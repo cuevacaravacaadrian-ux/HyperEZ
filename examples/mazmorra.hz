@@ -1,0 +1,174 @@
+// Mazmorra — combate por turnos. Tu héroe recorre tres salas llenas de monstruos.
+// Controles: 1 atacar, 2 bola de fuego, 3 poción, 4 huir.
+//
+// Sin consola interactiva, el héroe decide solo y la partida usa una semilla fija.
+
+const DEMO = not Console.interactive
+
+enum Accion { Atacar, Magia, Curarse, Huir }
+
+/// Se emite con cada golpe que se da en combate.
+event Golpe(atacante: text, objetivo: text, danio: number, critico: bool)
+/// Se emite cuando un personaje se queda sin vida.
+event Derrota(nombre: text)
+
+class Personaje {
+    var nombre: text
+    var vida: number
+    var vidaMax: number
+    var fuerza: number
+    var defensa: number = 0
+
+    constructor(nombre: text, vida: number, fuerza: number) {
+        this.nombre = nombre
+        this.vida = vida
+        this.vidaMax = vida
+        this.fuerza = fuerza
+    }
+
+    get vivo(): bool { return vida > 0 }
+
+    /// Resta vida teniendo en cuenta la defensa; devuelve el daño real.
+    function recibir(danio: number): number {
+        var real = max(1, danio - defensa)
+        vida = max(0, vida - real)
+        return real
+    }
+
+    function atacar(otro: Personaje) {
+        var critico = chance(0.15)
+        var danio = randomInt(fuerza - 2, fuerza + 2) * (critico ? 2 : 1)
+        emit Golpe(nombre, otro.nombre, otro.recibir(danio), critico)
+        if not otro.vivo { emit Derrota(otro.nombre) }
+    }
+
+    function toString(): text { return "${nombre} ${barra(vida, vidaMax)} ${vida}/${vidaMax}" }
+}
+
+class Heroe extends Personaje {
+    var mana = 12
+    var pociones = 2
+    var oro = 0
+
+    constructor(nombre: text) {
+        super(nombre, 42, 7)
+        defensa = 1
+    }
+
+    function magia(otro: Personaje): bool {
+        if mana < 4 { return false }
+        mana -= 4
+        emit Golpe(nombre + " (bola de fuego)", otro.nombre, otro.recibir(randomInt(10, 14)), false)
+        if not otro.vivo { emit Derrota(otro.nombre) }
+        return true
+    }
+
+    function curarse(): bool {
+        if pociones == 0 { return false }
+        pociones -= 1
+        var antes = vida
+        vida = min(vidaMax, vida + 16)
+        print("  + ${nombre} bebe una poción y recupera ${vida - antes} de vida")
+        return true
+    }
+}
+
+class Monstruo extends Personaje {
+    var botin: number
+    constructor(nombre: text, vida: number, fuerza: number, botin: number) {
+        super(nombre, vida, fuerza)
+        this.botin = botin
+    }
+}
+
+struct Sala { var nombre: text = ""; var monstruos: list = [] }
+
+function barra(actual: number, maximo: number): text {
+    var llenos = round(actual / maximo * 10)
+    return "[" + "#".repeat(llenos) + "-".repeat(10 - llenos) + "]"
+}
+
+on Golpe as e {
+    print("  > ${e.atacante} golpea a ${e.objetivo}: -${e.danio}${e.critico ? " ¡CRÍTICO!" : ""}")
+}
+on Derrota as e {
+    print("  x ${e.nombre} ha caído")
+}
+
+function elegir(h: Heroe, m: Monstruo): Accion {
+    if DEMO {
+        if h.vida < 16 and h.pociones > 0 { return Accion.Curarse }
+        if h.mana >= 4 and m.vida > 9 { return Accion.Magia }
+        return Accion.Atacar
+    }
+    Console.print("  [1] Atacar  [2] Bola de fuego (${h.mana} maná)  [3] Poción (${h.pociones})  [4] Huir", "cyan")
+    while true {
+        match Console.readKey() {
+            "1" => { return Accion.Atacar }
+            "2" => { return Accion.Magia }
+            "3" => { return Accion.Curarse }
+            "4", "escape" => { return Accion.Huir }
+            else => null
+        }
+    }
+}
+
+async function pausa(segundos: number) {
+    if not DEMO { await wait(segundos) }
+}
+
+/// Combate contra un monstruo; devuelve true si el héroe sigue en pie.
+async function combate(h: Heroe, m: Monstruo): bool {
+    print("\n¡Aparece ${m.nombre}!")
+    var turno = 1
+    while h.vivo and m.vivo {
+        print("\n-- Turno ${turno} --   ${h}   |   ${m}")
+        var hecho = match elegir(h, m) {
+            Accion.Atacar => { h.atacar(m); true }
+            Accion.Magia => h.magia(m)
+            Accion.Curarse => h.curarse()
+            else => {
+                if chance(0.5) {
+                    print("  ${h.nombre} huye... ¡y lo consigue!")
+                    return true
+                }
+                print("  ${h.nombre} intenta huir, pero no puede")
+                true
+            }
+        }
+        if not hecho { print("  No puedes hacer eso ahora: pierdes el turno") }
+        await pausa(0.4)
+        if m.vivo { m.atacar(h) }
+        await pausa(0.4)
+        turno += 1
+    }
+    if h.vivo {
+        h.oro += m.botin
+        print("  ${h.nombre} consigue ${m.botin} monedas de oro")
+    }
+    return h.vivo
+}
+
+async function jugar(): bool {
+    var heroe = Heroe("Aria")
+    var salas = [
+        Sala("La entrada húmeda", [Monstruo("Rata gigante", 14, 4, 5), Monstruo("Murciélago", 10, 5, 3)]),
+        Sala("El salón de los huesos", [Monstruo("Esqueleto", 22, 6, 12)]),
+        Sala("La cámara del tesoro", [Monstruo("Golem de piedra", 34, 8, 40)]),
+    ]
+    foreach i, sala in salas {
+        print("\n=== Sala ${i + 1}: ${sala.nombre} ===")
+        foreach m in sala.monstruos {
+            if not await combate(heroe, m) {
+                print("\n${heroe.nombre} ha sido derrotada en ${sala.nombre}. Oro reunido: ${heroe.oro}")
+                return false
+            }
+        }
+    }
+    print("\n¡${heroe.nombre} ha superado la mazmorra con ${heroe.vida} de vida y ${heroe.oro} monedas de oro!")
+    return true
+}
+
+if DEMO { randomSeed(2024) } else { Console.title("Mazmorra — HyperEZ") }
+var victoria = await jugar()
+print(victoria ? "VICTORIA" : "DERROTA")

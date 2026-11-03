@@ -1,0 +1,10 @@
+antes del error
+error en ejecución: Índice fuera de rango: 10 (la lista tiene 3 elementos)
+  --> ejecucion.hz:2:47
+ 2 | function nivel3(lista: list): number { return lista[10] }
+   |                                               ^
+  pila de llamadas:
+    en nivel3 (ejecucion.hz:2)
+    en nivel2 (ejecucion.hz:3)
+    en nivel1 (ejecucion.hz:6)
+    en <principal> (ejecucion.hz:8)

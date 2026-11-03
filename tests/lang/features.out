@@ -1,0 +1,24 @@
+Actor(Ana, 70) Actor(Rey, 250) 2 true true true false
+Estado.Jugando 6 Menu 3
+Punto(x: 3, y: 4) true
+[1, 3, 5, 8] [2, 6, 10, 16] 16 8 [3, 5]
+{nombre: "zed", hp: 10, mp: 5} zed 10 ["nombre", "hp", "mp"] por defecto
+set{1, 2, 3} true false true
+HOLA MUNDO ["Hola", "Mundo"] ÑANDÚ 5 b xxx
+20 30 20 7
+contador: 3
+cero pequeño medio menú otro
+finally ejecutado
+capturado: División entre cero
+finally ejecutado
+5 0
+MiError boom
+(una sola vez, primero)
+golpe a Ana 5
+golpe a Rey 7
+total 36 w 5
+5 Vec2(4, 5) Vec2(6, 8) Vec3(0, 1, 0) Color(230, 41, 55, 255) Color(255, 136, 0, 255)
+antes de await false
+cargado nivel1
+["cargado a", "cargado b"]
+fin

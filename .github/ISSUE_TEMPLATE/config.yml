@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Guía del lenguaje
+    url: https://github.com/cuevacaravacaadrian-ux/HyperEZ/blob/main/docs/GUIA.md
+    about: Antes de preguntar, mira si la guía lo explica.

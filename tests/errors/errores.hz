@@ -1,0 +1,19 @@
+var vida: number = "mucha"
+const MAX = 10
+MAX = 20
+pirnt("hola")
+function sumar(a: number, b: number): number {
+    return a + b
+}
+sumar(1)
+sumar(1, 2, 3)
+class Jugador {
+    var nombre = "Ana"
+    function saltar() { }
+}
+var j = Jugador()
+j.correr()
+var x = 5 - "texto"
+function f() { await wait(1) }
+if vida == "cero" { }
+break

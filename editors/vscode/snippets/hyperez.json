@@ -1,0 +1,168 @@
+{
+  "Variable": {
+    "prefix": ["var"],
+    "body": ["var ${1:nombre} = ${2:valor}"],
+    "description": "Declara una variable"
+  },
+  "Constante": {
+    "prefix": ["const"],
+    "body": ["const ${1:NOMBRE} = ${2:valor}"],
+    "description": "Declara una constante"
+  },
+  "Función": {
+    "prefix": ["function", "funcion", "fn"],
+    "body": ["/// ${3:Qué hace la función}", "function ${1:nombre}(${2}) {", "\t$0", "}"],
+    "description": "Declara una función documentada"
+  },
+  "Función con tipos": {
+    "prefix": ["functipo", "fnt"],
+    "body": ["function ${1:nombre}(${2:x}: ${3:number}): ${4:number} {", "\treturn ${0:x}", "}"],
+    "description": "Función con parámetros y resultado tipados"
+  },
+  "Función async": {
+    "prefix": ["async", "asincrona"],
+    "body": ["async function ${1:nombre}(${2}) {", "\tawait wait(${3:1})", "\t$0", "}"],
+    "description": "Función asíncrona (puede usar await)"
+  },
+  "Lambda": {
+    "prefix": ["lambda", "=>"],
+    "body": ["(${1:x}) => ${0:x * 2}"],
+    "description": "Función anónima"
+  },
+  "Clase": {
+    "prefix": ["class", "clase"],
+    "body": [
+      "/// ${2:Descripción de la clase}",
+      "class ${1:Nombre} {",
+      "\tvar ${3:nombre}: ${4:text}",
+      "",
+      "\tconstructor(${3:nombre}: ${4:text}) {",
+      "\t\tthis.${3:nombre} = ${3:nombre}",
+      "\t}",
+      "",
+      "\tfunction ${5:metodo}() {",
+      "\t\t$0",
+      "\t}",
+      "}"
+    ],
+    "description": "Declara una clase con constructor y un método"
+  },
+  "Clase hija": {
+    "prefix": ["extends", "hereda"],
+    "body": [
+      "class ${1:Hija} extends ${2:Padre} {",
+      "\tconstructor(${3}) {",
+      "\t\tsuper(${3})",
+      "\t\t$0",
+      "\t}",
+      "}"
+    ],
+    "description": "Clase que hereda de otra"
+  },
+  "Struct": {
+    "prefix": ["struct"],
+    "body": ["struct ${1:Punto} { var ${2:x}: number = 0; var ${3:y}: number = 0 }"],
+    "description": "Estructura de datos (se compara por valor)"
+  },
+  "Enum": {
+    "prefix": ["enum"],
+    "body": ["enum ${1:Estado} { ${2:Menu}, ${3:Jugando}, ${4:Pausa} }"],
+    "description": "Enumeración"
+  },
+  "Interfaz": {
+    "prefix": ["interface", "interfaz"],
+    "body": ["interface ${1:Nombre} {", "\tfunction ${2:metodo}(): ${3:void}", "}"],
+    "description": "Interfaz que deben cumplir las clases"
+  },
+  "if": {
+    "prefix": ["if", "si"],
+    "body": ["if ${1:condicion} {", "\t$0", "}"],
+    "description": "Condición"
+  },
+  "if / else": {
+    "prefix": ["ifelse", "sino"],
+    "body": ["if ${1:condicion} {", "\t$2", "} else {", "\t$0", "}"],
+    "description": "Condición con alternativa"
+  },
+  "for con rango": {
+    "prefix": ["for", "para"],
+    "body": ["for ${1:i} in ${2:0}..${3:10} {", "\t$0", "}"],
+    "description": "Bucle numérico (fin excluido; usa ..= para incluirlo)"
+  },
+  "foreach": {
+    "prefix": ["foreach", "paracada"],
+    "body": ["foreach ${1:elemento} in ${2:lista} {", "\t$0", "}"],
+    "description": "Recorre una lista, mapa, conjunto o texto"
+  },
+  "while": {
+    "prefix": ["while", "mientras"],
+    "body": ["while ${1:condicion} {", "\t$0", "}"],
+    "description": "Bucle mientras se cumpla la condición"
+  },
+  "repeat": {
+    "prefix": ["repeat", "repetir"],
+    "body": ["repeat ${1:3} {", "\t$0", "}"],
+    "description": "Repite un bloque N veces"
+  },
+  "match": {
+    "prefix": ["match", "segun"],
+    "body": ["match ${1:valor} {", "\t${2:1} => ${3:\"uno\"}", "\t${4:2, 3} => ${5:\"dos o tres\"}", "\telse => ${0:\"otro\"}", "}"],
+    "description": "Elige un resultado según el valor"
+  },
+  "try / catch": {
+    "prefix": ["try", "intentar"],
+    "body": ["try {", "\t$1", "} catch e {", "\tprint(\"Error:\", e.message)$0", "}"],
+    "description": "Captura errores"
+  },
+  "Evento": {
+    "prefix": ["event", "evento"],
+    "body": ["event ${1:Golpe}(${2:objetivo}: ${3:text}, ${4:danio}: ${5:number})", "", "on ${1:Golpe} as e {", "\t$0", "}"],
+    "description": "Declara un evento y un manejador"
+  },
+  "Manejador on": {
+    "prefix": ["on"],
+    "body": ["on ${1:Evento} as e {", "\t$0", "}"],
+    "description": "Escucha un evento"
+  },
+  "Emitir evento": {
+    "prefix": ["emit", "emitir"],
+    "body": ["emit ${1:Evento}(${0})"],
+    "description": "Lanza un evento"
+  },
+  "Importar": {
+    "prefix": ["from", "importar"],
+    "body": ["from \"./${1:modulo}.hz\" import ${0:Nombre}"],
+    "description": "Importa nombres de otro archivo"
+  },
+  "Prueba": {
+    "prefix": ["test", "prueba"],
+    "body": ["test(\"${1:descripción}\", () => {", "\tassertEqual(${2:actual}, ${3:esperado})$0", "})"],
+    "description": "Prueba unitaria (se ejecuta con hyper test)"
+  },
+  "Bucle de juego de consola": {
+    "prefix": ["juego", "gameloop"],
+    "body": [
+      "var jugando = true",
+      "var x = 0",
+      "while jugando {",
+      "\tConsole.clear()",
+      "\tConsole.print(\" \".repeat(x) + \"@\", \"cyan\")",
+      "\tConsole.print(\"← → para moverte, Esc para salir\", \"gray\")",
+      "\tvar tecla = Console.readKey()",
+      "\tmatch tecla {",
+      "\t\t\"left\" => x = max(0, x - 1)",
+      "\t\t\"right\" => x = min(Console.width - 1, x + 1)",
+      "\t\t\"escape\" => jugando = false",
+      "\t\telse => null",
+      "\t}",
+      "}",
+      "$0"
+    ],
+    "description": "Esqueleto de un juego de consola controlado con el teclado"
+  },
+  "Tarea en segundo plano": {
+    "prefix": ["spawn", "temporizador"],
+    "body": ["spawn(async () => {", "\twhile true {", "\t\tawait wait(${1:1})", "\t\t$0", "\t}", "})"],
+    "description": "Repite algo cada N segundos sin bloquear"
+  }
+}

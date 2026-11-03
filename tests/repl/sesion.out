@@ -1,0 +1,50 @@
+3
+"HOLA"
+30
+6
+20
+50
+100
+6
+3
+Celda(x: 2, y: 3)
+true
+impreso
+sin salto
+[1, 4, 9]
+error[E0205]: No existe nada llamado 'pirnt'
+  --> <consola>:1:1
+ 1 | pirnt("x")
+   | ^^^^^
+   = ayuda: ¿quisiste decir 'print'?
+error en ejecución: Índice fuera de rango: 10 (la lista tiene 3 elementos)
+  --> <consola>:1:1
+ 1 | lista[10]
+   | ^
+"listo"
+error[E0213]: 'fijo' se declaró con 'let' y solo puede asignarse una vez
+  --> <consola>:1:1
+ 1 | fijo = 2
+   | ^^^^
+   = ayuda: usa 'var' si necesitas cambiar su valor
+true
+  var vidas: number = 100
+  function doble(n: number): number
+  function usa(): number
+  var total: number = 6
+  var datos: map = {nombre: "Ana", vida: 3}
+  class Punto
+  struct Celda
+  enum Color { Rojo, Verde }
+  var c: Color = Color.Verde
+  var lista: list<number> = [1, 2, 3]
+  async function tarde(): Task<text>
+  let fijo: number = 1
+  class Inventario
+  struct Objeto
+  var m: Inventario = <Inventario>
+Sesión reiniciada.
+error[E0205]: No existe nada llamado 'total'
+  --> <consola>:1:1
+ 1 | total
+   | ^^^^^

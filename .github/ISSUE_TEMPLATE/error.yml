@@ -1,0 +1,47 @@
+name: Informar de un error
+description: Algo no funciona como debería (el compilador, la VM, la extensión o el instalador).
+labels: ["error"]
+body:
+  - type: textarea
+    id: codigo
+    attributes:
+      label: Programa que lo reproduce
+      description: El código .hz más pequeño posible en el que pasa el error.
+      render: hz
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: Qué esperabas que pasara
+    validations:
+      required: true
+  - type: textarea
+    id: obtenido
+    attributes:
+      label: Qué pasó
+      description: Copia el mensaje completo (errores, avisos o la salida del programa).
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión
+      description: La salida de `hyper version`.
+      placeholder: HyperEZ 0.5.0
+    validations:
+      required: true
+  - type: dropdown
+    id: donde
+    attributes:
+      label: Dónde ocurre
+      multiple: true
+      options:
+        - Al ejecutar (hyper run / F5)
+        - Consola interactiva (hyper repl)
+        - Modo watch
+        - Comprobar errores (hyper check)
+        - Pruebas (hyper test)
+        - Extensión de VS Code
+        - Instalador

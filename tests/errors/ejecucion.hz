@@ -1,0 +1,9 @@
+// Un error no capturado muestra el mensaje, dónde ocurrió y la pila de llamadas.
+function nivel3(lista: list): number { return lista[10] }
+function nivel2(): number { return nivel3([1, 2, 3]) }
+function nivel1() {
+    print("antes del error")
+    nivel2()
+}
+nivel1()
+print("esto no se ejecuta")

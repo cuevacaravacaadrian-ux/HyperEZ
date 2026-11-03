@@ -1,0 +1,22 @@
+// Módulos: from ... import, import ... as y miembros privados.
+from "./_inventario.hz" import Inventario, Objeto, VERSION
+import "./_inventario.hz" as inv
+
+test("from ... import", () => {
+    var mochila = Inventario(10)
+    assertEqual(mochila.meter(Objeto("espada", 4, 50)), true)
+    assertEqual(mochila.meter(Objeto("escudo", 5, 30)), true)
+    assertEqual(mochila.meter(Objeto("yunque", 8, 5)), false)
+    assertEqual(mochila.peso, 9)
+    assertEqual(mochila.valorTotal(), 80)
+    assertEqual(mochila.sacar("espada")?.valor, 50)
+    assertEqual(mochila.sacar("nada"), null)
+    assertEqual(VERSION, 2)
+})
+
+test("import ... as", () => {
+    var m = inv.Inventario(3)
+    m.meter(inv.Objeto("poción", 1, 10))
+    assertEqual(m.objetos.length, 1)
+    assertEqual(inv.VERSION, 2)
+})

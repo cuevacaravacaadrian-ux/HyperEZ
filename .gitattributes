@@ -1,0 +1,21 @@
+# Finales de línea normalizados en el repositorio (LF); Git los adapta al sistema al descargar.
+* text=auto
+
+# Scripts de Windows con CRLF
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Salidas esperadas de las pruebas: siempre LF
+*.out text eol=lf
+
+# Binarios
+*.png binary
+*.jpg binary
+*.ico binary
+*.ttf binary
+*.exe binary
+*.vsix binary
+
+# Estadísticas de lenguajes de GitHub: sin contar las bibliotecas de terceros
+third_party/** linguist-vendored

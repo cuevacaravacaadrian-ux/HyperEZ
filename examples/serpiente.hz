@@ -1,0 +1,159 @@
+// Serpiente — come manzanas sin chocar con las paredes ni contigo misma.
+// Controles: flechas o WASD para girar, P para pausar, Esc para salir.
+//
+// Si no hay una consola interactiva (por ejemplo dentro de 'hyper test'),
+// la serpiente juega sola con un piloto automático y una semilla fija.
+
+const ANCHO = 26
+const ALTO = 14
+const DEMO = not Console.interactive
+const TICKS_DEMO = 600
+
+struct Punto { var x: number = 0; var y: number = 0 }
+
+enum Dir { Arriba, Abajo, Izquierda, Derecha }
+
+/// Desplazamiento de una casilla en la dirección indicada.
+function paso(d: Dir): Punto {
+    return match d {
+        Dir.Arriba => Punto(0, -1)
+        Dir.Abajo => Punto(0, 1)
+        Dir.Izquierda => Punto(-1, 0)
+        else => Punto(1, 0)
+    }
+}
+
+function opuestas(a: Dir, b: Dir): bool {
+    var p = paso(a)
+    var q = paso(b)
+    return p.x + q.x == 0 and p.y + q.y == 0
+}
+
+class Serpiente {
+    var cuerpo: list = []
+    var dir: Dir = Dir.Derecha
+    var crecer = 0
+
+    constructor(x: number, y: number) {
+        for i in 0..3 { cuerpo.add(Punto(x - i, y)) }
+    }
+
+    get cabeza(): Punto { return cuerpo[0] }
+
+    /// Cambia de dirección (no puede darse la vuelta sobre sí misma).
+    function girar(d: Dir) {
+        if not opuestas(d, dir) { dir = d }
+    }
+
+    function siguiente(d: Dir? = null): Punto {
+        var p = paso(d ?? dir)
+        return Punto(cabeza.x + p.x, cabeza.y + p.y)
+    }
+
+    function avanzar() {
+        cuerpo.insert(0, siguiente())
+        if crecer > 0 { crecer -= 1 } else { cuerpo.pop() }
+    }
+
+    function ocupa(p: Punto): bool { return p in cuerpo }
+}
+
+var serpiente = Serpiente(6, 7)
+var puntos = 0
+var ticks = 0
+var pausa = false
+if DEMO { randomSeed(7) }
+var manzana = nuevaManzana()
+
+function fuera(p: Punto): bool { return p.x <= 0 or p.y <= 0 or p.x >= ANCHO - 1 or p.y >= ALTO - 1 }
+function choca(p: Punto): bool { return fuera(p) or serpiente.ocupa(p) }
+
+function nuevaManzana(): Punto {
+    while true {
+        var p = Punto(randomInt(1, ANCHO - 2), randomInt(1, ALTO - 2))
+        if not serpiente.ocupa(p) { return p }
+    }
+}
+
+/// Piloto automático: va hacia la manzana evitando los choques inmediatos.
+function piloto(): Dir {
+    var opciones = [Dir.Arriba, Dir.Abajo, Dir.Izquierda, Dir.Derecha].filter(d => not opuestas(d, serpiente.dir))
+    var seguras = opciones.filter(d => not choca(serpiente.siguiente(d)))
+    if seguras.isEmpty() { return serpiente.dir }
+    return seguras.minBy(d => {
+        var p = serpiente.siguiente(d)
+        return abs(p.x - manzana.x) + abs(p.y - manzana.y)
+    })
+}
+
+function leerTeclado(): bool {
+    var seguir = true
+    var tecla = Console.pollKey()
+    while tecla != null {
+        match tecla {
+            "up", "w" => serpiente.girar(Dir.Arriba)
+            "down", "s" => serpiente.girar(Dir.Abajo)
+            "left", "a" => serpiente.girar(Dir.Izquierda)
+            "right", "d" => serpiente.girar(Dir.Derecha)
+            "p" => pausa = not pausa
+            "escape", "q" => seguir = false
+            else => null
+        }
+        tecla = Console.pollKey()
+    }
+    return seguir
+}
+
+function dibujar() {
+    Console.moveTo(0, 0)
+    Console.print("  SERPIENTE   Puntos: ${puntos}   Longitud: ${len(serpiente.cuerpo)}   ", "lime")
+    for y in 0..ALTO {
+        Console.write("  ")
+        for x in 0..ANCHO {
+            var p = Punto(x, y)
+            if fuera(p) { Console.write("██", "#3a4a5a") }
+            else if p == serpiente.cabeza { Console.write("◆ ", "yellow") }
+            else if serpiente.ocupa(p) { Console.write("■ ", "lime") }
+            else if p == manzana { Console.write("● ", "red") }
+            else { Console.write("  ") }
+        }
+        Console.print()
+    }
+    Console.print(pausa ? "  (pausa: pulsa P para seguir)            " : "  Flechas/WASD: girar   P: pausa   Esc: salir", "gray")
+}
+
+if not DEMO {
+    Console.title("Serpiente — HyperEZ")
+    Console.showCursor(false)
+    Console.clear()
+}
+
+var vivo = true
+while vivo {
+    if DEMO {
+        if ticks >= TICKS_DEMO { break }
+        serpiente.girar(piloto())
+    } else {
+        if not leerTeclado() { break }
+        if pausa { dibujar(); System.sleep(0.1); continue }
+    }
+    if choca(serpiente.siguiente()) {
+        vivo = false
+        break
+    }
+    serpiente.avanzar()
+    if serpiente.cabeza == manzana {
+        puntos += 10
+        serpiente.crecer += 2
+        manzana = nuevaManzana()
+    }
+    ticks += 1
+    if not DEMO {
+        dibujar()
+        System.sleep(max(0.05, 0.13 - puntos / 3000))
+    }
+}
+
+if not DEMO { Console.showCursor(true) }
+var final = vivo ? "tiempo agotado" : "choque"
+Console.print("\n  Fin de la partida (${final}): ${puntos} puntos, longitud ${len(serpiente.cuerpo)}, ${ticks} movimientos", "gold")

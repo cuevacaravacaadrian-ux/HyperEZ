@@ -1,0 +1,79 @@
+// Tareas async/await y eventos (on, once, priority, off, stopPropagation).
+
+async function cargar(nombre: text, segundos: number): text {
+    await wait(segundos)
+    return "cargado " + nombre
+}
+
+async function falla() {
+    await wait(0.01)
+    throw Error("no se pudo cargar")
+}
+
+test("await y tareas", async () => {
+    var t = cargar("nivel1", 0.02)
+    assertEqual(t.done, false)
+    assertEqual(await t, "cargado nivel1")
+    assertEqual(t.done, true)
+    assertEqual(await awaitAll([cargar("a", 0.02), cargar("b", 0.01)]), ["cargado a", "cargado b"])
+    assertEqual(await awaitAny([cargar("lento", 0.2), cargar("rápido", 0.01)]), "cargado rápido")
+})
+
+test("errores en tareas", async () => {
+    var mensaje = ""
+    try {
+        await falla()
+    } catch e {
+        mensaje = e.message
+    }
+    assertEqual(mensaje, "no se pudo cargar")
+})
+
+test("spawn, then y cancelar", async () => {
+    var ticks = 0
+    var reloj = spawn(async () => {
+        while true {
+            await wait(0.01)
+            ticks += 1
+        }
+    })
+    await wait(0.08)
+    reloj.cancel()
+    var visto = ticks
+    assert(visto >= 2, "el reloj debería haber avanzado (" + str(visto) + ")")
+    await wait(0.05)
+    assert(ticks <= visto + 1, "tras cancelar no debe seguir contando")
+    var resultado = null
+    cargar("x", 0.01).then(r => { resultado = r })
+    await wait(0.05)
+    assertEqual(resultado, "cargado x")
+})
+
+event Golpe(quien: text, cantidad: number)
+event Puntos(n: number)
+
+test("eventos: orden, prioridad, once y off", () => {
+    var log = []
+    var s1 = on Golpe as e { log.add("normal ${e.quien} ${e.cantidad}") }
+    once Golpe priority 10 as e { log.add("primero una vez") }
+    on Golpe priority -5 as e { log.add("último") }
+    emit Golpe("Ana", 5)
+    emit Golpe(quien: "Rey", cantidad: 7)
+    off(s1)
+    emit Golpe("Bea", 1)
+    assertEqual(log, ["primero una vez", "normal Ana 5", "último", "normal Rey 7", "último", "último"])
+    off(Golpe)
+})
+
+test("eventos: stopPropagation y datos", () => {
+    var total = 0
+    on Puntos priority 1 as e {
+        total += e.n
+        if e.n > 100 { e.stopPropagation() }
+    }
+    on Puntos as e { total += 1 }
+    emit Puntos(10)
+    emit Puntos(500)
+    assertEqual(total, 10 + 1 + 500)
+    off(Puntos)
+})

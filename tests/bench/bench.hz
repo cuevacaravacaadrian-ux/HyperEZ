@@ -1,0 +1,32 @@
+// Pruebas de rendimiento de la VM (no forman parte de la suite normal).
+function fib(n: number): number {
+    if n < 2 { return n }
+    return fib(n - 1) + fib(n - 2)
+}
+var t0 = time()
+print("fib(27) =", fib(27))
+var t1 = time()
+
+var suma = 0
+for i in 0..3000000 { suma += i % 7 }
+var t2 = time()
+
+class P { var x = 0; var y = 0; function mover(dx: number, dy: number) { x += dx; y += dy } }
+var ps = []
+for i in 0..1000 { ps.add(P()) }
+for f in 0..300 { foreach p in ps { p.mover(1, 2) } }
+var t3 = time()
+
+var v = Vec2(0, 0)
+for i in 0..300000 { v = v + Vec2(1, 1) }
+var t4 = time()
+
+var lista = []
+for i in 0..200000 { lista.add(i * 2) }
+var m = lista.map(x => x + 1).filter(x => x % 3 == 0).sum()
+var t5 = time()
+var txt = ""
+for i in 0..20000 { txt = txt + "a" }
+var t6 = time()
+print("fib", round((t1 - t0) * 1000), "ms | bucle", round((t2 - t1) * 1000), "ms | objetos", round((t3 - t2) * 1000),
+      "ms | vec", round((t4 - t3) * 1000), "ms | listas", round((t5 - t4) * 1000), "ms | texto", round((t6 - t5) * 1000), "ms")

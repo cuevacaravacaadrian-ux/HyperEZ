@@ -1,0 +1,192 @@
+// Lógica típica de un juego escrita en HyperEZ: entidades, bucle de juego con paso fijo,
+// colisiones, IA con máquina de estados, búsqueda de caminos, guardado y temporizadores.
+
+const MAPA = [
+    "##########",
+    "#P...#...#",
+    "#.##.#.#.#",
+    "#.#..#.#.#",
+    "#.#.##.#.#",
+    "#......#E#",
+    "##########",
+]
+
+struct Celda { var x: number = 0; var y: number = 0 }
+
+/// Caja de colisión alineada con los ejes.
+struct Caja {
+    var x: number = 0
+    var y: number = 0
+    var ancho: number = 1
+    var alto: number = 1
+    function choca(o: Caja): bool {
+        return x < o.x + o.ancho and o.x < x + ancho and y < o.y + o.alto and o.y < y + alto
+    }
+}
+
+enum EstadoIA { Patrulla, Persecucion, Huida }
+
+class Entidad {
+    var pos: Vec2
+    var vel: Vec2 = Vec2(0, 0)
+    var vida: number = 10
+    constructor(x: number, y: number) { pos = Vec2(x, y) }
+    get caja(): Caja { return Caja(pos.x, pos.y, 1, 1) }
+    function actualizar(dt: number) { pos = pos + vel * dt }
+}
+
+class Enemigo extends Entidad {
+    var estado = EstadoIA.Patrulla
+    var cambios: list = []
+    function pensar(objetivo: Entidad) {
+        var d = pos.distance(objetivo.pos)
+        var nuevo = match true {
+            vida < 4 => EstadoIA.Huida
+            d < 5 => EstadoIA.Persecucion
+            else => EstadoIA.Patrulla
+        }
+        if nuevo != estado {
+            cambios.add(nuevo.name)
+            estado = nuevo
+        }
+        vel = match estado {
+            EstadoIA.Persecucion => (objetivo.pos - pos).normalized() * 3
+            EstadoIA.Huida => (pos - objetivo.pos).normalized() * 4
+            else => Vec2(1, 0)
+        }
+    }
+}
+
+/// Camino más corto entre dos celdas (búsqueda en anchura). Devuelve la lista de celdas o [].
+function camino(mapa: list, desde: Celda, hasta: Celda): list {
+    var previo = {}
+    var clave = (c: Celda) => "${c.x},${c.y}"
+    var cola = [desde]
+    previo[clave(desde)] = null
+    while not cola.isEmpty() {
+        var c = cola.shift()
+        if c == hasta {
+            var ruta = []
+            var p: any = c
+            while p != null {
+                ruta.insert(0, p)
+                p = previo[clave(p)]
+            }
+            return ruta
+        }
+        foreach d in [Celda(1, 0), Celda(-1, 0), Celda(0, 1), Celda(0, -1)] {
+            var n = Celda(c.x + d.x, c.y + d.y)
+            if mapa[n.y][n.x] != "#" and not previo.has(clave(n)) {
+                previo[clave(n)] = c
+                cola.add(n)
+            }
+        }
+    }
+    return []
+}
+
+function buscar(mapa: list, letra: text): Celda {
+    foreach y, fila in mapa {
+        var x = fila.indexOf(letra)
+        if x >= 0 { return Celda(x, y) }
+    }
+    throw Error("no está '${letra}' en el mapa")
+}
+
+test("colisiones AABB", () => {
+    assertEqual(Caja(0, 0, 2, 2).choca(Caja(1, 1, 2, 2)), true)
+    assertEqual(Caja(0, 0, 1, 1).choca(Caja(1, 0, 1, 1)), false)
+    assertEqual(Caja(5, 5, 1, 1).choca(Caja(0, 0, 10, 10)), true)
+})
+
+test("bucle de juego con paso fijo", () => {
+    var e = Entidad(0, 0)
+    e.vel = Vec2(2, 1)
+    var acumulado = 0
+    var pasos = 0
+    const PASO = 1 / 60
+    // fotogramas irregulares: el paso fijo hace la simulación estable
+    foreach dt in [0.016, 0.033, 0.017, 0.05, 0.001, 0.05] {
+        acumulado += dt
+        while acumulado >= PASO {
+            e.actualizar(PASO)
+            acumulado -= PASO
+            pasos += 1
+        }
+    }
+    assertEqual(pasos, 10) // 0.167 s de fotogramas = 10 pasos de 1/60 (sobra 0.0003 s para el siguiente)
+    assertEqual(round(e.pos.x, 3), round(10 * PASO * 2, 3))
+})
+
+test("IA con máquina de estados", () => {
+    var jugador = Entidad(10, 0)
+    var malo = Enemigo(0, 0)
+    for t in 0..120 {
+        malo.pensar(jugador)
+        malo.actualizar(0.1)
+        if t == 60 { malo.vida = 3 }
+    }
+    assertEqual(malo.cambios, ["Persecucion", "Huida"])
+    assert(malo.pos.distance(jugador.pos) > 5, "huye del jugador")
+})
+
+test("búsqueda de caminos en el mapa", () => {
+    var inicio = buscar(MAPA, "P")
+    var salida = buscar(MAPA, "E")
+    var ruta = camino(MAPA, inicio, salida)
+    assertEqual(ruta[0], inicio)
+    assertEqual(ruta[-1], salida)
+    assertEqual(ruta.length - 1, 19)
+    foreach i in 1..ruta.length {
+        var a = ruta[i - 1]
+        var b = ruta[i]
+        assertEqual(abs(a.x - b.x) + abs(a.y - b.y), 1, "cada paso avanza una casilla")
+        assert(MAPA[b.y][b.x] != "#", "no atraviesa paredes")
+    }
+    assertEqual(camino(["###", "#P#", "###"], Celda(1, 1), Celda(0, 0)), [])
+})
+
+test("guardar y cargar la partida", () => {
+    var partida = {
+        jugador: "Ana",
+        nivel: 3,
+        inventario: ["espada", "poción", "llave"],
+        posicion: { x: 4, y: 7 },
+        records: [1200, 950, 1800],
+    }
+    var ruta = "_partida_prueba.json"
+    File.write(ruta, JSON.stringify(partida, 2))
+    var cargada = JSON.parse(File.read(ruta))
+    File.delete(ruta)
+    assertEqual(cargada, partida)
+    var top = cargada.records.copy().sort().reversed().take(2)
+    assertEqual(top, [1800, 1200])
+})
+
+test("oleadas con temporizadores async", async () => {
+    var aparecidos = []
+    async function oleada(n: number, intervalo: number) {
+        repeat n {
+            await wait(intervalo)
+            aparecidos.add(len(aparecidos) + 1)
+        }
+    }
+    await awaitAll([oleada(3, 0.01), oleada(2, 0.015)])
+    assertEqual(aparecidos, [1, 2, 3, 4, 5])
+})
+
+test("rendimiento: 1000 entidades durante 300 fotogramas", () => {
+    var entidades = []
+    for i in 0..1000 {
+        var e = Entidad(i % 40, floor(i / 40))
+        e.vel = Vec2(1, -1)
+        entidades.add(e)
+    }
+    var t0 = time()
+    repeat 300 {
+        foreach e in entidades { e.actualizar(1 / 60) }
+    }
+    var ms = (time() - t0) * 1000
+    assertEqual(round(entidades[0].pos.x, 6), 5)
+    assert(ms < 3000, "demasiado lento: ${round(ms)} ms")
+})

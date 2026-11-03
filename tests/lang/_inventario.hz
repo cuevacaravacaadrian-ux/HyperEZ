@@ -1,0 +1,31 @@
+// Módulo auxiliar de las pruebas (los archivos que empiezan por "_" no se ejecutan solos).
+
+/// Objeto que se puede guardar en el inventario.
+struct Objeto { var nombre: text = ""; var peso: number = 1; var valor: number = 0 }
+
+/// Inventario con límite de peso.
+class Inventario {
+    var objetos: list = []
+    var pesoMax: number
+
+    constructor(pesoMax: number) { this.pesoMax = pesoMax }
+
+    get peso(): number { return objetos.map(o => o.peso).sum() }
+
+    function meter(o: Objeto): bool {
+        if peso + o.peso > pesoMax { return false }
+        objetos.add(o)
+        return true
+    }
+
+    function sacar(nombre: text): Objeto? {
+        var i = objetos.findIndex(o => o.nombre == nombre)
+        if i < 0 { return null }
+        return objetos.removeAt(i)
+    }
+
+    function valorTotal(): number { return objetos.reduce((a, o) => a + o.valor, 0) }
+}
+
+private var interno = "no se exporta"
+const VERSION = 2

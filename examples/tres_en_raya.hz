@@ -1,0 +1,133 @@
+// Tres en raya contra el ordenador, que juega de forma perfecta (minimax con poda alfa-beta).
+// Pulsa 1-9 para poner tu ficha (X) en la casilla correspondiente; Esc para salir.
+//
+// Sin consola interactiva juega el ordenador contra sí mismo y contra un rival al azar.
+
+const DEMO = not Console.interactive
+const LINEAS = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
+
+function tableroVacio(): list { return range(9).toList().map(i => " ") }
+
+function ganador(t: list): text? {
+    foreach l in LINEAS {
+        var a = t[l[0]]
+        if a != " " and a == t[l[1]] and a == t[l[2]] { return a }
+    }
+    return null
+}
+
+function libres(t: list): list { return range(9).toList().filter(i => t[i] == " ") }
+function rival(f: text): text { return f == "X" ? "O" : "X" }
+
+/// Valor de la posición para 'yo': positivo si gana (antes es mejor), negativo si pierde.
+function minimax(t: list, turno: text, yo: text, alfa: number, beta: number, prof: number): number {
+    var g = ganador(t)
+    if g == yo { return 10 - prof }
+    if g != null { return prof - 10 }
+    var casillas = libres(t)
+    if casillas.isEmpty() { return 0 }
+    var maximizar = turno == yo
+    var mejor = maximizar ? -INFINITY : INFINITY
+    foreach i in casillas {
+        t[i] = turno
+        var v = minimax(t, rival(turno), yo, alfa, beta, prof + 1)
+        t[i] = " "
+        if maximizar {
+            mejor = max(mejor, v)
+            alfa = max(alfa, v)
+        } else {
+            mejor = min(mejor, v)
+            beta = min(beta, v)
+        }
+        if beta <= alfa { break }
+    }
+    return mejor
+}
+
+var nodos = 0
+
+function mejorJugada(t: list, yo: text): number {
+    var mejor = -INFINITY
+    var jugada = -1
+    foreach i in libres(t) {
+        t[i] = yo
+        var v = minimax(t, rival(yo), yo, -INFINITY, INFINITY, 1)
+        t[i] = " "
+        nodos += 1
+        if v > mejor {
+            mejor = v
+            jugada = i
+        }
+    }
+    return jugada
+}
+
+function dibujar(t: list) {
+    for f in 0..3 {
+        var celdas = [0, 1, 2].map(c => {
+            var i = f * 3 + c
+            return t[i] == " " ? str(i + 1) : t[i]
+        })
+        print("   " + celdas.join(" │ "))
+        if f < 2 { print("  ───┼───┼───") }
+    }
+}
+
+/// Juega una partida completa; 'jugadorX' y 'jugadorO' son funciones (tablero) => casilla.
+function partida(jugadorX: function, jugadorO: function, mostrar: bool): text {
+    var t = tableroVacio()
+    var turno = "X"
+    while ganador(t) == null and not libres(t).isEmpty() {
+        var casilla = turno == "X" ? jugadorX(t) : jugadorO(t)
+        if casilla < 0 { return "abandono" }
+        t[casilla] = turno
+        turno = rival(turno)
+        if mostrar {
+            print()
+            dibujar(t)
+        }
+    }
+    return ganador(t) ?? "empate"
+}
+
+var ordenadorX = (t: list) => mejorJugada(t, "X")
+var ordenadorO = (t: list) => mejorJugada(t, "O")
+
+if DEMO {
+    randomSeed(42)
+    var alAzar = (t: list) => randomChoice(libres(t))
+    print("Ordenador contra ordenador:")
+    var r = partida(ordenadorX, ordenadorO, true)
+    print("Resultado:", r)
+    var resultados = { X: 0, O: 0, empate: 0 }
+    repeat 20 {
+        var res = partida(alAzar, ordenadorO, false)
+        resultados[res] += 1
+    }
+    print("20 partidas de un rival al azar (X) contra el ordenador (O):", resultados)
+    assert(resultados.X == 0, "el ordenador nunca debería perder")
+    print("Jugadas analizadas:", nodos)
+} else {
+    Console.title("Tres en raya — HyperEZ")
+    var humano = (t: list) => {
+        while true {
+            Console.print("\nTu turno (1-9, Esc para salir): ", "cyan")
+            var tecla = Console.readKey()
+            if tecla == "escape" { return -1 }
+            var n = toNumber(tecla)
+            if n != null and n >= 1 and n <= 9 and t[n - 1] == " " { return n - 1 }
+            Console.print("Esa casilla no vale.", "red")
+        }
+    }
+    Console.clear()
+    print("Tú eres X. Las casillas se numeran así:\n")
+    dibujar(tableroVacio())
+    var r = partida(humano, ordenadorO, true)
+    var mensaje = match r {
+        "X" => "¡Has ganado! (esto no debería pasar...)"
+        "O" => "Gana el ordenador."
+        "empate" => "Empate: el mejor resultado posible contra un rival perfecto."
+        else => "Partida abandonada."
+    }
+    Console.print("\n" + mensaje, "gold")
+}

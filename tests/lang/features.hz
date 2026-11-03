@@ -1,0 +1,119 @@
+enum Estado { Menu, Jugando = 5, Pausa }
+interface Danable { function recibir(n: number): void }
+
+class Actor implements Danable {
+    public var nombre: text
+    public var vida: number = 100
+    static var cuenta: number = 0
+    constructor(nombre: text) {
+        this.nombre = nombre
+        cuenta += 1
+    }
+    function recibir(n: number): void {
+        vida = max(0, vida - n)
+    }
+    get vivo(): bool { return vida > 0 }
+    function toString(): text { return "Actor(${nombre}, ${vida})" }
+}
+
+class Jefe extends Actor {
+    var escudo = 2
+    constructor(nombre: text) { super(nombre); vida = 300 }
+    function recibir(n: number): void { super.recibir(n / escudo) }
+}
+
+struct Punto { var x: number = 0; var y: number = 0 }
+
+var a = Actor("Ana")
+var j = new Jefe("Rey")
+a.recibir(30)
+j.recibir(100)
+print(a, j, Actor.cuenta, a.vivo, a is Danable, j is Actor, a is Jefe)
+print(Estado.Jugando, Estado.Pausa.value, Estado.Menu.name, Estado.count)
+
+var p = Punto(3, 4)
+print(p, p == Punto(3, 4))
+
+// colecciones y lambdas
+var nums = [5, 3, 8, 1]
+print(nums.sort(), nums.map(x => x * 2), nums.filter(x => x > 2).sum(), nums[-1], nums[1..3])
+var m = { nombre: "zed", hp: 10 }
+m.mp = 5
+print(m, m.nombre, m["hp"], m.keys(), m?.nada?.x ?? "por defecto")
+var s = set(1, 2, 2, 3)
+print(s, 2 in s, 9 in nums, "ell" in "hola ella")
+
+// texto
+var t = "  Hola Mundo  "
+print(t.trim().upper(), t.trim().split(" "), "ñandú".upper(), len("ñandú"), "abc"[1], "x" * 3)
+
+// funciones: por defecto, con nombre, resto, clausuras
+function danio(base: number, mult: number = 2, ...extra: number): number {
+    return base * mult + extra.sum()
+}
+print(danio(10), danio(10, 3), danio(base: 5, mult: 4), danio(1, 1, 1, 2, 3))
+function contador() {
+    var c = 0
+    return () => { c += 1; return c }
+}
+var inc = contador()
+inc(); inc()
+print("contador:", inc())
+
+// match
+function describir(x: any): text {
+    return match x {
+        0 => "cero"
+        1, 2, 3 => "pequeño"
+        4..10 => "medio"
+        Estado.Menu => "menú"
+        else => "otro"
+    }
+}
+print(describir(0), describir(2), describir(7), describir(Estado.Menu), describir(99))
+
+// excepciones
+function dividir(a: number, b: number): number {
+    try {
+        return a / b
+    } catch e {
+        print("capturado:", e.message)
+        return 0
+    } finally {
+        print("finally ejecutado")
+    }
+}
+print(dividir(10, 2), dividir(1, 0))
+try { throw Error("boom", "MiError") } catch e { print(e.name, e.message) }
+
+// eventos
+event Golpe(quien: text, cantidad: number)
+on Golpe as e { print("golpe a", e.quien, e.cantidad) }
+once Golpe priority 10 as e { print("(una sola vez, primero)") }
+emit Golpe("Ana", 5)
+emit Golpe(quien: "Rey", cantidad: 7)
+
+// bucles
+var total = 0
+repeat 3 { total += 1 }
+for i in 10..0 step -2 { total += i }
+foreach k, v in { a: 1, b: 2 } { total += v }
+var w = 0
+while true { w++; if w >= 5 { break } }
+print("total", total, "w", w)
+
+// vectores y colores
+var v = Vec2(3, 4)
+print(v.length(), v + Vec2(1, 1), v * 2, Vec3.up, Color.RED, Color.hex("#ff8800"))
+
+// async
+async function cargar(nombre: text): text {
+    await wait(0.05)
+    return "cargado " + nombre
+}
+var tarea = cargar("nivel1")
+print("antes de await", tarea.done)
+print(await tarea)
+var res = await awaitAll([cargar("a"), cargar("b")])
+print(res)
+print("fin")

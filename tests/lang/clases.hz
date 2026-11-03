@@ -1,0 +1,135 @@
+// Clases, herencia, interfaces, structs, enums, getters/setters, estáticos y errores propios.
+
+interface Danable { function recibir(n: number): void }
+
+class Actor implements Danable {
+    public var nombre: text
+    var vida: number = 100
+    private var secreto = 42
+    static var creados: number = 0
+
+    constructor(nombre: text) {
+        this.nombre = nombre
+        creados += 1
+    }
+    function recibir(n: number): void { vida = max(0, vida - n) }
+    get vivo(): bool { return vida > 0 }
+    get salud(): number { return vida }
+    set salud(v: number) { vida = clamp(v, 0, 100) }
+    static function crear(nombre: text): Actor { return Actor(nombre) }
+    function toString(): text { return "Actor(${nombre}, ${vida})" }
+}
+
+class Jefe extends Actor {
+    var escudo = 2
+    constructor(nombre: text) {
+        super(nombre)
+        vida = 300
+    }
+    function recibir(n: number): void { super.recibir(n / escudo) }
+}
+
+struct Punto { var x: number = 0; var y: number = 0 }
+
+enum Estado { Menu, Jugando = 5, Pausa }
+
+class SinVida extends Error {}
+
+test("constructores, campos y métodos", () => {
+    var a = Actor("Ana")
+    a.recibir(30)
+    assertEqual(a.vida, 70)
+    assertEqual(str(a), "Actor(Ana, 70)")
+    assertEqual(a.vivo, true)
+    var b = new Actor("Bea")
+    assertEqual(b.nombre, "Bea")
+})
+
+test("herencia y super", () => {
+    var j = Jefe("Rey")
+    j.recibir(100)
+    assertEqual(j.vida, 250)
+    assertEqual(j is Actor, true)
+    assertEqual(j is Danable, true)
+    assertEqual(Actor("x") is Jefe, false)
+})
+
+test("getters y setters", () => {
+    var a = Actor("Ana")
+    a.salud = 500
+    assertEqual(a.salud, 100)
+    a.salud = -3
+    assertEqual(a.vivo, false)
+})
+
+test("miembros estáticos", () => {
+    var antes = Actor.creados
+    var c = Actor.crear("Cid")
+    assertEqual(Actor.creados, antes + 1)
+    assertEqual(c.nombre, "Cid")
+})
+
+test("structs: valor y comparación", () => {
+    var p = Punto(3, 4)
+    assertEqual(p, Punto(3, 4))
+    assertEqual(p == Punto(4, 3), false)
+    assertEqual(Punto().x, 0)
+    assertEqual(Punto(y: 7).y, 7)
+    var lista = [Punto(1, 1), Punto(2, 2)]
+    assertEqual(Punto(2, 2) in lista, true)
+})
+
+test("enums", () => {
+    assertEqual(Estado.Jugando.value, 5)
+    assertEqual(Estado.Pausa.value, 6)
+    assertEqual(Estado.Menu.name, "Menu")
+    assertEqual(Estado.count, 3)
+    assertEqual(Estado.values().map(e => e.name), ["Menu", "Jugando", "Pausa"])
+    assertEqual(Estado.fromName("Pausa"), Estado.Pausa)
+    var e = Estado.Menu
+    var texto = match e {
+        Estado.Menu => "menú"
+        Estado.Jugando => "jugando"
+        else => "pausa"
+    }
+    assertEqual(texto, "menú")
+})
+
+test("errores propios", () => {
+    var capturado = null
+    try {
+        throw SinVida("el héroe ha caído")
+    } catch e {
+        capturado = e
+    }
+    assertEqual(capturado is SinVida, true)
+    assertEqual(capturado is Error, true)
+    assertEqual(capturado.message, "el héroe ha caído")
+    var e2 = assertThrows(() => { throw Error("boom", "MiError") })
+    assertEqual(e2.name, "MiError")
+})
+
+test("finally siempre se ejecuta", () => {
+    var log = []
+    function dividir(a: number, b: number): number {
+        try {
+            return a / b
+        } catch e {
+            log.add("error")
+            return 0
+        } finally {
+            log.add("finally")
+        }
+    }
+    assertEqual(dividir(10, 2), 5)
+    assertEqual(dividir(1, 0), 0)
+    assertEqual(log, ["finally", "error", "finally"])
+})
+
+test("las propiedades privadas no se ven desde fuera", () => {
+    var e = assertThrows(() => {
+        var a: any = Actor("Ana")
+        print(a.inexistente)
+    })
+    assert(e.message.contains("inexistente"))
+})

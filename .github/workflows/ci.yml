@@ -1,0 +1,53 @@
+# Compila HyperEZ y ejecuta todas las pruebas en cada push y pull request.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: MSYS2 (GCC, CMake y Ninja)
+        id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+
+      - name: Compilar, probar y empaquetar
+        shell: pwsh
+        env:
+          HYPEREZ_MSYS: ${{ steps.msys2.outputs.msys2-location }}\ucrt64\bin
+        run: ./build.ps1 -NoPGO
+
+      - name: Guardar el instalador, la extensión y hyper.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: HyperEZ-windows
+          path: dist/*
+          if-no-files-found: error

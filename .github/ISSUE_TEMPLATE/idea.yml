@@ -1,0 +1,21 @@
+name: Proponer una idea
+description: Una función nueva para el lenguaje, la biblioteca estándar o las herramientas.
+labels: ["idea"]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qué quieres hacer
+      description: Lo que intentas conseguir y por qué ahora es difícil.
+    validations:
+      required: true
+  - type: textarea
+    id: propuesta
+    attributes:
+      label: Cómo te gustaría escribirlo
+      description: Un ejemplo de código .hz de cómo se usaría.
+      render: hz
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas que has probado

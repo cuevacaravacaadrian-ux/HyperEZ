@@ -1,0 +1,65 @@
+
+=== Sala 1: La entrada húmeda ===
+
+¡Aparece Rata gigante!
+
+-- Turno 1 --   Aria [##########] 42/42   |   Rata gigante [##########] 14/14
+  > Aria (bola de fuego) golpea a Rata gigante: -13
+  > Rata gigante golpea a Aria: -2
+
+-- Turno 2 --   Aria [##########] 40/42   |   Rata gigante [#---------] 1/14
+  > Aria golpea a Rata gigante: -5
+  x Rata gigante ha caído
+  Aria consigue 5 monedas de oro
+
+¡Aparece Murciélago!
+
+-- Turno 1 --   Aria [##########] 40/42   |   Murciélago [##########] 10/10
+  > Aria (bola de fuego) golpea a Murciélago: -10
+  x Murciélago ha caído
+  Aria consigue 3 monedas de oro
+
+=== Sala 2: El salón de los huesos ===
+
+¡Aparece Esqueleto!
+
+-- Turno 1 --   Aria [##########] 40/42   |   Esqueleto [##########] 22/22
+  > Aria (bola de fuego) golpea a Esqueleto: -14
+  > Esqueleto golpea a Aria: -4
+
+-- Turno 2 --   Aria [#########-] 36/42   |   Esqueleto [####------] 8/22
+  > Aria golpea a Esqueleto: -7
+  > Esqueleto golpea a Aria: -7
+
+-- Turno 3 --   Aria [#######---] 29/42   |   Esqueleto [----------] 1/22
+  > Aria golpea a Esqueleto: -5
+  x Esqueleto ha caído
+  Aria consigue 12 monedas de oro
+
+=== Sala 3: La cámara del tesoro ===
+
+¡Aparece Golem de piedra!
+
+-- Turno 1 --   Aria [#######---] 29/42   |   Golem de piedra [##########] 34/34
+  > Aria golpea a Golem de piedra: -6
+  > Golem de piedra golpea a Aria: -8
+
+-- Turno 2 --   Aria [#####-----] 21/42   |   Golem de piedra [########--] 28/34
+  > Aria golpea a Golem de piedra: -9
+  > Golem de piedra golpea a Aria: -6
+
+-- Turno 3 --   Aria [####------] 15/42   |   Golem de piedra [######----] 19/34
+  + Aria bebe una poción y recupera 16 de vida
+  > Golem de piedra golpea a Aria: -5
+
+-- Turno 4 --   Aria [######----] 26/42   |   Golem de piedra [######----] 19/34
+  > Aria golpea a Golem de piedra: -8
+  > Golem de piedra golpea a Aria: -9
+
+-- Turno 5 --   Aria [####------] 17/42   |   Golem de piedra [###-------] 11/34
+  > Aria golpea a Golem de piedra: -12 ¡CRÍTICO!
+  x Golem de piedra ha caído
+  Aria consigue 40 monedas de oro
+
+¡Aria ha superado la mazmorra con 17 de vida y 60 monedas de oro!
+VICTORIA

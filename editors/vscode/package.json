@@ -1,0 +1,333 @@
+{
+  "name": "hyperez",
+  "displayName": "HyperEZ",
+  "description": "Soporte completo para el lenguaje HyperEZ: resaltado, errores en vivo, autocompletado, documentación al pasar el ratón, renombrar, fragmentos, ejecución con F5, modo watch y consola interactiva.",
+  "version": "0.5.0",
+  "publisher": "hyperez",
+  "license": "MIT",
+  "author": {
+    "name": "Adrián Cueva Caravaca"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cuevacaravacaadrian-ux/HyperEZ.git",
+    "directory": "editors/vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/cuevacaravacaadrian-ux/HyperEZ/issues"
+  },
+  "homepage": "https://github.com/cuevacaravacaadrian-ux/HyperEZ#readme",
+  "icon": "icons/hyperez-128.png",
+  "galleryBanner": {
+    "color": "#111111",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Linters",
+    "Formatters"
+  ],
+  "keywords": [
+    "hyperez",
+    "hz",
+    "hez",
+    "español",
+    "juegos",
+    "aprender"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:hyperez",
+    "workspaceContains:**/*.hz",
+    "workspaceContains:**/*.hez"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "En espacios no confiables no se ejecutan programas."
+    }
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "hyperez",
+        "aliases": [
+          "HyperEZ",
+          "hyperez",
+          "hz"
+        ],
+        "extensions": [
+          ".hz",
+          ".hez"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/hz-file.svg",
+          "dark": "./icons/hz-file.svg"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "hyperez",
+        "scopeName": "source.hyperez",
+        "path": "./syntaxes/hyperez.tmLanguage.json"
+      },
+      {
+        "scopeName": "markdown.hyperez.codeblock",
+        "path": "./syntaxes/hyperez.markdown.json",
+        "injectTo": [
+          "text.html.markdown"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.block.hyperez": "hyperez"
+        }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "hyperez",
+        "path": "./snippets/hyperez.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "hyperez.run",
+        "title": "Ejecutar archivo",
+        "category": "HyperEZ",
+        "icon": "$(play)"
+      },
+      {
+        "command": "hyperez.watch",
+        "title": "Ejecutar y repetir al guardar (watch)",
+        "category": "HyperEZ",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "hyperez.repl",
+        "title": "Abrir consola interactiva",
+        "category": "HyperEZ",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "hyperez.check",
+        "title": "Comprobar errores",
+        "category": "HyperEZ",
+        "icon": "$(check)"
+      },
+      {
+        "command": "hyperez.test",
+        "title": "Ejecutar pruebas",
+        "category": "HyperEZ",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "hyperez.newProject",
+        "title": "Nuevo proyecto",
+        "category": "HyperEZ"
+      },
+      {
+        "command": "hyperez.showDocs",
+        "title": "Abrir la referencia de la API",
+        "category": "HyperEZ",
+        "icon": "$(book)"
+      },
+      {
+        "command": "hyperez.restartServer",
+        "title": "Reiniciar el servidor de lenguaje",
+        "category": "HyperEZ"
+      },
+      {
+        "command": "hyperez.showVersion",
+        "title": "Mostrar versión",
+        "category": "HyperEZ"
+      }
+    ],
+    "menus": {
+      "editor/title/run": [
+        {
+          "command": "hyperez.run",
+          "when": "resourceLangId == hyperez",
+          "group": "navigation@0"
+        },
+        {
+          "command": "hyperez.watch",
+          "when": "resourceLangId == hyperez",
+          "group": "navigation@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "hyperez.run",
+          "when": "resourceLangId == hyperez",
+          "group": "hyperez@1"
+        },
+        {
+          "command": "hyperez.watch",
+          "when": "resourceLangId == hyperez",
+          "group": "hyperez@1"
+        },
+        {
+          "command": "hyperez.check",
+          "when": "resourceLangId == hyperez",
+          "group": "hyperez@2"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "hyperez.run",
+          "when": "resourceExtname =~ /^\\.(hz|hez)$/",
+          "group": "hyperez@1"
+        },
+        {
+          "command": "hyperez.watch",
+          "when": "resourceExtname =~ /^\\.(hz|hez)$/",
+          "group": "hyperez@1"
+        },
+        {
+          "command": "hyperez.check",
+          "when": "resourceExtname =~ /^\\.(hz|hez)$/",
+          "group": "hyperez@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "hyperez.run",
+          "when": "editorLangId == hyperez"
+        },
+        {
+          "command": "hyperez.check",
+          "when": "editorLangId == hyperez"
+        },
+        {
+          "command": "hyperez.watch",
+          "when": "editorLangId == hyperez"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "hyperez.run",
+        "key": "f5",
+        "when": "editorLangId == hyperez && !inDebugMode"
+      },
+      {
+        "command": "hyperez.run",
+        "key": "ctrl+f5",
+        "mac": "cmd+f5",
+        "when": "editorLangId == hyperez && !inDebugMode"
+      },
+      {
+        "command": "hyperez.check",
+        "key": "ctrl+shift+f5",
+        "when": "editorLangId == hyperez"
+      },
+      {
+        "command": "hyperez.watch",
+        "key": "ctrl+alt+f5",
+        "mac": "cmd+alt+f5",
+        "when": "editorLangId == hyperez && !inDebugMode"
+      }
+    ],
+    "configuration": {
+      "title": "HyperEZ",
+      "properties": {
+        "hyperez.path": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Ruta de `hyper.exe`. Si se deja vacía se usa la instalación de HyperEZ, el `PATH` o la copia incluida en la extensión."
+        },
+        "hyperez.languageServer.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Errores en vivo, autocompletado, documentación y renombrar (servidor de lenguaje)."
+        },
+        "hyperez.run.saveBeforeRun": {
+          "type": "boolean",
+          "default": true,
+          "description": "Guardar el archivo antes de ejecutarlo."
+        },
+        "hyperez.run.reuseTerminal": {
+          "type": "boolean",
+          "default": true,
+          "description": "Cerrar la terminal de la ejecución anterior al volver a ejecutar."
+        },
+        "hyperez.colorDecorators": {
+          "type": "boolean",
+          "default": true,
+          "description": "Mostrar muestras de color para \"#ff8800\" y Color(r, g, b)."
+        }
+      }
+    },
+    "problemMatchers": [
+      {
+        "name": "hyperez",
+        "owner": "hyperez",
+        "source": "hyperez",
+        "fileLocation": [
+          "autoDetect",
+          "${workspaceFolder}"
+        ],
+        "pattern": [
+          {
+            "regexp": "^(error|aviso)(?:\\[([EW]\\d+)\\])?: (.*)$",
+            "severity": 1,
+            "code": 2,
+            "message": 3
+          },
+          {
+            "regexp": "^\\s*--> (.+):(\\d+):(\\d+)$",
+            "file": 1,
+            "line": 2,
+            "column": 3
+          }
+        ],
+        "severity": "error"
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "hyperez",
+        "required": [
+          "command"
+        ],
+        "properties": {
+          "command": {
+            "type": "string",
+            "enum": [
+              "run",
+              "check",
+              "test"
+            ],
+            "description": "Comando de hyper"
+          },
+          "file": {
+            "type": "string",
+            "description": "Archivo o carpeta"
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "bundle": "node tools/bundle.js",
+    "vscode:prepublish": "node tools/bundle.js",
+    "package": "vsce package --no-dependencies --allow-missing-repository --allow-star-activation -o hyperez-0.5.0.vsix",
+    "test": "node test/grammar.test.js",
+    "test:vscode": "node test/runTest.js"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^3.2.0",
+    "esbuild": "^0.28.2",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.1.0"
+  }
+}

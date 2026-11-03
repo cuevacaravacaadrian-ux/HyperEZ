@@ -1,0 +1,53 @@
+1 + 2
+"hola".upper()
+var vidas = 3
+vidas * 10
+function doble(n: number): number {
+    return n * 2
+}
+doble(vidas)
+function usa(): number { return doble(10) }
+usa()
+function doble(n: number): number { return n * 5 }
+usa()
+var vidas = 100
+vidas
+var total = 0
+for i in 0..4 {
+    total += i
+}
+total
+var datos = { nombre: "Ana",
+    vida: 3 }
+datos.vida
+class Punto {
+    var x = 0
+    var y = 0
+    function suma(): number { return x + y }
+}
+struct Celda { var x: number = 0; var y: number = 0 }
+Celda(2, 3)
+enum Color { Rojo, Verde }
+var c = Color.Verde
+c == Color.Verde
+print("impreso")
+write("sin salto")
+[1, 2, 3].map(v => v * v)
+pirnt("x")
+var lista = [1, 2, 3]
+lista[10]
+async function tarde(): text {
+    await wait(0.01)
+    return "listo"
+}
+await tarde()
+let fijo = 1
+fijo = 2
+from "./tests/lang/_inventario.hz" import Inventario, Objeto
+var m = Inventario(10)
+m.meter(Objeto("espada", 4, 50))
+.vars
+.reiniciar
+total
+.salir
+print("no se ejecuta")

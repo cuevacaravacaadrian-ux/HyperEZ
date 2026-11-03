@@ -1,0 +1,10 @@
+// Mi primer programa en HyperEZ
+var nombre = "Mundo"
+print("¡Hola, ${nombre}!")
+
+const MAX_VIDA: number = 100
+var puntos = 0
+for i in 0..5 {
+    puntos += i * 10
+}
+print("Puntos:", puntos, "de", MAX_VIDA)
