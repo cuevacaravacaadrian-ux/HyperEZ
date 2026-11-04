@@ -1,5 +1,13 @@
 # Cambios
 
+## 0.7.0
+
+- Botones encima del código (CodeLens): **▶ Ejecutar · ⟳ Repetir al guardar · ✓ Comprobar**, y **▶ Probar** sobre cada `test(...)` (ajuste `hyperez.codeLens`).
+- **Dar formato** (Mayús+Alt+F) con el formateador del lenguaje, también desde el menú contextual; ajuste `hyperez.formatOnSave`.
+- Comandos nuevos: *Ver el bytecode del archivo*, *Abrir en HyperEZ Editor* (Windows) y *Ejecutar las pruebas de este archivo*.
+- `.hez` es la extensión por defecto: ejecutar un archivo sin guardar pregunta dónde guardarlo como `.hez` (en la carpeta abierta o en `Documentos\HyperEZ`) y lo ejecuta.
+- Resaltado de las funciones nuevas (`gcd`, `noise`, `primes`, `chr`, `ord`...) y 8 fragmentos nuevos: grafo, cola de prioridad, camino A*, plantilla, Markdown, zip, gráfica SVG y registro.
+
 ## 0.6.0
 
 - Página de bienvenida **Empezar con HyperEZ**, con un tutorial en cinco pasos (se abre la primera vez).

@@ -1,0 +1,32 @@
+// Laberinto: encuentra el camino más corto con A* (biblioteca algo) y lo dibuja.
+// Ejecuta: hyper laberinto.hz
+import algo
+
+var mapa = ["S....#.........",
+            ".###.#.#######.",
+            ".#...#.#.....#.",
+            ".#.###.#.###.#.",
+            ".#.....#...#...",
+            ".#######.#.###.",
+            ".........#....G"]
+
+// Buscar las casillas S (salida) y G (meta)
+var inicio: list = []
+var meta: list = []
+for y in 0..mapa.length {
+    var x = mapa[y].indexOf("S")
+    if x >= 0 { inicio = [x, y] }
+    x = mapa[y].indexOf("G")
+    if x >= 0 { meta = [x, y] }
+}
+
+var camino = algo.gridPath(mapa, inicio, meta)
+if camino == null {
+    print("No hay salida")
+} else {
+    foreach fila in algo.drawPath(mapa, camino, "·") { print(fila) }
+    print()
+    print("Pasos:", camino.length - 1)
+    print("Casillas alcanzables desde la salida:", algo.floodFill(mapa, inicio[0], inicio[1]).length)
+    print("Con diagonales serían", algo.gridPath(mapa, inicio, meta, true).length - 1, "pasos")
+}

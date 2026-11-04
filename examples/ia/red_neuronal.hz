@@ -44,4 +44,3 @@ for fila in 0..11 {
     }
     print(linea)
 }
-

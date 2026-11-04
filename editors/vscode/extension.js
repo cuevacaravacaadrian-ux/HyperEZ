@@ -2,6 +2,7 @@
 // - Cliente del servidor de lenguaje (`hyper lsp`): errores, autocompletado, hover, firmas, renombrar...
 // - Ejecutar (F5), modo watch (se repite al guardar), consola interactiva, comprobar y probar.
 // - Nuevo proyecto, referencia de la API, tareas, barra de estado y muestras de color.
+// - Botones encima del código (CodeLens), formato (hyper fmt), bytecode y abrir en HyperEZ Editor.
 'use strict';
 
 const vscode = require('vscode');
@@ -130,15 +131,39 @@ function targetFile(uri) {
   return null;
 }
 
-async function saveIfNeeded(file) {
-  if (!vscode.workspace.getConfiguration('hyperez').get('run.saveBeforeRun')) return true;
-  const doc = vscode.workspace.textDocuments.find((d) => d.uri.fsPath === file);
+// Carpeta donde se proponen los programas nuevos: la del espacio de trabajo o Documentos\HyperEZ
+function defaultProgramsDir() {
+  const ws = vscode.workspace.workspaceFolders;
+  if (ws && ws.length) return ws[0].uri.fsPath;
+  const docs = path.join(os.homedir(), 'Documents', 'HyperEZ');
+  return fs.existsSync(docs) ? docs : os.homedir();
+}
+
+// Guarda el archivo antes de ejecutarlo. Uno sin título se guarda como .hez (se pregunta dónde).
+// Devuelve la ruta que hay que ejecutar o null si el usuario cancela.
+async function ensureSaved(file) {
+  const doc = vscode.workspace.textDocuments.find((d) => d.uri.fsPath === file || d.uri.toString() === file);
   if (doc && doc.isUntitled) {
-    vscode.window.showWarningMessage('Guarda el archivo (con extensión .hz) antes de ejecutarlo.');
-    return false;
+    const uri = await vscode.window.showSaveDialog({
+      title: 'Guarda tu programa para ejecutarlo',
+      saveLabel: 'Guardar',
+      defaultUri: vscode.Uri.file(path.join(defaultProgramsDir(), 'programa.hez')),
+      filters: { 'Programa HyperEZ': ['hez', 'hz'] },
+    });
+    if (!uri) return null;
+    await vscode.workspace.fs.writeFile(uri, Buffer.from(doc.getText(), 'utf8'));
+    // el editor sin título se sustituye por el archivo guardado
+    const ed = vscode.window.visibleTextEditors.find((e) => e.document === doc);
+    if (ed) {
+      await vscode.window.showTextDocument(doc, ed.viewColumn);
+      await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+    }
+    await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(uri));
+    return uri.fsPath;
   }
-  if (doc && doc.isDirty) return doc.save();
-  return true;
+  if (!vscode.workspace.getConfiguration('hyperez').get('run.saveBeforeRun')) return file;
+  if (doc && doc.isDirty && !(await doc.save())) return null;
+  return file;
 }
 
 function runInTerminal(context, args, cwd, title) {
@@ -160,18 +185,18 @@ function runInTerminal(context, args, cwd, title) {
 }
 
 async function cmdRun(context, uri) {
-  const file = targetFile(uri);
-  if (!file) { vscode.window.showWarningMessage('Abre un archivo .hz para ejecutarlo.'); return; }
-  if (!(await saveIfNeeded(file))) return;
+  let file = targetFile(uri);
+  if (!file) { vscode.window.showWarningMessage('Abre un archivo .hez o .hz para ejecutarlo.'); return; }
+  if (!(file = await ensureSaved(file))) return;
   if (!vscode.workspace.isTrusted) { vscode.window.showWarningMessage('Este espacio de trabajo no es de confianza: no se ejecutan programas.'); return; }
   runInTerminal(context, ['run', file], path.dirname(file), 'HyperEZ: ' + path.basename(file));
 }
 
 // Modo watch: ejecuta y vuelve a ejecutar cada vez que se guarda un .hz de la carpeta.
 async function cmdWatch(context, uri) {
-  const file = targetFile(uri);
-  if (!file) { vscode.window.showWarningMessage('Abre un archivo .hz para ejecutarlo en modo watch.'); return; }
-  if (!(await saveIfNeeded(file))) return;
+  let file = targetFile(uri);
+  if (!file) { vscode.window.showWarningMessage('Abre un archivo .hez o .hz para ejecutarlo en modo watch.'); return; }
+  if (!(file = await ensureSaved(file))) return;
   if (!vscode.workspace.isTrusted) { vscode.window.showWarningMessage('Este espacio de trabajo no es de confianza: no se ejecutan programas.'); return; }
   runInTerminal(context, ['watch', file], path.dirname(file), 'HyperEZ watch: ' + path.basename(file));
 }
@@ -196,9 +221,9 @@ function cmdRepl(context) {
 }
 
 async function cmdCheck(context, uri) {
-  const file = targetFile(uri);
-  if (!file) { vscode.window.showWarningMessage('Abre un archivo .hz para comprobarlo.'); return; }
-  if (!(await saveIfNeeded(file))) return;
+  let file = targetFile(uri);
+  if (!file) { vscode.window.showWarningMessage('Abre un archivo .hez o .hz para comprobarlo.'); return; }
+  if (!(file = await ensureSaved(file))) return;
   runInTerminal(context, ['check', file], path.dirname(file), 'HyperEZ: comprobar');
 }
 
@@ -274,7 +299,7 @@ async function cmdShowDocs(context) {
 async function cmdNewFile() {
   const doc = await vscode.workspace.openTextDocument({
     language: 'hyperez',
-    content: '// Mi programa en HyperEZ: pulsa F5 para ejecutarlo (guárdalo antes con extensión .hz)\n' +
+    content: '// Mi programa en HyperEZ: pulsa F5 para ejecutarlo (se guarda como .hez)\n' +
       'var nombre = "mundo"\nprint("¡Hola, ${nombre}!")\n',
   });
   await vscode.window.showTextDocument(doc);
@@ -307,6 +332,101 @@ async function cmdOpenExamples(context) {
   } else {
     await vscode.env.openExternal(vscode.Uri.parse(REPO + '/tree/main/examples'));
   }
+}
+
+// HyperEZ Editor (Windows): el editor clásico que instala HyperEZ-Setup, junto a hyper.exe
+function editorPath(context) {
+  const exe = hyperPath(context);
+  if (!exe || process.platform !== 'win32') return null;
+  const p = path.join(path.dirname(exe), 'hyperez-editor.exe');
+  return isFile(p) ? p : null;
+}
+
+async function cmdOpenInEditor(context, uri) {
+  const file = targetFile(uri);
+  const ed = editorPath(context);
+  if (!ed) {
+    vscode.window.showInformationMessage('HyperEZ Editor se instala con HyperEZ-Setup.exe (Windows).', 'Descargar')
+      .then((c) => { if (c) vscode.env.openExternal(vscode.Uri.parse(REPO + '/releases')); });
+    return;
+  }
+  const doc = file && vscode.workspace.textDocuments.find((d) => d.uri.fsPath === file);
+  if (doc && doc.isDirty) await doc.save();
+  const child = cp.spawn(ed, file && !(doc && doc.isUntitled) ? [file] : [], { detached: true, stdio: 'ignore' });
+  child.unref();
+}
+
+// Instrucciones de la máquina virtual (hyper bytecode) en un documento nuevo
+async function cmdShowBytecode(context, uri) {
+  let file = targetFile(uri);
+  if (!file) { vscode.window.showWarningMessage('Abre un archivo .hez o .hz.'); return; }
+  if (!(file = await ensureSaved(file))) return;
+  const exe = requireHyper(context);
+  if (!exe) return;
+  let text;
+  try {
+    text = cp.execFileSync(exe, ['bytecode', file], { encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' }, maxBuffer: 64 * 1024 * 1024 });
+  } catch (e) {
+    vscode.window.showErrorMessage('El archivo tiene errores: ' + ((e.stderr || e.message) + '').split('\n')[0]);
+    return;
+  }
+  const doc = await vscode.workspace.openTextDocument({ content: '// Bytecode de ' + path.basename(file) + ' (hyper bytecode)\n\n' + text, language: 'plaintext' });
+  await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Beside, preview: true });
+}
+
+// Dar formato: con el servidor de lenguaje (como Mayús+Alt+F) o, si no está, con hyper fmt
+async function cmdFormat(context) {
+  const ed = vscode.window.activeTextEditor;
+  if (!ed || ed.document.languageId !== 'hyperez') return;
+  if (client) { await vscode.commands.executeCommand('editor.action.formatDocument'); return; }
+  const exe = requireHyper(context);
+  if (!exe || ed.document.isUntitled) return;
+  await ed.document.save();
+  try {
+    cp.execFileSync(exe, ['fmt', ed.document.uri.fsPath], { encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' } });
+    await vscode.commands.executeCommand('workbench.action.files.revert');
+  } catch (e) {
+    vscode.window.showErrorMessage('No se pudo dar formato: ' + ((e.stderr || e.stdout || e.message) + '').trim());
+  }
+}
+
+async function cmdRunTests(context, uri) {
+  let file = targetFile(uri);
+  if (!file) return;
+  if (!(file = await ensureSaved(file))) return;
+  if (!vscode.workspace.isTrusted) { vscode.window.showWarningMessage('Este espacio de trabajo no es de confianza: no se ejecutan programas.'); return; }
+  runInTerminal(context, ['run', file], path.dirname(file), 'HyperEZ: pruebas de ' + path.basename(file));
+}
+
+// ---------------------------------------------------------------------------
+// Botones encima del código: ▶ Ejecutar · ⟳ Repetir al guardar · ✓ Comprobar, y ▶ Probar en cada test(...)
+// ---------------------------------------------------------------------------
+
+function codeLensProvider() {
+  const changed = new vscode.EventEmitter();
+  return {
+    onDidChangeCodeLenses: changed.event,
+    provideCodeLenses(doc) {
+      if (!vscode.workspace.getConfiguration('hyperez').get('codeLens')) return [];
+      const top = new vscode.Range(0, 0, 0, 0);
+      const args = [doc.uri];
+      const lenses = [
+        new vscode.CodeLens(top, { title: '▶ Ejecutar', tooltip: 'Ejecutar este programa (F5)', command: 'hyperez.run', arguments: args }),
+        new vscode.CodeLens(top, { title: '⟳ Repetir al guardar', tooltip: 'Ejecutar y repetir cada vez que guardas (Ctrl+Alt+F5)', command: 'hyperez.watch', arguments: args }),
+        new vscode.CodeLens(top, { title: '✓ Comprobar', tooltip: 'Buscar errores sin ejecutar (Ctrl+Mayús+F5)', command: 'hyperez.check', arguments: args }),
+      ];
+      let tests = 0;
+      for (let i = 0; i < doc.lineCount && tests < 200; i++) {
+        const m = /^\s*test\(\s*"([^"]*)"/.exec(doc.lineAt(i).text);
+        if (!m) continue;
+        tests++;
+        lenses.push(new vscode.CodeLens(new vscode.Range(i, 0, i, 0),
+          { title: '▶ Probar', tooltip: 'Ejecutar las pruebas de este archivo', command: 'hyperez.runTests', arguments: args }));
+      }
+      return lenses;
+    },
+    refresh() { changed.fire(); },
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -430,6 +550,10 @@ async function activate(context) {
     await startClient(ctx);
     vscode.window.setStatusBarMessage('HyperEZ: servidor de lenguaje reiniciado', 3000);
   });
+  reg('hyperez.openInEditor', cmdOpenInEditor);
+  reg('hyperez.showBytecode', cmdShowBytecode);
+  reg('hyperez.format', cmdFormat);
+  reg('hyperez.runTests', cmdRunTests);
   reg('hyperez.showVersion', (ctx) => {
     const exe = requireHyper(ctx);
     if (!exe) return;
@@ -446,11 +570,21 @@ async function activate(context) {
 
   context.subscriptions.push(vscode.tasks.registerTaskProvider('hyperez', taskProvider(context)));
   context.subscriptions.push(vscode.languages.registerColorProvider({ language: 'hyperez' }, colorProvider()));
+  const lenses = codeLensProvider();
+  context.subscriptions.push(vscode.languages.registerCodeLensProvider({ language: 'hyperez' }, lenses));
+  // Formato al guardar (ajuste hyperez.formatOnSave)
+  context.subscriptions.push(vscode.workspace.onWillSaveTextDocument((e) => {
+    if (e.document.languageId !== 'hyperez' || !client) return;
+    if (!vscode.workspace.getConfiguration('hyperez').get('formatOnSave')) return;
+    e.waitUntil(vscode.commands.executeCommand('vscode.executeFormatDocumentProvider', e.document.uri, { tabSize: 4, insertSpaces: true })
+      .then((edits) => edits || []));
+  }));
   context.subscriptions.push(vscode.window.onDidCloseTerminal((t) => {
     if (t === runTerminal) runTerminal = null;
     if (t === replTerminal) replTerminal = null;
   }));
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(async (e) => {
+    if (e.affectsConfiguration('hyperez.codeLens')) lenses.refresh();
     if (e.affectsConfiguration('hyperez.path') || e.affectsConfiguration('hyperez.languageServer')) {
       await stopClient();
       await startClient(context);

@@ -39,9 +39,15 @@ Produce, por cada función, un `ObjFunction` con su bytecode, constantes y tabla
 - **Optimizaciones de mirilla**:
   - comparación + salto condicional → una sola instrucción (`OP_JUMP_IF_NOT_LT`...), salvo si algún salto llega entre las dos;
   - bucles `for` numéricos con una instrucción por vuelta (`OP_FOR_NEXT`);
+  - si ninguna función captura la variable del `for` (lo normal), esa variable tiene un hueco fijo y `OP_FOR_CHECK_V`/`OP_FOR_NEXT_V` le copian el contador: sin `GET_LOCAL` al empezar cada vuelta ni `POP` al terminarla. Si una función la captura, cada vuelta sigue teniendo su propia variable;
+  - una asignación usada como sentencia (`x = ...`, `x += ...`, `x++`) guarda y descarta en una instrucción: `SET_GLOBAL + POP` pasa a ser `DEFINE_GLOBAL` y `SET_LOCAL + POP`, `SET_LOCAL_POP`;
   - parámetros `: number` comprobados con `OP_CHECK_NUMBER` (un byte en lugar de comparar nombres de tipos).
 
-La lista completa de instrucciones está en [bytecode.md](bytecode.md).
+Todas estas optimizaciones solo se aplican si ningún salto llega entre las instrucciones que se juntan. Para ver el resultado: `hyper bytecode archivo.hz` (ver [la orden hyper](../herramientas/cli.md#el-bytecode-hyper-bytecode)). La lista completa de instrucciones está en [bytecode.md](bytecode.md).
+
+## Formateador
+
+`hyper fmt` (y *Formatear* en los editores) reutiliza el lexer: calcula la sangría de cada línea según los paréntesis, corchetes y llaves que siguen abiertos (los que se abren en la misma línea cuentan como un nivel), añade un nivel a las líneas que continúan una expresión (las que empiezan por `.`, `and`, `??`... o siguen a una que acaba en un operador) y respeta la alineación hecha a mano. Al final vuelve a pasar el lexer sobre el resultado y comprueba que los tokens son idénticos: si no lo fueran, no cambia nada (`src/lang/syntax/format.cpp`).
 
 ## La consola interactiva
 

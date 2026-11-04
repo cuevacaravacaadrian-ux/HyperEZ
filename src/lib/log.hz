@@ -1,0 +1,70 @@
+// log — mensajes de registro con niveles, hora y colores; opcionalmente también a un archivo.
+//
+//   import log
+//   var registro = log.Logger("servidor")             // nivel "info" por defecto
+//   registro.info("Arrancando en el puerto 8080")
+//   registro.warn("Queda poco espacio")
+//   registro.error("No se pudo abrir la base de datos")
+//   registro.debug("no se ve: el nivel es info")
+//
+//   var archivo = log.Logger("juego", "debug", "registro.txt")  // también escribe en registro.txt
+
+const LEVELS = ["debug", "info", "warn", "error"]
+const COLORS = { debug: "gray", info: "cyan", warn: "yellow", error: "red" }
+const LABELS = { debug: "DEPURA", info: "INFO", warn: "AVISO", error: "ERROR" }
+
+/// Registro con nombre. nivel: "debug", "info", "warn" o "error" (se muestran ese y los más graves).
+class Logger {
+    var name: text
+    var level: text
+    var file: text?
+    var colors: bool = true
+    var showTime: bool = true
+    var history: list = []
+
+    constructor(nombre: text = "", nivel: text = "info", archivo: text? = null) {
+        if not LEVELS.contains(nivel) { throw Error("log: nivel desconocido '${nivel}' (usa debug, info, warn o error)") }
+        name = nombre
+        level = nivel
+        file = archivo
+    }
+
+    /// ¿Se mostraría un mensaje de este nivel?
+    function enabled(nivel: text): bool { return LEVELS.indexOf(nivel) >= LEVELS.indexOf(level) }
+
+    /// Escribe un mensaje con un nivel concreto.
+    function log(nivel: text, ...partes: any) {
+        if not enabled(nivel) { return }
+        var mensaje = partes.map(p => str(p)).join(" ")
+        var hora = showTime ? Time.format(Time.now(), "%H:%M:%S") + " " : ""
+        var quien = name == "" ? "" : "[${name}] "
+        var etiqueta = LABELS[nivel].padEnd(6)
+        var linea = "${hora}${etiqueta} ${quien}${mensaje}"
+        history.add({ level: nivel, message: mensaje, time: Time.now() })
+        if history.length > 1000 { history.shift() }
+        if colors and Console.interactive {
+            Console.write(hora, "gray")
+            Console.write(etiqueta, COLORS[nivel])
+            Console.print(" ${quien}${mensaje}")
+        } else {
+            print(linea)
+        }
+        if file != null { File.append(file, Time.format(Time.now(), "%Y-%m-%d ") + linea + "\n") }
+    }
+
+    function debug(...partes: any) { log("debug", ...partes) }
+    function info(...partes: any) { log("info", ...partes) }
+    function warn(...partes: any) { log("warn", ...partes) }
+    function error(...partes: any) { log("error", ...partes) }
+
+    /// Mide cuánto tarda f y lo registra: registro.time("cargar nivel", () => cargar()).
+    function time(que: text, f: function): any {
+        var t0 = Time.clock()
+        var r = f()
+        info("${que}: ${Time.duration(Time.clock() - t0)}")
+        return r
+    }
+
+    /// Últimos mensajes registrados (como mapas {level, message, time}).
+    function recent(n: number = 20): list { return history.skip(max(0, history.length - n)) }
+}

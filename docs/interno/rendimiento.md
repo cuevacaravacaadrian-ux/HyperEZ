@@ -19,14 +19,14 @@
 sh tests/bench/minbench.sh build/hyper.exe 7
 ```
 
-| Caso | Qué hace | antes de 0.4 | 0.4.0 | 0.5.0 | 0.6.0 |
-|---|---|---|---|---|---|
-| `fib` | `fib(27)` recursivo con parámetros `: number` (≈630.000 llamadas) | 44 ms | 42 ms | 25 ms | **18 ms** |
-| `bucle` | 3 millones de vueltas con `%` y una variable global | 118 ms | 80 ms | 72 ms | **72 ms** |
-| `objetos` | 300.000 llamadas a un método que modifica dos campos | 52 ms | 31 ms | 21 ms | **17 ms** |
-| `vec` | 300.000 sumas de `Vec2` (crea dos objetos por vuelta) | 69 ms | 61 ms | 62 ms | **18 ms** |
-| `listas` | `map` + `filter` + `sum` sobre 200.000 elementos | 31 ms | 26 ms | 25 ms | **25 ms** |
-| `texto` | concatenar 20.000 veces a un texto creciente | 282 ms | 238 ms | 151 ms | **148 ms** |
+| Caso | Qué hace | antes de 0.4 | 0.4.0 | 0.5.0 | 0.6.0 | 0.7.0 |
+|---|---|---|---|---|---|---|
+| `fib` | `fib(27)` recursivo con parámetros `: number` (≈630.000 llamadas) | 44 ms | 42 ms | 25 ms | 18 ms | **18 ms** |
+| `bucle` | 3 millones de vueltas con `%` y una variable global | 118 ms | 80 ms | 72 ms | 72 ms | **72 ms** |
+| `objetos` | 300.000 llamadas a un método que modifica dos campos | 52 ms | 31 ms | 21 ms | 17 ms | **18 ms** |
+| `vec` | 300.000 sumas de `Vec2` (crea dos objetos por vuelta) | 69 ms | 61 ms | 62 ms | 18 ms | **17 ms** |
+| `listas` | `map` + `filter` + `sum` sobre 200.000 elementos | 31 ms | 26 ms | 25 ms | 25 ms | **25 ms** |
+| `texto` | concatenar 20.000 veces a un texto creciente | 282 ms | 238 ms | 151 ms | 148 ms | **121 ms** |
 
 Medido en el mismo equipo (Windows 11, versiones compiladas con `build.ps1`). Los números absolutos dependen del equipo; lo importante es la evolución.
 
@@ -43,6 +43,17 @@ Medido en el mismo equipo (Windows 11, versiones compiladas con `build.ps1`). Lo
 - asignador de objetos pequeños con listas libres (`vec` es 3,4 veces más rápido).
 
 En total, de la primera versión a la 0.6.0: llamadas 2,4 veces más rápidas, objetos 3 veces, vectores 3,8 veces, bucles 1,6 veces y textos 1,9 veces.
+
+**0.7.0**:
+
+- hash por muestras de los textos largos al internarlos: concatenar a un texto que crece es un 18 % más rápido (`texto`: 148 → 121 ms). El coste que queda es la copia del texto en cada `+`: para textos muy largos sigue siendo mejor juntar las partes con `join`;
+- los `for` numéricos cuya variable no captura ninguna función ya no crean y destruyen la variable en cada vuelta (`FOR_CHECK_V`/`FOR_NEXT_V`): un bucle vacío de 3 millones de vueltas pasa de 19 a 10 ms (medido con la misma compilación sin PGO antes y después del cambio);
+- las asignaciones usadas como sentencia guardan y descartan en una instrucción (`DEFINE_GLOBAL`, `SET_LOCAL_POP`);
+- cada operación aritmética tiene su propio caso en el intérprete (sin un segundo `switch`) y `%` usa división de 32 bits cuando los números caben.
+
+En los seis casos de `bench.hz`, compilados con PGO, las tres últimas optimizaciones apenas se notan: el compilador ya colocaba bien ese código con el perfil. En `bucle`, lo que más pesa es el propio `%` (convertir los números a enteros y dividir cuesta unos 9 ns), no las instrucciones de alrededor. Los siguientes pasos para el intérprete están en la [hoja de ruta](../hoja-de-ruta.md).
+
+Para ver qué instrucciones genera tu programa: `hyper bytecode archivo.hz`.
 
 ## Consejos para programas rápidos
 

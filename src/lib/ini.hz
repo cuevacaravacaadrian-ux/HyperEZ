@@ -1,0 +1,81 @@
+// ini — archivos de configuración .ini / .cfg: [secciones] y clave = valor.
+//
+//   import ini
+//   var ajustes = ini.parse("[pantalla]\nancho = 800\ncompleta = no\n\n[jugador]\nnombre = Ana")
+//   print(ajustes.pantalla.ancho)           // 800 (los números y sí/no se convierten solos)
+//   ajustes.jugador.nombre = "Luis"
+//   ini.save("ajustes.ini", ajustes)
+
+/// Convierte un valor de texto: números, true/false, sí/no; el resto queda como texto (sin comillas).
+function value(t: text): any {
+    var v = t.trim()
+    if v.length >= 2 and ((v.startsWith("\"") and v.endsWith("\"")) or (v.startsWith("'") and v.endsWith("'"))) {
+        return v.substring(1, v.length - 1)
+    }
+    var l = v.lower()
+    if l == "true" or l == "sí" or l == "si" or l == "yes" or l == "on" { return true }
+    if l == "false" or l == "no" or l == "off" { return false }
+    if v.isNumeric() { return toNumber(v) }
+    return v
+}
+
+/// Lee texto INI: {seccion: {clave: valor}}. Las claves antes de la primera sección van en "" (la raíz).
+/// convertir = false deja todos los valores como texto.
+function parse(texto: text, convertir: bool = true): map {
+    var out = {}
+    var actual = ""
+    out[""] = {}
+    var n = 0
+    foreach linea in texto.replace("\r\n", "\n").split("\n") {
+        n += 1
+        var l = linea.trim()
+        if l == "" or l.startsWith(";") or l.startsWith("#") { continue }
+        if l.startsWith("[") {
+            if not l.endsWith("]") { throw Error("ini: falta ']' en la línea ${n}") }
+            actual = l.substring(1, l.length - 1).trim()
+            if not out.has(actual) { out[actual] = {} }
+            continue
+        }
+        var i = l.indexOf("=")
+        if i < 0 { i = l.indexOf(":") }
+        if i < 0 { throw Error("ini: se esperaba 'clave = valor' en la línea ${n}") }
+        var clave = l.substring(0, i).trim()
+        var bruto = l.substring(i + 1)
+        // comentario al final de la línea (fuera de comillas)
+        var sc = bruto.indexOf(" ;")
+        if sc >= 0 and not bruto.trim().startsWith("\"") { bruto = bruto.substring(0, sc) }
+        out[actual][clave] = convertir ? value(bruto) : bruto.trim()
+    }
+    if out[""].isEmpty() { out.remove("") }
+    return out
+}
+
+/// Lee un archivo .ini.
+function load(ruta: text, convertir: bool = true): map { return parse(File.read(ruta), convertir) }
+
+function format(v: any): text {
+    if v == true { return "true" }
+    if v == false { return "false" }
+    var s = str(v)
+    if s != s.trim() or s.contains(";") or s.contains("#") { return "\"" + s + "\"" }
+    return s
+}
+
+/// Convierte {seccion: {clave: valor}} en texto INI.
+function stringify(datos: map): text {
+    var out = []
+    if datos.has("") {
+        foreach k, v in datos[""] { out.add("${k} = ${format(v)}") }
+        if not out.isEmpty() { out.add("") }
+    }
+    foreach seccion, claves in datos {
+        if seccion == "" { continue }
+        out.add("[${seccion}]")
+        foreach k, v in claves { out.add("${k} = ${format(v)}") }
+        out.add("")
+    }
+    return out.join("\n")
+}
+
+/// Guarda en un archivo .ini.
+function save(ruta: text, datos: map) { File.write(ruta, stringify(datos)) }

@@ -16,10 +16,14 @@ La extensión de HyperEZ convierte VS Code en un entorno completo para el lengua
 | Buscar referencias | Mayús+F12 |
 | Renombrar | F2 (en todos los archivos) |
 | Esquema del archivo | panel *Esquema* y Ctrl+Mayús+O |
-| Ejecutar | **F5** o el botón ▶ |
+| Botones encima del código | **▶ Ejecutar · ⟳ Repetir al guardar · ✓ Comprobar** en la primera línea y **▶ Probar** encima de cada `test(...)` |
+| Ejecutar | **F5** o el botón ▶ (un archivo sin guardar se guarda como `.hez`) |
 | Ejecutar y repetir al guardar | **Ctrl+Alt+F5** (`hyper watch`) |
 | Consola interactiva | *HyperEZ: Abrir consola interactiva* |
 | Comprobar errores | Ctrl+Mayús+F5 |
+| Dar formato | **Mayús+Alt+F** o clic derecho → *Dar formato al archivo* (`hyper fmt`) |
+| Ver el bytecode | clic derecho → *HyperEZ: Ver el bytecode del archivo* |
+| Abrir en HyperEZ Editor | clic derecho → *HyperEZ: Abrir en HyperEZ Editor* (Windows) |
 | Pruebas | *HyperEZ: Ejecutar pruebas* |
 | Nuevo proyecto | *HyperEZ: Nuevo proyecto* (elige el tipo) |
 | Referencia de la API | *HyperEZ: Abrir la referencia de la API* |
@@ -37,6 +41,8 @@ La extensión de HyperEZ convierte VS Code en un entorno completo para el lengua
 | `hyperez.run.saveBeforeRun` | `true` | guardar antes de ejecutar |
 | `hyperez.run.reuseTerminal` | `true` | cerrar la terminal de la ejecución anterior |
 | `hyperez.colorDecorators` | `true` | muestras de color |
+| `hyperez.codeLens` | `true` | botones ▶ Ejecutar / ⟳ / ✓ encima del código |
+| `hyperez.formatOnSave` | `false` | dar formato al guardar |
 
 ## Tareas
 

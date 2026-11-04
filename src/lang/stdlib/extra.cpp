@@ -882,6 +882,7 @@ void registerStdlibExtra(VM& vm) {
     registerMatrix(vm);
     registerImage(vm);
     registerServer(vm);
+    registerMore(vm);
 }
 
 } // namespace hz

@@ -1,6 +1,8 @@
 // hyper — herramienta de línea de comandos de HyperEZ.
 #include "lang/vm/vm.h"
 #include "lang/sema/analyzer.h"
+#include "lang/syntax/format.h"
+#include "lang/compiler/disasm.h"
 #include "tools/tools.h"
 
 #include <algorithm>
@@ -37,9 +39,11 @@ static void printHelp() {
     section("Comprobar y probar");
     row("hyper check [archivos|carpetas]", "busca errores sin ejecutar");
     row("hyper test [carpeta] [--update]", "ejecuta las pruebas (por defecto tests/)");
+    row("hyper fmt [archivos|carpetas] [--check]", "ordena la sangría y los espacios del código");
     std::printf("\n");
     section("Herramientas");
     row("hyper docs [salida.md]", "referencia de toda la API en Markdown");
+    row("hyper bytecode <archivo.hz>", "muestra las instrucciones que genera el compilador");
     row("hyper lsp", "servidor de lenguaje para editores");
 #ifndef __APPLE__
     row("hyper register | unregister", "asocia (o no) los .hz y .hez con este hyper");
@@ -134,6 +138,42 @@ static int cmdCheck(const std::vector<std::string>& paths) {
         std::fprintf(stderr, "%s✗%s %d error%s, %d aviso%s%s\n", color::red(), color::reset(), errors, errors == 1 ? "" : "es", warnings,
                      warnings == 1 ? "" : "s", files.size() > 1 ? (" en " + std::to_string(bad) + " archivo(s)").c_str() : "");
     return errors ? 1 : 0;
+}
+
+// ---------------------------------------------------------------------------
+// fmt: sangría y espacios (sin cambiar el significado)
+// ---------------------------------------------------------------------------
+
+static int cmdFmt(const std::vector<std::string>& args) {
+    bool check = false;
+    std::vector<std::string> paths, files;
+    for (auto& a : args) { if (a == "--check") check = true; else paths.push_back(a); }
+    if (paths.empty()) paths.push_back(".");
+    for (auto& p : paths) collectSources(p, files);
+    if (files.empty()) { std::fprintf(stderr, "No hay archivos .hz o .hez que formatear\n"); return 2; }
+    int changed = 0, failed = 0;
+    for (auto& f : files) {
+        std::string src;
+        if (!readFile(f, src)) { std::fprintf(stderr, "%serror:%s no se puede leer %s\n", color::red(), color::reset(), f.c_str()); failed++; continue; }
+        FormatResult r = formatSource(src);
+        if (!r.ok) {
+            std::fprintf(stderr, "%s✗%s %s: %s\n", color::red(), color::reset(), f.c_str(), r.error.c_str());
+            failed++;
+            continue;
+        }
+        if (!r.changed) continue;
+        changed++;
+        if (check) { std::printf("%s•%s %s necesita formato\n", color::yellow(), color::reset(), f.c_str()); continue; }
+        if (!writeFileAtomic(f, r.text)) { std::fprintf(stderr, "%serror:%s no se puede escribir %s\n", color::red(), color::reset(), f.c_str()); failed++; continue; }
+        std::printf("%s✓%s %s\n", color::green(), color::reset(), f.c_str());
+    }
+    if (check) {
+        if (changed == 0 && failed == 0) std::printf("%s✓%s %zu archivo(s) con buen formato\n", color::green(), color::reset(), files.size());
+        return changed || failed ? 1 : 0;
+    }
+    std::printf("%zu archivo(s): %d formateado(s), %d ya estaba(n) bien%s\n", files.size(), changed, (int)files.size() - changed - failed,
+                failed ? (", " + std::to_string(failed) + " con errores").c_str() : "");
+    return failed ? 1 : 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -436,6 +476,17 @@ int main(int argc, char** argv) {
         return cmdTest(paths, update);
     }
     if (cmd == "new") return cmdNew(rest);
+    if (cmd == "fmt" || cmd == "format") return cmdFmt(rest);
+    if (cmd == "bytecode") {
+        if (rest.empty()) { std::fprintf(stderr, "Uso: hyper bytecode <archivo.hz>\n"); return 2; }
+        VM vm;
+        setupVM(vm);
+        vm.projectRoot = pathDir(pathAbsolute(rest[0]));
+        ModuleUnit* unit = vm.compileFile(rest[0]);
+        if (vm.unitHasErrors(unit)) { vm.printDiagnostics(unit, stderr, false); return 1; }
+        std::fputs(disassemble(vm, unit->script).c_str(), stdout);
+        return 0;
+    }
     if (cmd == "docs") return cmdDocs(rest.empty() ? "" : rest[0]);
 #ifndef __APPLE__
     if (cmd == "register") return registerFileTypes(exePath(), true) ? 0 : 1;

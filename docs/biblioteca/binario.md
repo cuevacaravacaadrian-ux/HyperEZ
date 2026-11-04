@@ -74,3 +74,30 @@ print((255).toHex(), (255).toHex(4), (5).toBinary(8), (35).toBase(36))
 print(parseInt("ff", 16), parseInt("0x1F", 16), parseInt("1010", 2))
 print(0xFF & 0x0F, 1 << 8, ~0)
 ```
+
+## Archivos .zip: `import zip`
+
+Crea y lee archivos `.zip` normales (los abren Windows, macOS, Linux y cualquier programa de zip). Usa la compresión deflate de `Bytes.compress(nivel, true)` y comprueba el CRC de cada archivo al leer.
+
+```hz
+import zip
+
+zip.create("copia.zip", { "notas.txt": "hola", "datos/puntos.json": JSON.stringify([1, 2, 3]) })
+print(zip.list("copia.zip"))                      // [notas.txt, datos/puntos.json]
+print(zip.read("copia.zip")["notas.txt"].toText())
+zip.extract("copia.zip", "extraido")
+zip.createFromFolder("todo.zip", "extraido")      // una carpeta entera
+print(zip.list("todo.zip").length)
+```
+
+Los contenidos pueden ser textos o `Bytes`. `extract` rechaza rutas con `..` (un zip no puede escribir fuera de la carpeta de destino).
+
+## Más huellas
+
+```hz
+print(Hash.md5("abc"))                            // 900150983cd24fb0d6963f7d28e17f72
+print(Hash.sha1("abc"))                           // la huella que usa Git
+print(Hash.hmac("clave secreta", "mensaje"))      // firma HMAC-SHA256 (APIs web, tokens)
+```
+
+MD5 y SHA-1 sirven para comprobar archivos y compatibilidad con otros programas, no para seguridad (usa `sha256` o `hmac`).

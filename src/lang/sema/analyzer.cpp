@@ -1964,6 +1964,7 @@ TypeP Analyzer::expr(Expr* e) {
                     else if (isVec(l)) t = l;
                     else if (isVec(r) && isNumeric(l)) t = r;
                     else if (b->op == Tok::Star && l->kind == TK::Text && isNumeric(r)) t = tText();
+                    else if (b->op == Tok::Star && l->kind == TK::List && isNumeric(r)) t = l; // [0] * 5
                     else if (lk && rk) { mismatch(w); t = tAny(); }
                     else t = (isKnown(l) && isNumeric(l)) || (isKnown(r) && isNumeric(r)) ? tNum() : tAny();
                     break;

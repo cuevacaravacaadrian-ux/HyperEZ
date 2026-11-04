@@ -51,3 +51,40 @@ s.save(Path.join(Path.temp, "efecto.wav"))
 - `toBytes()` da el WAV como `Bytes` (por ejemplo para enviarlo con `Http`).
 
 El ejemplo [examples/audio/melodia.hz](../../examples/audio/melodia.hz) compone una melodía con bajo.
+
+## Más dibujo y filtros en `Image`
+
+```hz
+var im = Image(300, 160, "#ffffff")
+im.gradient("#dbeafe", "#ffffff")                                   // degradado de fondo
+im.ellipse(80, 80, 60, 35, "#2f81f7")
+im.polygon([[180, 130], [230, 30], [280, 130]], "#f0883e")          // triángulo
+im.floodFill(5, 5, "#fff5d6", 30)                                   // bote de pintura con tolerancia
+var girada = im.rotate(90)
+im.copy().blur(3).save("desenfocada.png")
+im.copy().sepia().save("antigua.png")
+im.copy().brightness(1.2).contrast(1.3).save("viva.png")
+im.copy().threshold(128).save("blanco-y-negro.png")
+print(girada.width, girada.height)
+```
+
+## Gráficas y dibujos vectoriales: `import svg`
+
+Los SVG son dibujos que se ven nítidos a cualquier tamaño y se abren con cualquier navegador (o se insertan en una página web).
+
+```hz
+import svg
+
+var d = svg.Drawing(400, 200, "#ffffff")
+d.rect(10, 10, 120, 80, { fill: "#2f81f7", rx: 8 })
+d.circle(250, 60, 40, { fill: "#ffc857", stroke: "#1f2328", width: 2 })
+d.line(10, 150, 390, 150, { stroke: "#d0d7de", width: 2, dash: "6 4" })
+d.text(20, 185, "Hecho con HyperEZ", { size: 22, weight: "bold" })
+d.save("dibujo.svg")
+
+svg.barChart({ ene: 120, feb: 95, mar: 160 }, { title: "Ventas" }).save("ventas.svg")
+svg.lineChart([3, 5, 4, 8, 7], { title: "Temperatura", color: "#3fb950" }).save("linea.svg")
+svg.pieChart({ web: 45, tienda: 35, teléfono: 20 }, { title: "Canales" }).save("tarta.svg")
+```
+
+Figuras: `rect`, `circle`, `ellipse`, `line`, `polyline`, `polygon`, `path` (trazados SVG), `text` y `raw` (SVG escrito a mano). El estilo es un mapa: `fill`, `stroke`, `width` (grosor), `opacity`, `rx` (esquinas redondeadas), `size`, `font`, `anchor`, `weight`, `dash`... Ejemplo completo: [datos/graficas.hz](../../examples/datos/graficas.hz).

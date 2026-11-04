@@ -2,7 +2,7 @@
   "name": "hyperez",
   "displayName": "HyperEZ",
   "description": "Lenguaje de programación en español para hacer de todo: juegos, IA, web, datos, gráficos y sistemas. Errores en vivo, autocompletado, F5 para ejecutar, modo watch, consola interactiva, tema y tutorial.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "publisher": "hyperez",
   "license": "MIT",
   "author": {
@@ -72,8 +72,8 @@
           "hz"
         ],
         "extensions": [
-          ".hz",
-          ".hez"
+          ".hez",
+          ".hz"
         ],
         "configuration": "./language-configuration.json",
         "icon": {
@@ -180,6 +180,30 @@
         "title": "Abrir los ejemplos",
         "category": "HyperEZ",
         "icon": "$(folder-library)"
+      },
+      {
+        "command": "hyperez.openInEditor",
+        "title": "Abrir en HyperEZ Editor",
+        "category": "HyperEZ",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "hyperez.showBytecode",
+        "title": "Ver el bytecode del archivo",
+        "category": "HyperEZ",
+        "icon": "$(list-ordered)"
+      },
+      {
+        "command": "hyperez.format",
+        "title": "Dar formato al archivo (hyper fmt)",
+        "category": "HyperEZ",
+        "icon": "$(symbol-ruler)"
+      },
+      {
+        "command": "hyperez.runTests",
+        "title": "Ejecutar las pruebas de este archivo",
+        "category": "HyperEZ",
+        "icon": "$(beaker)"
       }
     ],
     "menus": {
@@ -210,6 +234,21 @@
           "command": "hyperez.check",
           "when": "resourceLangId == hyperez",
           "group": "hyperez@2"
+        },
+        {
+          "command": "hyperez.format",
+          "when": "resourceLangId == hyperez",
+          "group": "hyperez@3"
+        },
+        {
+          "command": "hyperez.showBytecode",
+          "when": "resourceLangId == hyperez",
+          "group": "hyperez@4"
+        },
+        {
+          "command": "hyperez.openInEditor",
+          "when": "resourceLangId == hyperez && isWindows",
+          "group": "hyperez@4"
         }
       ],
       "explorer/context": [
@@ -232,6 +271,11 @@
           "command": "hyperez.check",
           "when": "resourceExtname =~ /^\\.(hz|hez)$/",
           "group": "hyperez@2"
+        },
+        {
+          "command": "hyperez.openInEditor",
+          "when": "resourceExtname =~ /^\\.(hz|hez)$/ && isWindows",
+          "group": "hyperez@3"
         }
       ],
       "commandPalette": [
@@ -245,6 +289,22 @@
         },
         {
           "command": "hyperez.watch",
+          "when": "editorLangId == hyperez"
+        },
+        {
+          "command": "hyperez.format",
+          "when": "editorLangId == hyperez"
+        },
+        {
+          "command": "hyperez.showBytecode",
+          "when": "editorLangId == hyperez"
+        },
+        {
+          "command": "hyperez.openInEditor",
+          "when": "editorLangId == hyperez"
+        },
+        {
+          "command": "hyperez.runTests",
           "when": "editorLangId == hyperez"
         }
       ]
@@ -271,6 +331,11 @@
         "key": "ctrl+alt+f5",
         "mac": "cmd+alt+f5",
         "when": "editorLangId == hyperez && !inDebugMode"
+      },
+      {
+        "command": "hyperez.format",
+        "key": "shift+alt+f",
+        "when": "editorLangId == hyperez && editorTextFocus"
       }
     ],
     "configuration": {
@@ -300,6 +365,16 @@
           "type": "boolean",
           "default": true,
           "description": "Mostrar muestras de color para \"#ff8800\" y Color(r, g, b)."
+        },
+        "hyperez.codeLens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Muestra «▶ Ejecutar · ⟳ Repetir al guardar · ✓ Comprobar» encima del código y «▶ Probar» encima de cada test(...)."
+        },
+        "hyperez.formatOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Da formato al archivo (hyper fmt: sangría y espacios) cada vez que se guarda."
         }
       }
     },
@@ -430,7 +505,7 @@
   "scripts": {
     "bundle": "node tools/bundle.js",
     "vscode:prepublish": "node tools/bundle.js",
-    "package": "vsce package --no-dependencies --allow-missing-repository --allow-star-activation -o hyperez-0.6.0.vsix",
+    "package": "vsce package --no-dependencies --allow-missing-repository --allow-star-activation -o hyperez-0.7.0.vsix",
     "test": "node test/grammar.test.js",
     "test:vscode": "node test/runTest.js"
   },

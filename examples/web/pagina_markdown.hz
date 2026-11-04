@@ -1,0 +1,32 @@
+// Generar una página web a partir de Markdown y una plantilla con datos.
+//   hyper pagina_markdown.hz            muestra el HTML
+//   hyper pagina_markdown.hz pagina.html  lo guarda (ábrelo con el navegador)
+import markdown
+import template
+
+var datos = {
+    titulo: "Torneo de ajedrez",
+    fecha: "4 de noviembre",
+    jugadores: [{ nombre: "Ana", puntos: 7 }, { nombre: "Luis", puntos: 5 }, { nombre: "Eva", puntos: 6 }].sortBy(j => -j.puntos)
+}
+
+var plantilla = """
+# {{titulo}}
+
+Clasificación del **{{fecha}}** ({{jugadores.length}} jugadores):
+
+{{#each jugadores}}
+1. {{nombre}} — {{puntos}} puntos{{#if @first}} 🏆{{/if}}
+{{/each}}
+
+> Hecho con `HyperEZ`: [más información](https://github.com/cuevacaravacaadrian-ux/HyperEZ)
+"""
+
+var md = template.render(plantilla, datos)
+var html = markdown.page(datos.titulo, md)
+if System.args.length > 0 {
+    File.write(System.args[0], html)
+    print("✓ Guardado en ${System.args[0]}")
+} else {
+    print(markdown.toHtml(md))
+}

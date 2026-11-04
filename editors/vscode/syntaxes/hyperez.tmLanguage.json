@@ -688,7 +688,7 @@
         },
         {
           "name": "support.function.builtin.hyperez",
-          "match": "\\b(?:print|println|write|input|len|typeof|str|toNumber|toInt|assert|assertEqual|assertThrows|test|exit|range|time|now|wait|nextFrame|spawn|off|abs|sqrt|pow|floor|ceil|round|sign|min|max|clamp|lerp|sin|cos|tan|asin|acos|atan|atan2|hypot|exp|log|log10|radians|degrees|random|randomInt|randomChoice|randomSeed|remap|wrap|approach|smoothstep|chance|distance|isNaN|awaitAll|awaitAny|parseInt)\\b(?=\\s*\\()"
+          "match": "\\b(?:print|println|write|input|len|typeof|str|toNumber|toInt|assert|assertEqual|assertThrows|test|exit|range|time|now|wait|nextFrame|spawn|off|abs|sqrt|pow|floor|ceil|round|sign|min|max|clamp|lerp|sin|cos|tan|asin|acos|atan|atan2|hypot|exp|log|log10|radians|degrees|random|randomInt|randomChoice|randomSeed|remap|wrap|approach|smoothstep|chance|distance|isNaN|awaitAll|awaitAny|parseInt|gcd|lcm|factorial|isPrime|primes|divisors|cbrt|trunc|fract|sinh|cosh|tanh|randomGaussian|noise|chr|ord)\\b(?=\\s*\\()"
         }
       ]
     },

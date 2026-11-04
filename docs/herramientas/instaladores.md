@@ -6,6 +6,7 @@ Programa propio (`packaging/windows/setup.cpp`) con los archivos dentro: no nece
 
 ```text
 bin\hyper.exe          el lenguaje y todas sus herramientas
+bin\hyperez-editor.exe HyperEZ Editor
 docs\                  documentación (incluida la referencia de la API)
 examples\              ejemplos
 icons\                 iconos de los archivos .hz
@@ -19,8 +20,9 @@ Todo en `HKEY_CURRENT_USER` (solo afecta a tu usuario):
 
 | Clave | Para qué |
 |---|---|
-| `Software\Classes\.hz`, `.hez` | extensiones → tipo `HyperEZ.Source`, `text/x-hyperez`, *Nuevo → Programa HyperEZ* |
-| `Software\Classes\HyperEZ.Source` | icono y acciones: *Ejecutar* (doble clic), *Editar*, *Comprobar errores*, *Ejecutar y repetir al guardar* |
+| `Software\Classes\.hz`, `.hez` | extensiones → tipo `HyperEZ.Source`, `text/x-hyperez`; *Nuevo → Programa HyperEZ* (solo `.hez`) |
+| `Software\Classes\HyperEZ.Source` | icono y acciones: *Ejecutar* (doble clic), *Editar con HyperEZ Editor*, *Editar con Visual Studio Code*, *Comprobar errores*, *Ejecutar y repetir al guardar* |
+| `Software\Classes\HyperEZ.Editor`, `Applications\hyperez-editor.exe` | HyperEZ Editor en *Abrir con...* |
 | `Software\Classes\Directory\Background\shell\HyperEZ` | *Abrir HyperEZ aquí* |
 | `Software\Classes\Applications\hyper.exe` | HyperEZ en *Abrir con...* |
 | `...\Explorer\FileExts\.hz\UserChoice` | se borra: si antes elegiste otro programa para `.hz`, HyperEZ vuelve a ser el predeterminado |
@@ -28,6 +30,8 @@ Todo en `HKEY_CURRENT_USER` (solo afecta a tu usuario):
 | `Software\Microsoft\Windows\CurrentVersion\Uninstall\HyperEZ` | aparece en *Aplicaciones* |
 
 El doble clic ejecuta `hyper.exe run --pause "archivo"`: la ventana espera una tecla al terminar para que se pueda leer el resultado.
+
+Además crea `Documentos\HyperEZ` (la carpeta donde HyperEZ Editor guarda los programas nuevos) y los accesos directos del menú Inicio y del escritorio. Al desinstalar, esa carpeta solo se borra si está vacía: **tus programas nunca se borran**.
 
 ### Opciones
 
@@ -37,7 +41,9 @@ El doble clic ejecuta `hyper.exe run --pause "archivo"`: la ventana espera una t
 /NOASSOC           no asociar .hz/.hez
 /NOPATH            no tocar el PATH
 /NOSHORTCUTS       sin accesos en el menú Inicio
+/NODESKTOP         sin acceso directo en el escritorio
 /NOVSCODE          no instalar la extensión de VS Code
+/OPENEDITOR        abrir HyperEZ Editor al terminar (el asistente lo hace por defecto)
 ```
 
 ### Crear el instalador

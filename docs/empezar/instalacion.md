@@ -4,15 +4,18 @@
 
 1. Descarga `HyperEZ-Setup-<versión>.exe` de la [página de versiones](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest).
 2. Ejecútalo y pulsa **Instalar**. No necesita permisos de administrador. Si aparece "Windows protegió su PC" (el instalador no está firmado), pulsa *Más información → Ejecutar de todas formas*.
-3. Abre una terminal **nueva** y escribe `hyper version`.
+3. Al terminar se abre **HyperEZ Editor** con un programa de ejemplo: pulsa **F5** y ya estás programando.
+
+![El instalador de HyperEZ](../img/instalador.png)
 
 El instalador:
 
-- copia HyperEZ en `%LOCALAPPDATA%\Programs\HyperEZ`;
-- hace que **todos los archivos `.hz` y `.hez`** se abran siempre con HyperEZ (con su icono). Si antes habías elegido otro programa para ellos, deja de tener prioridad;
-- añade al menú contextual de los `.hz`: *Editar con Visual Studio Code*, *Comprobar errores* y *Ejecutar y repetir al guardar*; y al fondo de cualquier carpeta, *Abrir HyperEZ aquí* (consola interactiva);
-- añade `hyper` al `PATH`;
-- crea accesos en el menú Inicio: consola interactiva, terminal, ejemplos, guía, referencia de la API y desinstalar;
+- copia HyperEZ y **HyperEZ Editor** en `%LOCALAPPDATA%\Programs\HyperEZ`;
+- hace que **todos los archivos `.hez` y `.hz`** se abran siempre con HyperEZ (con su icono): doble clic para ejecutar. Si antes habías elegido otro programa para ellos, deja de tener prioridad;
+- añade al menú contextual de los archivos: *Editar con HyperEZ Editor*, *Editar con Visual Studio Code* (si lo tienes), *Comprobar errores* y *Ejecutar y repetir al guardar*; en cualquier carpeta, *Nuevo → Programa HyperEZ* y *Abrir HyperEZ aquí* (consola interactiva);
+- crea la carpeta `Documentos\HyperEZ` para tus programas;
+- añade `hyper` al `PATH` (para usarlo en una terminal **nueva**: `hyper version`);
+- crea accesos en el menú Inicio (HyperEZ Editor, consola interactiva, terminal, ejemplos, guía, referencia de la API y desinstalar) y, si quieres, en el escritorio;
 - instala la extensión de VS Code si tienes VS Code.
 
 Se desinstala desde *Configuración → Aplicaciones → HyperEZ* (o con el acceso del menú Inicio).
@@ -20,11 +23,12 @@ Se desinstala desde *Configuración → Aplicaciones → HyperEZ* (o con el acce
 ### Instalación silenciosa
 
 ```text
-HyperEZ-Setup-0.6.0.exe /S                  sin preguntas
-HyperEZ-Setup-0.6.0.exe /S /D=C:\HyperEZ    en otra carpeta
+HyperEZ-Setup-0.7.0.exe /S                  sin preguntas
+HyperEZ-Setup-0.7.0.exe /S /D=C:\HyperEZ    en otra carpeta
+HyperEZ-Setup-0.7.0.exe /S /OPENEDITOR      y abre el editor al terminar
 ```
 
-Opciones: `/NOASSOC` (no asociar archivos), `/NOPATH`, `/NOSHORTCUTS`, `/NOVSCODE`.
+Opciones: `/NOASSOC` (no asociar archivos), `/NOPATH`, `/NOSHORTCUTS`, `/NODESKTOP`, `/NOVSCODE`, `/OPENEDITOR`.
 
 ## Linux y macOS
 
@@ -32,8 +36,8 @@ Opciones: `/NOASSOC` (no asociar archivos), `/NOPATH`, `/NOSHORTCUTS`, `/NOVSCOD
 2. Descomprímelo e instala para tu usuario (sin `sudo`):
 
 ```text
-tar xzf HyperEZ-0.6.0-linux-x64.tar.gz
-cd HyperEZ-0.6.0-linux-x64
+tar xzf HyperEZ-0.7.0-linux-x64.tar.gz
+cd HyperEZ-0.7.0-linux-x64
 sh install.sh
 ```
 
@@ -46,7 +50,7 @@ En cualquier sistema, `hyper register` asocia los archivos con el `hyper` que lo
 La instala el instalador de Windows. También se puede instalar a mano: en VS Code, *Extensiones → ⋯ → Instalar desde VSIX…* y elige `hyperez-<versión>.vsix`, o desde la terminal:
 
 ```text
-code --install-extension hyperez-0.6.0.vsix
+code --install-extension hyperez-0.7.0.vsix
 ```
 
 ## Desde el código fuente

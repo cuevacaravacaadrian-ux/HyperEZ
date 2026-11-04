@@ -46,6 +46,7 @@ private:
     void u16(int v);
     int emitJump(uint8_t o, SrcLoc loc = {});
     void patchJump(int at);
+    void discardTop();
     void patchJumpTo(int at, int target);
     void emitLoop(int start, SrcLoc loc = {});
     int here() const { return (int)fs->fn->code.size(); }

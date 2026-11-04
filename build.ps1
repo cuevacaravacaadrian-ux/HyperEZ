@@ -6,7 +6,7 @@
 #   ./build.ps1 -SkipTests      sin ejecutar las pruebas
 #   ./build.ps1 -VSCodeTests    además, pruebas de integración dentro de VS Code (descarga VS Code Insiders)
 #
-# Resultado en dist/: HyperEZ-Setup-<versión>.exe, hyperez-<versión>.vsix y hyper.exe
+# Resultado en dist/: HyperEZ-Setup-<versión>.exe, hyperez-<versión>.vsix, hyper.exe y hyperez-editor.exe
 param(
     [switch]$NoPGO,
     [switch]$SkipVsix,
@@ -96,6 +96,7 @@ New-Item -ItemType Directory -Force "dist" | Out-Null
 Get-ChildItem "dist" -File | Remove-Item
 Copy-Item "$BuildDir/packaging/windows/HyperEZ-Setup-$version.exe" "dist/" -Force
 Copy-Item $hyper "dist/" -Force
+if (Test-Path "$BuildDir/hyperez-editor.exe") { Copy-Item "$BuildDir/hyperez-editor.exe" "dist/" -Force }
 if (-not $SkipVsix) { Copy-Item "editors/vscode/hyperez-$version.vsix" "dist/" -Force }
 Get-ChildItem dist | ForEach-Object { "{0,-32} {1,8:N0} KB" -f $_.Name, ($_.Length / 1KB) }
 Write-Host "`nListo. Ejecuta dist\HyperEZ-Setup-$version.exe para instalar HyperEZ." -ForegroundColor Green

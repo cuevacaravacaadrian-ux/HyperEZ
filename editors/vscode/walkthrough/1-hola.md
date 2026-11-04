@@ -1,6 +1,6 @@
 # Tu primer programa
 
-Crea un archivo con extensión `.hz` (por ejemplo `hola.hz`) y escribe:
+Crea un archivo con extensión `.hez` (o `.hz`; por ejemplo `hola.hez`) y escribe:
 
 ```hz
 var nombre = "mundo"

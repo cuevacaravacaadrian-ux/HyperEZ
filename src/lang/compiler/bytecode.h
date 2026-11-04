@@ -86,6 +86,11 @@ enum Op : uint8_t {
     // Fin de vuelta de un for numérico: incrementa, comprueba y vuelve al cuerpo (FOR_INCR + LOOP + FOR_CHECK)
     OP_FOR_NEXT,       // u16 slot, u8 inclusivo, u16 distancia hacia atrás
     OP_CHECK_NUMBER,   // u16 slot, u16 const nombre del parámetro (parámetro ": number")
+    OP_SET_LOCAL_POP,  // u16 slot   (consume el valor: "x = ..." como sentencia; SET_LOCAL + POP)
+    // for numérico cuya variable no captura ninguna función: la variable tiene un hueco fijo y estas
+    // instrucciones le copian el contador (sin GET_LOCAL al empezar cada vuelta ni POP al acabar)
+    OP_FOR_CHECK_V,    // u16 slot contador, u8 inclusivo, u16 slot variable, u16 salto adelante
+    OP_FOR_NEXT_V,     // u16 slot contador, u8 inclusivo, u16 slot variable, u16 distancia hacia atrás
     OP_COUNT
 };
 

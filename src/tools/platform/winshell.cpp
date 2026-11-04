@@ -126,6 +126,16 @@ bool registerFileTypes(const std::wstring& exe0, bool install, const std::wstrin
     const std::wstring prog = classes + L"\\HyperEZ.Source";
     const std::wstring app = classes + L"\\Applications\\hyper.exe";
     const std::wstring here = classes + L"\\Directory\\Background\\shell\\HyperEZ"; // "Abrir HyperEZ aquí"
+    const std::wstring edProg = classes + L"\\HyperEZ.Editor";                       // "Abrir con > HyperEZ Editor"
+    const std::wstring edApp = classes + L"\\Applications\\hyperez-editor.exe";
+    // HyperEZ Editor se instala junto a hyper.exe
+    std::wstring hzEditor;
+    {
+        size_t slash = exe.find_last_of(L'\\');
+        std::wstring cand = (slash == std::wstring::npos ? L"" : exe.substr(0, slash + 1)) + L"hyperez-editor.exe";
+        DWORD a = GetFileAttributesW(cand.c_str());
+        if (a != INVALID_FILE_ATTRIBUTES && !(a & FILE_ATTRIBUTE_DIRECTORY)) hzEditor = cand;
+    }
     if (!install) {
         for (const wchar_t* ext : {L".hz", L".hez"}) {
             std::wstring key = classes + L"\\" + ext, cur;
@@ -134,6 +144,7 @@ bool registerFileTypes(const std::wstring& exe0, bool install, const std::wstrin
                 HKEY h;
                 if (RegOpenKeyExW(root, (key + L"\\OpenWithProgids").c_str(), 0, KEY_SET_VALUE, &h) == ERROR_SUCCESS) {
                     RegDeleteValueW(h, L"HyperEZ.Source");
+                    RegDeleteValueW(h, L"HyperEZ.Editor");
                     RegCloseKey(h);
                 }
             }
@@ -141,6 +152,8 @@ bool registerFileTypes(const std::wstring& exe0, bool install, const std::wstrin
         deleteTree(root, prog);
         deleteTree(root, app);
         deleteTree(root, here);
+        deleteTree(root, edProg);
+        deleteTree(root, edApp);
         notifyAssociationsChanged();
         return true;
     }
@@ -153,11 +166,36 @@ bool registerFileTypes(const std::wstring& exe0, bool install, const std::wstrin
     ok &= setValue(root, prog + L"\\shell\\open", L"", L"Ejecutar con HyperEZ");
     ok &= setValue(root, prog + L"\\shell\\open", L"Icon", q);
     ok &= setValue(root, prog + L"\\shell\\open\\command", L"", q + L" run --pause \"%1\"");
-    std::wstring editor = findVSCode();
-    std::wstring editCmd = editor.empty() ? L"notepad.exe \"%1\"" : L"\"" + editor + L"\" \"%1\"";
-    ok &= setValue(root, prog + L"\\shell\\edit", L"", editor.empty() ? L"Editar" : L"Editar con Visual Studio Code");
-    if (!editor.empty()) ok &= setValue(root, prog + L"\\shell\\edit", L"Icon", L"\"" + editor + L"\"");
-    ok &= setValue(root, prog + L"\\shell\\edit\\command", L"", editCmd);
+    // Editar: con HyperEZ Editor si está instalado; además, con VS Code si existe
+    std::wstring vscode = findVSCode();
+    if (!hzEditor.empty()) {
+        std::wstring qe = L"\"" + hzEditor + L"\"";
+        ok &= setValue(root, prog + L"\\shell\\edit", L"", L"Editar con HyperEZ Editor");
+        ok &= setValue(root, prog + L"\\shell\\edit", L"Icon", qe);
+        ok &= setValue(root, prog + L"\\shell\\edit\\command", L"", qe + L" \"%1\"");
+        if (!vscode.empty()) {
+            ok &= setValue(root, prog + L"\\shell\\editcode", L"", L"Editar con Visual Studio Code");
+            ok &= setValue(root, prog + L"\\shell\\editcode", L"Icon", L"\"" + vscode + L"\"");
+            ok &= setValue(root, prog + L"\\shell\\editcode\\command", L"", L"\"" + vscode + L"\" \"%1\"");
+        } else {
+            deleteTree(root, prog + L"\\shell\\editcode");
+        }
+        ok &= setValue(root, edProg, L"", L"Programa HyperEZ");
+        ok &= setValue(root, edProg, L"FriendlyTypeName", L"Programa HyperEZ");
+        ok &= setValue(root, edProg + L"\\DefaultIcon", L"", L"\"" + iconFile + L"\"" + (iconFile0.empty() ? L",1" : L",0"));
+        ok &= setValue(root, edProg + L"\\shell\\open", L"", L"Editar con HyperEZ Editor");
+        ok &= setValue(root, edProg + L"\\shell\\open\\command", L"", qe + L" \"%1\"");
+        ok &= setValue(root, edApp, L"FriendlyAppName", L"HyperEZ Editor");
+        ok &= setValue(root, edApp + L"\\DefaultIcon", L"", qe + L",0");
+        ok &= setValue(root, edApp + L"\\shell\\open\\command", L"", qe + L" \"%1\"");
+        ok &= setValue(root, edApp + L"\\SupportedTypes", L".hz", L"");
+        ok &= setValue(root, edApp + L"\\SupportedTypes", L".hez", L"");
+    } else {
+        std::wstring editCmd = vscode.empty() ? L"notepad.exe \"%1\"" : L"\"" + vscode + L"\" \"%1\"";
+        ok &= setValue(root, prog + L"\\shell\\edit", L"", vscode.empty() ? L"Editar" : L"Editar con Visual Studio Code");
+        if (!vscode.empty()) ok &= setValue(root, prog + L"\\shell\\edit", L"Icon", L"\"" + vscode + L"\"");
+        ok &= setValue(root, prog + L"\\shell\\edit\\command", L"", editCmd);
+    }
     ok &= setValue(root, prog + L"\\shell\\check", L"", L"Comprobar errores (HyperEZ)");
     ok &= setValue(root, prog + L"\\shell\\check", L"Icon", q);
     ok &= setValue(root, prog + L"\\shell\\check\\command", L"", q + L" check --pause \"%1\"");
@@ -174,7 +212,10 @@ bool registerFileTypes(const std::wstring& exe0, bool install, const std::wstrin
         ok &= setValue(root, key, L"Content Type", L"text/x-hyperez");
         ok &= setValue(root, key, L"PerceivedType", L"text");
         ok &= setValue(root, key + L"\\OpenWithProgids", L"HyperEZ.Source", L"");
-        ok &= setValue(root, key + L"\\ShellNew", L"NullFile", L"");
+        if (!hzEditor.empty()) ok &= setValue(root, key + L"\\OpenWithProgids", L"HyperEZ.Editor", L"");
+        // Clic derecho > Nuevo > Programa HyperEZ: solo para .hez (la extensión por defecto) para que no salga dos veces
+        if (std::wstring(ext) == L".hez") ok &= setValue(root, key + L"\\ShellNew", L"NullFile", L"");
+        else deleteTree(root, key + L"\\ShellNew");
     }
     ok &= setValue(root, app, L"FriendlyAppName", L"HyperEZ");
     ok &= setValue(root, app + L"\\DefaultIcon", L"", q + L",0");

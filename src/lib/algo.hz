@@ -1,0 +1,213 @@
+// algo — algoritmos clásicos listos para usar: combinatoria, caminos en cuadrículas (A*),
+// relleno de zonas, subsecuencias y memorización de funciones.
+//
+//   import algo
+//   print(algo.permutations([1, 2, 3]))          // [[1, 2, 3], [1, 3, 2], ...]
+//   print(algo.combinations(["a", "b", "c"], 2)) // [[a, b], [a, c], [b, c]]
+//
+//   var mapa = ["S..#....",
+//               ".#.#.##.",
+//               ".#...#G."]
+//   print(algo.gridPath(mapa, [0, 0], [6, 2]))   // lista de [x, y] desde S hasta G evitando los #
+
+import collections
+
+/// Todas las ordenaciones posibles de una lista (n! resultados: úsalo con listas pequeñas).
+function permutations(lista: list): list {
+    if lista.length <= 1 { return [lista.copy()] }
+    var out = []
+    for i in 0..lista.length {
+        var resto = lista.copy()
+        var x = resto.removeAt(i)
+        foreach p in permutations(resto) {
+            p.insert(0, x)
+            out.add(p)
+        }
+    }
+    return out
+}
+
+/// Todas las formas de elegir k elementos sin importar el orden.
+function combinations(lista: list, k: number): list {
+    var out = []
+    function elegir(desde: number, actual: list) {
+        if actual.length == k {
+            out.add(actual.copy())
+            return
+        }
+        for i in desde..lista.length {
+            actual.add(lista[i])
+            elegir(i + 1, actual)
+            actual.pop()
+        }
+    }
+    if k >= 0 and k <= lista.length { elegir(0, []) }
+    return out
+}
+
+/// Producto cartesiano: product([1, 2], ["a", "b"]) es [[1, a], [1, b], [2, a], [2, b]].
+function product(...listas: list): list {
+    var out = [[]]
+    foreach l in listas {
+        var nuevo = []
+        foreach prefijo in out {
+            foreach x in l {
+                var c = prefijo.copy()
+                c.add(x)
+                nuevo.add(c)
+            }
+        }
+        out = nuevo
+    }
+    return out
+}
+
+/// Todos los subconjuntos de una lista (2^n resultados).
+function powerset(lista: list): list {
+    var out = [[]]
+    foreach x in lista {
+        var mas = out.map(s => s + [x])
+        out = out + mas
+    }
+    return out
+}
+
+/// Subsecuencia común más larga de dos textos o listas: lcs("ABCBDAB", "BDCABA") es "BCBA".
+function lcs(a: any, b: any): any {
+    var esTexto = typeof(a) == "text"
+    var x = esTexto ? a.chars() : a
+    var y = esTexto ? b.chars() : b
+    var n = x.length
+    var m = y.length
+    var t = range(n + 1).toList().map(i => [0] * (m + 1))
+    for i in range(n - 1, -1, -1) {
+        for j in range(m - 1, -1, -1) {
+            t[i][j] = x[i] == y[j] ? t[i + 1][j + 1] + 1 : max(t[i + 1][j], t[i][j + 1])
+        }
+    }
+    var out = []
+    var i = 0
+    var j = 0
+    while i < n and j < m {
+        if x[i] == y[j] {
+            out.add(x[i])
+            i += 1
+            j += 1
+        } else if t[i + 1][j] >= t[i][j + 1] {
+            i += 1
+        } else {
+            j += 1
+        }
+    }
+    return esTexto ? out.join("") : out
+}
+
+/// Devuelve una versión de f que recuerda los resultados (para funciones caras y sin efectos).
+function memoize(f: function): function {
+    var cache = {}
+    return (x) => {
+        if not cache.has(x) { cache[x] = f(x) }
+        return cache[x]
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Cuadrículas: una lista de textos ("#" es pared) o una lista de listas (true/1 es pared)
+// ---------------------------------------------------------------------------
+
+/// ¿Se puede pisar la casilla (x, y)?
+function walkable(grid: list, x: number, y: number, pared: text = "#"): bool {
+    if y < 0 or y >= grid.length { return false }
+    var fila = grid[y]
+    if x < 0 or x >= len(fila) { return false }
+    var c = fila[x]
+    if typeof(c) == "text" { return c != pared }
+    return not (c == true or c == 1)
+}
+
+/// Vecinos pisables de (x, y): 4 direcciones (o 8 con diagonales).
+function neighbors(grid: list, x: number, y: number, diagonales: bool = false, pared: text = "#"): list {
+    var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+    if diagonales { dirs = dirs + [[1, 1], [1, -1], [-1, 1], [-1, -1]] }
+    var out = []
+    foreach d in dirs {
+        var nx = x + d[0]
+        var ny = y + d[1]
+        if walkable(grid, nx, ny, pared) { out.add([nx, ny]) }
+    }
+    return out
+}
+
+/// Camino más corto entre dos casillas con A* (lista de [x, y] incluidos inicio y fin), o null si no hay.
+function gridPath(grid: list, inicio: list, fin: list, diagonales: bool = false, pared: text = "#"): list? {
+    if not walkable(grid, fin[0], fin[1], pared) or not walkable(grid, inicio[0], inicio[1], pared) { return null }
+    function clave(p: list): text { return "${p[0]},${p[1]}" }
+    function h(p: list): number {
+        var dx = abs(p[0] - fin[0])
+        var dy = abs(p[1] - fin[1])
+        return diagonales ? max(dx, dy) : dx + dy
+    }
+    var abiertos = collections.PriorityQueue()
+    abiertos.push(inicio, h(inicio))
+    var coste = {}
+    var previo = {}
+    coste[clave(inicio)] = 0
+    var cerrados = set()
+    while not abiertos.isEmpty() {
+        var actual = abiertos.pop()
+        var k = clave(actual)
+        if cerrados.has(k) { continue }
+        if actual[0] == fin[0] and actual[1] == fin[1] {
+            var camino = [actual]
+            while previo.has(k) {
+                actual = previo[k]
+                k = clave(actual)
+                camino.insert(0, actual)
+            }
+            return camino
+        }
+        cerrados.add(k)
+        foreach v in neighbors(grid, actual[0], actual[1], diagonales, pared) {
+            var kv = clave(v)
+            var nuevo = coste[k] + 1
+            if not coste.has(kv) or nuevo < coste[kv] {
+                coste[kv] = nuevo
+                previo[kv] = actual
+                abiertos.push(v, nuevo + h(v))
+            }
+        }
+    }
+    return null
+}
+
+/// Casillas alcanzables desde (x, y) sin atravesar paredes (relleno por inundación).
+function floodFill(grid: list, x: number, y: number, diagonales: bool = false, pared: text = "#"): list {
+    if not walkable(grid, x, y, pared) { return [] }
+    var vistos = set("${x},${y}")
+    var out = []
+    var cola = collections.Queue()
+    cola.push([x, y])
+    while not cola.isEmpty() {
+        var p = cola.pop()
+        out.add(p)
+        foreach v in neighbors(grid, p[0], p[1], diagonales, pared) {
+            var k = "${v[0]},${v[1]}"
+            if not vistos.has(k) {
+                vistos.add(k)
+                cola.push(v)
+            }
+        }
+    }
+    return out
+}
+
+/// Dibuja un camino sobre la cuadrícula de texto con un carácter (para ver el resultado).
+function drawPath(grid: list, camino: list?, marca: text = "*"): list {
+    var filas = grid.map(f => typeof(f) == "text" ? f.chars() : f.map(c => (c == true or c == 1) ? "#" : "."))
+    if camino != null {
+        foreach p in camino {
+            if filas[p[1]][p[0]] == "." { filas[p[1]][p[0]] = marca }
+        }
+    }
+    return filas.map(f => f.join(""))
+}

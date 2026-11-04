@@ -310,6 +310,154 @@ NATIVE(ms_random) {
 NATIVE(ms_zeros) { return wrap(vm, Mat(dim(vm, args, argc, 0, "Matrix.zeros"), dim(vm, args, argc, 1, "Matrix.zeros", 1), 0)); }
 NATIVE(ms_ones) { return wrap(vm, Mat(dim(vm, args, argc, 0, "Matrix.ones"), dim(vm, args, argc, 1, "Matrix.ones", 1), 1)); }
 
+// ---- álgebra lineal: determinante, inversa, sistemas de ecuaciones -------------
+
+// Descomposición LU con pivoteo parcial (en el sitio). Devuelve false si la matriz es singular.
+static bool luDecompose(Mat& a, std::vector<int>& perm, int& sign) {
+    int n = a.rows;
+    perm.resize(n);
+    for (int i = 0; i < n; i++) perm[i] = i;
+    sign = 1;
+    for (int k = 0; k < n; k++) {
+        int p = k;
+        double best = std::fabs(a.at(k, k));
+        for (int i = k + 1; i < n; i++) if (std::fabs(a.at(i, k)) > best) { best = std::fabs(a.at(i, k)); p = i; }
+        if (best < 1e-12) return false;
+        if (p != k) {
+            for (int j = 0; j < n; j++) std::swap(a.at(k, j), a.at(p, j));
+            std::swap(perm[k], perm[p]);
+            sign = -sign;
+        }
+        for (int i = k + 1; i < n; i++) {
+            double f = a.at(i, k) / a.at(k, k);
+            a.at(i, k) = f;
+            for (int j = k + 1; j < n; j++) a.at(i, j) -= f * a.at(k, j);
+        }
+    }
+    return true;
+}
+// Resuelve L·U·x = P·b para cada columna de b
+static Mat luSolve(const Mat& lu, const std::vector<int>& perm, const Mat& b) {
+    int n = lu.rows;
+    Mat x(n, b.cols);
+    for (int c = 0; c < b.cols; c++) {
+        std::vector<double> y(n);
+        for (int i = 0; i < n; i++) {
+            double s = b.at(perm[i], c);
+            for (int j = 0; j < i; j++) s -= lu.at(i, j) * y[j];
+            y[i] = s;
+        }
+        for (int i = n - 1; i >= 0; i--) {
+            double s = y[i];
+            for (int j = i + 1; j < n; j++) s -= lu.at(i, j) * x.at(j, c);
+            x.at(i, c) = s / lu.at(i, i);
+        }
+    }
+    return x;
+}
+static void needSquare(VM& vm, const Mat& m, const char* fname) {
+    if (m.rows != m.cols || m.rows == 0) vm.raise(std::string(fname) + ": hace falta una matriz cuadrada, no " + shape(m));
+}
+NATIVE(m_det) {
+    UNUSED;
+    Mat a = M(args);
+    needSquare(vm, a, "det");
+    std::vector<int> perm;
+    int sign;
+    if (!luDecompose(a, perm, sign)) return Value(0.0);
+    double d = sign;
+    for (int i = 0; i < a.rows; i++) d *= a.at(i, i);
+    return Value(d);
+}
+NATIVE(m_inverse) {
+    UNUSED;
+    Mat a = M(args);
+    needSquare(vm, a, "inverse");
+    std::vector<int> perm;
+    int sign;
+    if (!luDecompose(a, perm, sign)) vm.raise("inverse: la matriz no tiene inversa (su determinante es 0)");
+    Mat id(a.rows, a.rows);
+    for (int i = 0; i < a.rows; i++) id.at(i, i) = 1;
+    return wrap(vm, luSolve(a, perm, id));
+}
+NATIVE(m_solve) {
+    Mat a = M(args);
+    needSquare(vm, a, "solve");
+    Mat b = isMatrix(vm, optArg(args, argc, 0)) ? asMat(vm, args[0], "solve") : fromList(vm, args[0], "solve");
+    if (b.rows == 1 && b.cols == a.rows && a.rows > 1) { // una lista [b1, b2...] es una columna
+        Mat t(b.cols, 1);
+        for (int i = 0; i < b.cols; i++) t.d[i] = b.d[i];
+        b = t;
+    }
+    if (b.rows != a.rows) vm.raise("solve: b debe tener " + std::to_string(a.rows) + " filas, no " + std::to_string(b.rows));
+    std::vector<int> perm;
+    int sign;
+    if (!luDecompose(a, perm, sign)) vm.raise("solve: el sistema no tiene solución única (la matriz es singular)");
+    return wrap(vm, luSolve(a, perm, b));
+}
+NATIVE(m_trace) {
+    UNUSED;
+    Mat& a = M(args);
+    double s = 0;
+    for (int i = 0; i < std::min(a.rows, a.cols); i++) s += a.at(i, i);
+    return Value(s);
+}
+NATIVE(m_norm) {
+    UNUSED;
+    double s = 0;
+    for (double x : M(args).d) s += x * x;
+    return Value(std::sqrt(s));
+}
+NATIVE(m_std) {
+    UNUSED;
+    auto& d = M(args).d;
+    if (d.empty()) return Value(0.0);
+    double mean = 0;
+    for (double x : d) mean += x;
+    mean /= (double)d.size();
+    double s = 0;
+    for (double x : d) s += (x - mean) * (x - mean);
+    return Value(std::sqrt(s / (double)d.size()));
+}
+NATIVE(m_diag) {
+    UNUSED;
+    Mat& a = M(args);
+    ObjList* out = vm.newList();
+    for (int i = 0; i < std::min(a.rows, a.cols); i++) out->items.push_back(Value(a.at(i, i)));
+    return Value::object(out);
+}
+NATIVE(m_slice) {
+    Mat& a = M(args);
+    int r0 = dim(vm, args, argc, 0, "slice"), r1 = dim(vm, args, argc, 1, "slice", a.rows);
+    int c0 = dim(vm, args, argc, 2, "slice", 0), c1 = dim(vm, args, argc, 3, "slice", a.cols);
+    r1 = std::min(r1, a.rows);
+    c1 = std::min(c1, a.cols);
+    if (r0 > r1 || c0 > c1) vm.raise("slice: el inicio debe ser menor que el final");
+    Mat m(r1 - r0, c1 - c0);
+    for (int i = r0; i < r1; i++)
+        for (int j = c0; j < c1; j++) m.at(i - r0, j - c0) = a.at(i, j);
+    return wrap(vm, std::move(m));
+}
+NATIVE(ms_concat) {
+    Mat a = isMatrix(vm, optArg(args, argc, 0)) ? asMat(vm, args[0], "Matrix.concat") : fromList(vm, args[0], "Matrix.concat");
+    Mat b = isMatrix(vm, optArg(args, argc, 1)) ? asMat(vm, args[1], "Matrix.concat") : fromList(vm, args[1], "Matrix.concat");
+    int axis = (int)argNum(vm, args, argc, 2, "Matrix.concat", 0);
+    if (axis == 0) { // una debajo de la otra
+        if (a.cols != b.cols) vm.raise("Matrix.concat: para unir filas hacen falta las mismas columnas (" + shape(a) + " y " + shape(b) + ")");
+        Mat m(a.rows + b.rows, a.cols);
+        std::copy(a.d.begin(), a.d.end(), m.d.begin());
+        std::copy(b.d.begin(), b.d.end(), m.d.begin() + (long)a.d.size());
+        return wrap(vm, std::move(m));
+    }
+    if (a.rows != b.rows) vm.raise("Matrix.concat: para unir columnas hacen falta las mismas filas (" + shape(a) + " y " + shape(b) + ")");
+    Mat m(a.rows, a.cols + b.cols);
+    for (int i = 0; i < a.rows; i++) {
+        for (int j = 0; j < a.cols; j++) m.at(i, j) = a.at(i, j);
+        for (int j = 0; j < b.cols; j++) m.at(i, a.cols + j) = b.at(i, j);
+    }
+    return wrap(vm, std::move(m));
+}
+
 void registerMatrix(VM& vm) {
     ObjClass* c = vm.nativeClass("Matrix",
         "Matriz de números (filas × columnas) calculada en C++: la base para redes neuronales, estadística y gráficos. "
@@ -357,6 +505,19 @@ void registerMatrix(VM& vm) {
                     "Valores aleatorios uniformes (usa la semilla de randomSeed).", ms_random);
     vm.defineStatic(c, "zeros", "(filas: number, columnas?: number = 1): Matrix", "Matriz de ceros.", ms_zeros);
     vm.defineStatic(c, "ones", "(filas: number, columnas?: number = 1): Matrix", "Matriz de unos.", ms_ones);
+    // álgebra lineal
+    vm.defineMethod(c, "det", "(): number", "Determinante (matriz cuadrada).", m_det);
+    vm.defineMethod(c, "inverse", "(): Matrix", "Matriz inversa (error si el determinante es 0).", m_inverse);
+    vm.defineMethod(c, "solve", "(b: Matrix|list): Matrix",
+                    "Resuelve el sistema A·x = b: Matrix([[2, 1], [1, 3]]).solve([3, 5]) da la columna x.", m_solve);
+    vm.defineMethod(c, "trace", "(): number", "Suma de la diagonal.", m_trace);
+    vm.defineMethod(c, "norm", "(): number", "Norma (raíz de la suma de los cuadrados).", m_norm);
+    vm.defineMethod(c, "std", "(): number", "Desviación típica de todos los valores.", m_std);
+    vm.defineMethod(c, "diag", "(): list<number>", "Valores de la diagonal.", m_diag);
+    vm.defineMethod(c, "slice", "(fila0: number, fila1?: number, col0?: number = 0, col1?: number): Matrix",
+                    "Submatriz con las filas fila0..fila1 y las columnas col0..col1 (sin incluir el final).", m_slice);
+    vm.defineStatic(c, "concat", "(a: Matrix|list, b: Matrix|list, eje?: number = 0): Matrix",
+                    "Une dos matrices: eje 0 una debajo de otra, eje 1 una al lado de otra.", ms_concat);
 }
 
 } // namespace hz

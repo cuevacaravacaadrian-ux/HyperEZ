@@ -1,0 +1,33 @@
+// Recursos de hyperez-editor.exe: iconos, manifiesto e información de versión.
+#include <winver.h>
+#include "../../src/core/version.h"
+
+1 ICON "../../assets/icons/hyperez.ico"
+2 ICON "../../assets/icons/hz-file.ico"
+1 24 "editor.manifest"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION HYPEREZ_VERSION_MAJOR, HYPEREZ_VERSION_MINOR, HYPEREZ_VERSION_PATCH, 0
+PRODUCTVERSION HYPEREZ_VERSION_MAJOR, HYPEREZ_VERSION_MINOR, HYPEREZ_VERSION_PATCH, 0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "0C0A04B0"
+    BEGIN
+      VALUE "CompanyName", "HyperEZ"
+      VALUE "FileDescription", "HyperEZ Editor"
+      VALUE "FileVersion", HYPEREZ_VERSION
+      VALUE "InternalName", "hyperez-editor"
+      VALUE "LegalCopyright", "Copyright (C) HyperEZ"
+      VALUE "OriginalFilename", "hyperez-editor.exe"
+      VALUE "ProductName", "HyperEZ"
+      VALUE "ProductVersion", HYPEREZ_VERSION
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x0C0A, 1200
+  END
+END

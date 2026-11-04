@@ -1,8 +1,18 @@
 # Primeros pasos
 
-Tres formas de escribir HyperEZ y ver el resultado al momento.
+Cuatro formas de escribir HyperEZ y ver el resultado al momento. La más sencilla es la primera.
 
-## 1. La consola interactiva
+## 1. HyperEZ Editor (Windows)
+
+Se instala con HyperEZ y se abre al terminar la instalación (también está en el menú Inicio y en el escritorio).
+
+1. Escribe tu programa (el editor trae uno de ejemplo).
+2. Pulsa **F5**: te pide dónde guardarlo (como `.hez`, en `Documentos\HyperEZ`) y lo ejecuta en una ventana nueva.
+3. Los errores aparecen abajo mientras escribes, con su línea. **Ctrl+Espacio** completa nombres y **F1** abre la guía.
+
+En *Archivo → Abrir ejemplo* están todos los ejemplos y en *Archivo → Nuevo desde plantilla*, programas para empezar (juego, IA, web...). Todo lo que hace está en [HyperEZ Editor](../herramientas/editor.md).
+
+## 2. La consola interactiva
 
 Escribe `hyper` en una terminal (o abre *HyperEZ (consola interactiva)* en el menú Inicio, o *Abrir HyperEZ aquí* con clic derecho en una carpeta):
 
@@ -27,7 +37,7 @@ hz> .guardar prueba.hz
 - Ctrl+C detiene un bucle que no termina sin cerrar la consola.
 - Comandos: `.ayuda`, `.vars`, `.codigo`, `.guardar archivo`, `.cargar archivo`, `.limpiar`, `.reiniciar`, `.salir`.
 
-## 2. Visual Studio Code
+## 3. Visual Studio Code
 
 1. Abre una carpeta (*Archivo → Abrir carpeta*).
 2. Crea `hola.hz`:
@@ -45,7 +55,7 @@ for i in 1..=3 {
 
 Mientras escribes, VS Code subraya los errores, autocompleta (`nombre.` muestra los métodos de los textos) y enseña la documentación al pasar el ratón.
 
-## 3. La terminal
+## 4. La terminal
 
 ```text
 hyper hola.hz           ejecuta

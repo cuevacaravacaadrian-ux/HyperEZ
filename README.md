@@ -15,10 +15,22 @@
   <a href="docs/GUIA.md"><b>Guía</b></a> ·
   <a href="docs/README.md"><b>Documentación</b></a> ·
   <a href="examples"><b>Ejemplos</b></a> ·
-  <a href="docs/hoja-de-ruta.md"><b>Hoja de ruta</b></a>
+  <a href="CHANGELOG.md"><b>Novedades</b></a>
 </p>
 
-**HyperEZ** es un lenguaje de programación con mensajes en español, pensado para aprender a programar y para hacer de todo: juegos, inteligencia artificial, webs, análisis de datos, gráficos, sonido, scripts del sistema y herramientas de bajo nivel. Todo cabe en un único ejecutable, `hyper`, sin nada más que instalar.
+**HyperEZ** es un lenguaje de programación con mensajes en español, pensado para aprender a programar y para hacer de todo: juegos, inteligencia artificial, webs, datos, gráficos, sonido, scripts del sistema y herramientas de bajo nivel. Trae su propio editor, su biblioteca completa y sus herramientas en una sola instalación.
+
+## 🚀 Empieza en un minuto
+
+1. Descarga **[HyperEZ-Setup-0.7.0.exe](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest)** y pulsa **Instalar** (no necesita administrador).
+2. Al terminar se abre **HyperEZ Editor** con tu primer programa.
+3. Pulsa **F5**. Ya está.
+
+<p align="center">
+  <img src="docs/img/editor.png" alt="HyperEZ Editor: fondo blanco, colores, números de línea y panel de errores" width="88%">
+</p>
+
+El editor colorea el código, marca los errores mientras escribes (con la línea y cómo arreglarlo), completa nombres con **Ctrl+Espacio**, formatea con **Ctrl+Mayús+F** y trae plantillas y todos los ejemplos. Los programas se guardan como **`.hez`**, y cualquier `.hez` o `.hz` se ejecuta con doble clic. Todo en [HyperEZ Editor](docs/herramientas/editor.md).
 
 ```hz
 class Jugador {
@@ -36,30 +48,29 @@ Si te equivocas, HyperEZ te lo dice en español antes de ejecutar y te propone e
 
 ```text
 error[E0205]: No existe nada llamado 'pirnt'
-  --> juego.hz:3:1
+  --> juego.hez:3:1
  3 | pirnt("¡Hola!")
    | ^^^^^
    = ayuda: ¿quisiste decir 'print'?
 ```
 
-## 🚀 Instalar
+## 📥 Instalar
 
 | Sistema | Cómo |
 |---|---|
-| **Windows** | Descarga y ejecuta **`HyperEZ-Setup-0.6.0.exe`** de la [última versión](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest). No necesita administrador. |
-| **Linux / macOS** | Descarga `HyperEZ-0.6.0-linux-x64.tar.gz` (o `macos-arm64`), descomprímelo y ejecuta `sh install.sh`. |
-| **VS Code** | Lo instala el instalador de Windows; también `code --install-extension hyperez-0.6.0.vsix`. |
+| **Windows** | **`HyperEZ-Setup-0.7.0.exe`** de la [última versión](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest): HyperEZ, HyperEZ Editor, ejemplos, documentación y la extensión de VS Code. |
+| **Linux / macOS** | `HyperEZ-0.7.0-linux-x64.tar.gz` (o `macos-arm64`): descomprímelo y ejecuta `sh install.sh`. |
+| **VS Code** | Lo instala el instalador de Windows; también `code --install-extension hyperez-0.7.0.vsix`. |
 
-En Windows, los archivos `.hz` y `.hez` se abren **siempre** con HyperEZ: doble clic para ejecutarlos y, con el clic derecho, *Editar con VS Code*, *Comprobar errores*, *Ejecutar y repetir al guardar* o *Abrir HyperEZ aquí*. Más detalles en la [guía de instalación](docs/empezar/instalacion.md).
+En Windows, los `.hez` y `.hz` se abren **siempre** con HyperEZ (doble clic = ejecutar) y el clic derecho ofrece *Editar con HyperEZ Editor*, *Editar con VS Code*, *Comprobar errores* y *Ejecutar y repetir al guardar*; en cualquier carpeta, *Nuevo → Programa HyperEZ* y *Abrir HyperEZ aquí*. Detalles en la [guía de instalación](docs/empezar/instalacion.md).
 
-## ⚡ Resultados al instante
+## ⚡ Tres formas de programar
 
-| Forma | Cómo |
-|---|---|
-| **Consola interactiva** | escribe `hyper`: cada línea se ejecuta al pulsar Intro y lo que defines se conserva |
-| **Modo watch** | `hyper watch juego.hz` (o **Ctrl+Alt+F5** en VS Code) vuelve a ejecutar cada vez que guardas |
-| **VS Code** | **F5** ejecuta; errores, autocompletado y documentación mientras escribes |
-| **Proyectos** | `hyper new mi-juego --tipo juego\|app\|ia\|script` crea una carpeta ordenada que funciona desde el primer momento |
+| | Para quién | Cómo |
+|---|---|---|
+| **HyperEZ Editor** | para empezar: sencillo y clásico | menú Inicio o escritorio → escribe → **F5** |
+| **Visual Studio Code** | para proyectos grandes | errores, autocompletado, F12, F2, botones **▶ Ejecutar · ⟳ Repetir · ✓ Comprobar** encima del código |
+| **Consola interactiva** | para probar ideas | escribe `hyper`: cada línea se ejecuta al pulsar Intro |
 
 ```text
 hz> var precios = [3.5, 12, 7.25]
@@ -68,6 +79,8 @@ hz> precios.sum()
 hz> precios.map(p => round(p * 1.21, 2))
 [4.24, 14.52, 8.77]
 ```
+
+Y además `hyper watch juego.hez` (vuelve a ejecutar cada vez que guardas) y `hyper new mi-juego --tipo juego|app|ia|script` (un proyecto ordenado que funciona desde el primer momento).
 
 ## 🧰 Qué se puede hacer
 
@@ -119,7 +132,36 @@ import csv
 import stats
 var filas = csv.parse("mes,ventas\nene,120\nfeb,95\nmar,160")
 var ventas = filas.map(f => f.ventas)
-print(stats.mean(ventas), stats.median(ventas), stats.stdev(ventas))
+print(stats.mean(ventas), ventas.median(), ventas.sum().format())
+```
+
+</td></tr>
+<tr><td valign="top">
+
+**🧩 Algoritmos y estructuras de datos**
+```hz
+import algo
+import collections
+var mapa = ["S..#", ".#..", "...G"]
+print(algo.gridPath(mapa, [0, 0], [3, 2]).length, "casillas")
+var rutas = collections.Graph()
+rutas.addEdge("Madrid", "Toledo", 72)
+rutas.addEdge("Toledo", "Ciudad Real", 117)
+print(rutas.shortestPath("Madrid", "Ciudad Real"))
+```
+
+</td><td valign="top">
+
+**📄 Documentos y archivos**
+```hz
+import template
+import markdown
+import zip
+var md = template.render("# {{t}}\n\n**{{n}}** puntos", { t: "Hola", n: 42 })
+print(markdown.toHtml(md))
+var z = Path.join(Path.temp, "copia.zip")
+zip.create(z, { "notas.txt": "¡hola!" })
+print(zip.list(z))
 ```
 
 </td></tr>
@@ -128,12 +170,13 @@ print(stats.mean(ventas), stats.median(ventas), stats.stdev(ventas))
 **🖼️ Gráficos y 🔊 sonido**
 ```hz
 import audio
+import svg
 var im = Image(200, 100, "#0f1424")
-im.circle(100, 50, 30, "#2f81f7")
-im.text(10, 75, "HyperEZ", "white", 16)
+im.ellipse(100, 50, 60, 30, "#2f81f7")
 im.save(Path.join(Path.temp, "logo.png"))
+svg.barChart({ ene: 3, feb: 5 }).save(Path.join(Path.temp, "barras.svg"))
 audio.Sound().melody("C4 E4 G4", 0.2).save(Path.join(Path.temp, "do-mi-sol.wav"))
-print("imagen y sonido creados")
+print("imagen, gráfica y sonido creados")
 ```
 
 </td><td valign="top">
@@ -143,14 +186,14 @@ print("imagen y sonido creados")
 var r = Process.run(System.exe, ["version"])
 print(r.output.lines()[0])
 var b = Bytes("HZS1").pushU16(2).pushU32(15)
-print(b.toHex(" "), Hash.crc32(b))
-print((255).toHex(), Regex(r"\d+").findAll("1 22 333").length)
+print(b.toHex(" "), Hash.crc32(b), Hash.sha1("abc").substring(0, 8))
+print((255).toHex(), (2026).toRoman(), Regex(r"\d+").findAll("1 22 333").length)
 ```
 
 </td></tr>
 </table>
 
-Y además: archivos y rutas, fechas, JSON, base de datos de documentos, expresiones regulares, compresión, peticiones HTTPS, servidor web, matrices en C++, ensamblador x86 para sectores de arranque, pruebas integradas, eventos y tareas `async`/`await`. Mira el [mapa de la biblioteca](docs/biblioteca/README.md) y los [ejemplos por áreas](examples).
+Y también: archivos y rutas, fechas en español, JSON, base de datos de documentos, expresiones regulares, peticiones HTTPS, servidor web, matrices en C++ (con inversa, determinante y sistemas de ecuaciones), configuración INI, registro de mensajes, ensamblador x86 para sectores de arranque, pruebas integradas, eventos y tareas `async`/`await`. Mira el [mapa de la biblioteca](docs/biblioteca/README.md) y los [ejemplos por áreas](examples).
 
 ## ✨ El lenguaje
 
@@ -161,7 +204,7 @@ Y además: archivos y rutas, fechas, JSON, base de datos de documentos, expresio
 - **Desestructuración**: `var [a, b] = lista`, `var {nombre, vida} = jugador`.
 - **Errores** con `try`/`catch`/`finally` y tipos de error propios.
 - **Eventos** (`event`, `on`, `emit`) y **tareas asíncronas** (`async`, `await`, `spawn`).
-- **Módulos** con `import` y bibliotecas incluidas.
+- **Módulos** con `import` y 17 bibliotecas incluidas.
 
 Toda la sintaxis está en la [referencia del lenguaje](docs/lenguaje/README.md), con su [gramática](docs/lenguaje/gramatica.md).
 
@@ -170,19 +213,21 @@ Toda la sintaxis está en la [referencia del lenguaje](docs/lenguaje/README.md),
 | Orden | Qué hace |
 |---|---|
 | `hyper` | consola interactiva |
-| `hyper archivo.hz` | ejecuta un programa |
-| `hyper watch [archivo.hz]` | ejecuta y repite al guardar |
+| `hyper archivo.hez` | ejecuta un programa |
+| `hyper watch [archivo]` | ejecuta y repite al guardar |
 | `hyper check` | busca errores sin ejecutar |
 | `hyper test` | ejecuta las pruebas (`test(...)` y salidas esperadas `.out`) |
+| `hyper fmt` | ordena la sangría y los espacios sin cambiar lo que hace el código |
 | `hyper new <nombre> --tipo T` | crea un proyecto |
+| `hyper bytecode archivo` | enseña las instrucciones que genera el compilador |
 | `hyper docs` | genera la referencia de la API |
 | `hyper lsp` | servidor de lenguaje para cualquier editor |
 
-La **extensión de VS Code** trae errores en vivo, autocompletado según el tipo, documentación al pasar el ratón, ir a la definición, renombrar, arreglos rápidos, 40 fragmentos, el tema *HyperEZ Noche* y un tutorial de bienvenida. Ver [VS Code](docs/herramientas/vscode.md).
+La **extensión de VS Code** trae errores en vivo, autocompletado según el tipo, documentación al pasar el ratón, ir a la definición, renombrar, arreglos rápidos, formato, botones de ejecutar encima del código, 48 fragmentos, el tema *HyperEZ Noche* y un tutorial de bienvenida. Ver [VS Code](docs/herramientas/vscode.md).
 
 ## 🏎️ Rendimiento
 
-Bytecode en una máquina virtual optimizada: cachés en línea, instrucciones fusionadas, llamadas directas, asignador de objetos propio y compilación con LTO y PGO. Lo pesado (matrices, imágenes, expresiones regulares, compresión, HTTP) va en C++. Los números están en [rendimiento](docs/interno/rendimiento.md).
+Bytecode en una máquina virtual optimizada: cachés en línea, instrucciones fusionadas (comparar y saltar, guardar y descartar, bucles `for` con una instrucción por vuelta), llamadas directas, asignador de objetos propio y compilación con LTO y PGO. Lo pesado (matrices, imágenes, expresiones regulares, compresión, HTTP) va en C++. Los números de cada versión están en [rendimiento](docs/interno/rendimiento.md).
 
 ## 🧑‍💻 Compilar desde el código
 
@@ -202,13 +247,14 @@ Requisitos y detalles en [CONTRIBUTING.md](CONTRIBUTING.md). Cómo está hecho p
 | Carpeta | Contenido |
 |---|---|
 | [`src/core`](src/core) | utilidades comunes: texto, UTF-8, archivos, consola, procesos |
-| [`src/lang`](src/lang) | el lenguaje: `syntax` (lexer, parser), `sema` (analizador), `compiler` (bytecode), `vm` (máquina virtual), `stdlib` (biblioteca nativa), `prelude` |
-| [`src/lib`](src/lib) | bibliotecas escritas en HyperEZ: `ai`, `stats`, `csv`, `cli`, `web`, `html`, `db`, `audio`, `x86` |
+| [`src/lang`](src/lang) | el lenguaje: `syntax` (lexer, parser, formateador), `sema` (analizador), `compiler` (bytecode y desensamblador), `vm` (máquina virtual), `stdlib` (biblioteca nativa), `prelude` |
+| [`src/lib`](src/lib) | bibliotecas escritas en HyperEZ: `ai`, `stats`, `csv`, `cli`, `web`, `html`, `db`, `audio`, `x86`, `collections`, `algo`, `template`, `markdown`, `ini`, `log`, `svg`, `zip` |
 | [`src/tools`](src/tools) | la orden `hyper`: CLI, consola interactiva, watch, servidor de lenguaje, integración con el sistema |
+| [`src/editor`](src/editor) | HyperEZ Editor (Windows) |
 | [`editors/vscode`](editors/vscode) | extensión de VS Code |
 | [`packaging`](packaging) | instalador de Windows, paquetes de Linux y macOS, iconos |
-| [`examples`](examples) | ejemplos por áreas: juegos, IA, datos, web, gráficos, audio, sistema, sistemas operativos... |
-| [`tests`](tests) | pruebas del lenguaje, las bibliotecas, la consola y los errores |
+| [`examples`](examples) | ejemplos por áreas: juegos, algoritmos, IA, datos, web, gráficos, audio, sistema... |
+| [`tests`](tests) | pruebas del lenguaje, las bibliotecas, la consola, el formato y los errores |
 | [`docs`](docs) | documentación completa |
 | [`tools`](tools) | scripts de mantenimiento |
 

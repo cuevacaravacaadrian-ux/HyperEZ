@@ -1,0 +1,400 @@
+// collections — estructuras de datos: pila, cola, cola doble, cola de prioridad, contador,
+// caché LRU y grafos (recorridos, camino más corto, orden topológico).
+//
+//   import collections
+//   var tareas = collections.PriorityQueue()
+//   tareas.push("normal", 5)
+//   tareas.push("urgente", 1)
+//   print(tareas.pop())                        // urgente (la prioridad más baja sale antes)
+//
+//   var mapa = collections.Graph()
+//   mapa.addEdge("Madrid", "Toledo", 70)
+//   mapa.addEdge("Toledo", "Ciudad Real", 120)
+//   print(mapa.shortestPath("Madrid", "Ciudad Real"))   // {path: [Madrid, Toledo, Ciudad Real], distance: 190}
+
+/// Pila: el último que entra es el primero que sale (deshacer, recorridos en profundidad...).
+class Stack {
+    var items: list = []
+
+    /// Pone un valor encima.
+    function push(valor: any) { items.add(valor) }
+
+    /// Quita y devuelve el valor de encima (error si está vacía).
+    function pop(): any {
+        if items.isEmpty() { throw Error("Stack.pop: la pila está vacía") }
+        return items.pop()
+    }
+
+    /// El valor de encima sin quitarlo (null si está vacía).
+    function peek(): any { return items.isEmpty() ? null : items.last() }
+
+    function isEmpty(): bool { return items.isEmpty() }
+    get length(): number { return items.length }
+    function toList(): list { return items.copy() }
+    function toString(): text { return "Stack(${items.length})" }
+}
+
+/// Cola: el primero que entra es el primero que sale (turnos, recorridos en anchura...).
+/// Sacar es rápido aunque la cola sea muy larga.
+class Queue {
+    var items: list = []
+    var head: number = 0
+
+    /// Añade al final.
+    function push(valor: any) { items.add(valor) }
+
+    /// Quita y devuelve el primero (error si está vacía).
+    function pop(): any {
+        if head >= items.length { throw Error("Queue.pop: la cola está vacía") }
+        var v = items[head]
+        items[head] = null
+        head += 1
+        // de vez en cuando se recoloca para no gastar memoria
+        if head > 64 and head * 2 > items.length {
+            items = items.skip(head)
+            head = 0
+        }
+        return v
+    }
+
+    /// El primero sin quitarlo (null si está vacía).
+    function peek(): any { return head < items.length ? items[head] : null }
+
+    function isEmpty(): bool { return head >= items.length }
+    get length(): number { return items.length - head }
+    function toList(): list { return items.skip(head) }
+    function toString(): text { return "Queue(${items.length - head})" }
+}
+
+/// Cola doble: se puede añadir y quitar por los dos extremos.
+class Deque {
+    var items: list = []
+
+    function pushFront(valor: any) { items.insert(0, valor) }
+    function pushBack(valor: any) { items.add(valor) }
+
+    function popFront(): any {
+        if items.isEmpty() { throw Error("Deque.popFront: está vacía") }
+        return items.shift()
+    }
+
+    function popBack(): any {
+        if items.isEmpty() { throw Error("Deque.popBack: está vacía") }
+        return items.pop()
+    }
+
+    function front(): any { return items.isEmpty() ? null : items.first() }
+    function back(): any { return items.isEmpty() ? null : items.last() }
+    function isEmpty(): bool { return items.isEmpty() }
+    get length(): number { return items.length }
+    function toList(): list { return items.copy() }
+}
+
+/// Cola de prioridad (montículo binario): pop() devuelve siempre el de menor prioridad.
+/// Para sacar primero el mayor usa PriorityQueue(true).
+class PriorityQueue {
+    var heap: list = []      // pares [prioridad, orden, valor]
+    var counter: number = 0  // a igual prioridad, sale antes el que entró antes
+    var maxFirst: bool = false
+
+    constructor(mayorPrimero: bool = false) { maxFirst = mayorPrimero }
+
+    private function before(a: list, b: list): bool {
+        if a[0] != b[0] { return maxFirst ? a[0] > b[0] : a[0] < b[0] }
+        return a[1] < b[1]
+    }
+
+    /// Añade un valor con su prioridad (un número).
+    function push(valor: any, prioridad: number) {
+        heap.add([prioridad, counter, valor])
+        counter += 1
+        var i = heap.length - 1
+        while i > 0 {
+            var padre = floor((i - 1) / 2)
+            if not before(heap[i], heap[padre]) { break }
+            heap.swap(i, padre)
+            i = padre
+        }
+    }
+
+    /// Quita y devuelve el valor con mejor prioridad (error si está vacía).
+    function pop(): any {
+        if heap.isEmpty() { throw Error("PriorityQueue.pop: la cola está vacía") }
+        var top = heap[0]
+        var ultimo = heap.pop()
+        if not heap.isEmpty() {
+            heap[0] = ultimo
+            var i = 0
+            var n = heap.length
+            while true {
+                var izq = 2 * i + 1
+                var der = izq + 1
+                var mejor = i
+                if izq < n and before(heap[izq], heap[mejor]) { mejor = izq }
+                if der < n and before(heap[der], heap[mejor]) { mejor = der }
+                if mejor == i { break }
+                heap.swap(i, mejor)
+                i = mejor
+            }
+        }
+        return top[2]
+    }
+
+    /// El valor con mejor prioridad sin quitarlo (null si está vacía).
+    function peek(): any { return heap.isEmpty() ? null : heap[0][2] }
+
+    /// Prioridad del primero (null si está vacía).
+    function peekPriority(): any { return heap.isEmpty() ? null : heap[0][0] }
+
+    function isEmpty(): bool { return heap.isEmpty() }
+    get length(): number { return heap.length }
+}
+
+/// Contador: cuántas veces aparece cada cosa.
+class Counter {
+    var counts: map = {}
+
+    constructor(valores: list = []) { foreach v in valores { add(v) } }
+
+    /// Suma n (1 por defecto) a la cuenta de un valor.
+    function add(valor: any, n: number = 1) { counts[valor] = counts.get(valor, 0) + n }
+
+    /// Cuenta de un valor (0 si no ha aparecido).
+    function get(valor: any): number { return counts.get(valor, 0) }
+
+    /// Los n más frecuentes como pares [valor, cuenta].
+    function mostCommon(n: number = 10): list {
+        return counts.entries().sortBy(e => -e[1]).take(n)
+    }
+
+    /// Suma de todas las cuentas.
+    function total(): number { return counts.values().sum() }
+
+    get length(): number { return counts.keys().length }
+    function toMap(): map { return counts.copy() }
+}
+
+/// Caché que recuerda los últimos 'capacidad' valores usados y olvida los más antiguos.
+class LRUCache {
+    var capacity: number
+    var data: map = {}
+
+    constructor(capacidad: number = 100) { capacity = max(1, capacidad) }
+
+    function has(clave: any): bool { return data.has(clave) }
+
+    /// Valor guardado (o porDefecto); cuenta como uso reciente.
+    function get(clave: any, porDefecto: any = null): any {
+        if not data.has(clave) { return porDefecto }
+        var v = data[clave]
+        data.remove(clave)
+        data[clave] = v
+        return v
+    }
+
+    /// Guarda un valor; si no cabe, olvida el que lleva más tiempo sin usarse.
+    function set(clave: any, valor: any) {
+        if data.has(clave) { data.remove(clave) }
+        data[clave] = valor
+        if data.keys().length > capacity { data.remove(data.keys()[0]) }
+    }
+
+    /// Devuelve el valor guardado o lo calcula con f(clave) y lo guarda.
+    function getOrCompute(clave: any, f: function): any {
+        if data.has(clave) { return get(clave) }
+        var v = f(clave)
+        set(clave, v)
+        return v
+    }
+
+    get length(): number { return data.keys().length }
+    function keys(): list { return data.keys() }
+}
+
+/// Grafo con nodos (cualquier valor) y aristas con peso. Dirigido o no dirigido.
+class Graph {
+    var adj: map = {}         // nodo -> {vecino: peso}
+    var directed: bool = false
+
+    constructor(dirigido: bool = false) { directed = dirigido }
+
+    /// Añade un nodo suelto (los nodos de las aristas se añaden solos).
+    function addNode(nodo: any) {
+        if not adj.has(nodo) { adj[nodo] = {} }
+    }
+
+    /// Añade una arista entre a y b (en los dos sentidos si el grafo no es dirigido).
+    function addEdge(a: any, b: any, peso: number = 1) {
+        addNode(a)
+        addNode(b)
+        adj[a][b] = peso
+        if not directed { adj[b][a] = peso }
+    }
+
+    function removeEdge(a: any, b: any) {
+        if adj.has(a) { adj[a].remove(b) }
+        if not directed and adj.has(b) { adj[b].remove(a) }
+    }
+
+    function hasNode(nodo: any): bool { return adj.has(nodo) }
+    function hasEdge(a: any, b: any): bool { return adj.has(a) and adj[a].has(b) }
+    function nodes(): list { return adj.keys() }
+    function neighbors(nodo: any): list { return adj.has(nodo) ? adj[nodo].keys() : [] }
+    function weight(a: any, b: any): any { return hasEdge(a, b) ? adj[a][b] : null }
+
+    /// Todas las aristas como [a, b, peso].
+    function edges(): list {
+        var out = []
+        foreach a, vecinos in adj {
+            foreach b, p in vecinos {
+                if directed or str(a) <= str(b) { out.add([a, b, p]) }
+            }
+        }
+        return out
+    }
+
+    /// Recorrido en anchura desde un nodo: lista de nodos por orden de distancia.
+    function bfs(inicio: any): list {
+        if not adj.has(inicio) { return [] }
+        var vistos = set(inicio)
+        var orden = []
+        var cola = Queue()
+        cola.push(inicio)
+        while not cola.isEmpty() {
+            var n = cola.pop()
+            orden.add(n)
+            foreach v in adj[n].keys() {
+                if not vistos.has(v) {
+                    vistos.add(v)
+                    cola.push(v)
+                }
+            }
+        }
+        return orden
+    }
+
+    /// Recorrido en profundidad desde un nodo.
+    function dfs(inicio: any): list {
+        if not adj.has(inicio) { return [] }
+        var vistos = set()
+        var orden = []
+        var pila = [inicio]
+        while not pila.isEmpty() {
+            var n = pila.pop()
+            if vistos.has(n) { continue }
+            vistos.add(n)
+            orden.add(n)
+            var vecinos = adj[n].keys()
+            for i in range(vecinos.length - 1, -1, -1) {
+                if not vistos.has(vecinos[i]) { pila.add(vecinos[i]) }
+            }
+        }
+        return orden
+    }
+
+    /// Camino más corto (algoritmo de Dijkstra; los pesos no pueden ser negativos).
+    /// Devuelve {path: [nodos], distance: número} o null si no hay camino.
+    function shortestPath(desde: any, hasta: any): map? {
+        if not adj.has(desde) or not adj.has(hasta) { return null }
+        var dist = {}
+        var previo = {}
+        dist[desde] = 0
+        var cola = PriorityQueue()
+        cola.push(desde, 0)
+        var hechos = set()
+        while not cola.isEmpty() {
+            var n = cola.pop()
+            if hechos.has(n) { continue }
+            hechos.add(n)
+            if n == hasta { break }
+            foreach v, p in adj[n] {
+                if p < 0 { throw Error("Graph.shortestPath: hay un peso negativo entre ${n} y ${v}") }
+                var nd = dist[n] + p
+                if not dist.has(v) or nd < dist[v] {
+                    dist[v] = nd
+                    previo[v] = n
+                    cola.push(v, nd)
+                }
+            }
+        }
+        if not dist.has(hasta) { return null }
+        var camino = [hasta]
+        var actual = hasta
+        while actual != desde {
+            actual = previo[actual]
+            camino.insert(0, actual)
+        }
+        return { path: camino, distance: dist[hasta] }
+    }
+
+    /// Distancia más corta desde un nodo a todos los demás alcanzables: {nodo: distancia}.
+    function distancesFrom(desde: any): map {
+        var dist = {}
+        if not adj.has(desde) { return dist }
+        dist[desde] = 0
+        var cola = PriorityQueue()
+        cola.push(desde, 0)
+        while not cola.isEmpty() {
+            var n = cola.pop()
+            foreach v, p in adj[n] {
+                var nd = dist[n] + p
+                if not dist.has(v) or nd < dist[v] {
+                    dist[v] = nd
+                    cola.push(v, nd)
+                }
+            }
+        }
+        return dist
+    }
+
+    /// Grupos de nodos conectados entre sí (en grafos no dirigidos).
+    function components(): list {
+        var vistos = set()
+        var grupos = []
+        foreach n in adj.keys() {
+            if vistos.has(n) { continue }
+            var grupo = bfs(n)
+            foreach x in grupo { vistos.add(x) }
+            grupos.add(grupo)
+        }
+        return grupos
+    }
+
+    /// Orden en el que cada nodo va después de los que apuntan a él (tareas con dependencias).
+    /// Solo grafos dirigidos sin ciclos; lanza un error si hay un ciclo.
+    function topologicalSort(): list {
+        var entrantes = {}
+        foreach n in adj.keys() { entrantes[n] = 0 }
+        foreach a, vecinos in adj {
+            foreach b in vecinos.keys() { entrantes[b] = entrantes[b] + 1 }
+        }
+        var cola = Queue()
+        foreach n, k in entrantes {
+            if k == 0 { cola.push(n) }
+        }
+        var orden = []
+        while not cola.isEmpty() {
+            var n = cola.pop()
+            orden.add(n)
+            foreach b in adj[n].keys() {
+                entrantes[b] = entrantes[b] - 1
+                if entrantes[b] == 0 { cola.push(b) }
+            }
+        }
+        if orden.length != adj.keys().length { throw Error("Graph.topologicalSort: el grafo tiene un ciclo") }
+        return orden
+    }
+
+    /// ¿Hay algún ciclo? (en grafos dirigidos)
+    function hasCycle(): bool {
+        try {
+            topologicalSort()
+            return false
+        } catch e {
+            return true
+        }
+    }
+
+    get length(): number { return adj.keys().length }
+    function toString(): text { return "Graph(${adj.keys().length} nodos)" }
+}

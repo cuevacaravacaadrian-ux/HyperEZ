@@ -84,3 +84,15 @@ print(minimo, maximo)
 ```
 
 Si a la lista le faltan elementos, es un error en ejecución (índice fuera de rango).
+
+## Repetir una lista
+
+```hz
+print([0] * 5)                 // [0, 0, 0, 0, 0]
+print([1, 2] * 3)              // [1, 2, 1, 2, 1, 2]
+var tablero = range(3).toList().map(i => ["."] * 3)   // cada fila es una lista distinta
+tablero[0][0] = "X"
+print(tablero)
+```
+
+Como `"ab" * 3` con los textos. Ojo: `[[0] * 3] * 3` repetiría *la misma* fila tres veces; para una cuadrícula crea cada fila por separado, como arriba.

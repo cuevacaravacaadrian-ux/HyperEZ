@@ -1,0 +1,140 @@
+// zip — crear y leer archivos .zip (compatibles con Windows, macOS, Linux y cualquier programa de zip).
+//
+//   import zip
+//   zip.create("copia.zip", { "notas.txt": "hola", "datos/puntos.json": JSON.stringify([1, 2, 3]) })
+//   zip.createFromFolder("proyecto.zip", "mi-juego")        // toda una carpeta
+//   foreach nombre in zip.list("copia.zip") { print(nombre) }
+//   print(zip.read("copia.zip")["notas.txt"].toText())
+//   zip.extract("copia.zip", "carpeta-destino")
+
+function toBytes(contenido: any): Bytes {
+    if typeof(contenido) == "Bytes" { return contenido }
+    return Bytes(0).concat(str(contenido))
+}
+
+// Fecha y hora en el formato de MS-DOS que usa zip
+function dosTime(t: number): list {
+    var d = Time.date(t)
+    var hora = d.hour * 2048 + d.minute * 32 + floor(d.second / 2)
+    var dia = (max(1980, d.year) - 1980) * 512 + d.month * 32 + d.day
+    return [hora, dia]
+}
+
+/// Crea un .zip con los archivos {ruta dentro del zip: texto o Bytes}. Comprime con deflate.
+function create(ruta: text, archivos: map, nivel: number = 8) {
+    var out = Bytes(0)
+    var central = Bytes(0)
+    var cuantos = 0
+    var [hora, dia] = dosTime(Time.now())
+    foreach nombre, contenido in archivos {
+        var datos = toBytes(contenido)
+        var comprimido = datos.compress(nivel, true)
+        var metodo = 8
+        if comprimido.length >= datos.length {
+            comprimido = datos   // no merece la pena: se guarda tal cual
+            metodo = 0
+        }
+        var crc = Hash.crc32(datos)
+        var nombreB = toBytes(str(nombre).replace("\\", "/"))
+        var offset = out.length
+        // cabecera local
+        out.pushU32(0x04034b50).pushU16(20).pushU16(0x0800).pushU16(metodo).pushU16(hora).pushU16(dia)
+        out.pushU32(crc).pushU32(comprimido.length).pushU32(datos.length).pushU16(nombreB.length).pushU16(0)
+        out = out.concat(nombreB).concat(comprimido)
+        // entrada del directorio central
+        central.pushU32(0x02014b50).pushU16(20).pushU16(20).pushU16(0x0800).pushU16(metodo).pushU16(hora).pushU16(dia)
+        central.pushU32(crc).pushU32(comprimido.length).pushU32(datos.length).pushU16(nombreB.length)
+        central.pushU16(0).pushU16(0).pushU16(0).pushU16(0).pushU32(0).pushU32(offset)
+        central = central.concat(nombreB)
+        cuantos += 1
+    }
+    var inicioCentral = out.length
+    out = out.concat(central)
+    out.pushU32(0x06054b50).pushU16(0).pushU16(0).pushU16(cuantos).pushU16(cuantos)
+    out.pushU32(central.length).pushU32(inicioCentral).pushU16(0)
+    File.writeBytes(ruta, out)
+}
+
+/// Crea un .zip con todos los archivos de una carpeta (con sus subcarpetas).
+function createFromFolder(ruta: text, carpeta: text, nivel: number = 8) {
+    var archivos = {}
+    foreach rel in File.listAll(carpeta) { // rutas relativas a la carpeta
+        var abs = Path.join(carpeta, rel)
+        if File.isDir(abs) { continue }
+        archivos[rel.replace("\\", "/")] = File.readBytes(abs)
+    }
+    create(ruta, archivos, nivel)
+}
+
+// Entradas del directorio central: [{name, method, crc, compressedSize, size, offset}]
+function entries(datos: Bytes): list {
+    // el final del directorio central está en los últimos 22 bytes (o antes si hay comentario)
+    var fin = -1
+    var i = datos.length - 22
+    while i >= max(0, datos.length - 65557) {
+        if datos.readU32(i) == 0x06054b50 {
+            fin = i
+            break
+        }
+        i -= 1
+    }
+    if fin < 0 { throw Error("zip: no es un archivo zip válido") }
+    var n = datos.readU16(fin + 10)
+    var p = datos.readU32(fin + 16)
+    var out = []
+    for k in 0..n {
+        if datos.readU32(p) != 0x02014b50 { throw Error("zip: el directorio del zip está dañado") }
+        var largoNombre = datos.readU16(p + 28)
+        var largoExtra = datos.readU16(p + 30)
+        var largoComentario = datos.readU16(p + 32)
+        out.add({
+            name: datos.slice(p + 46, p + 46 + largoNombre).toText(),
+            method: datos.readU16(p + 10),
+            crc: datos.readU32(p + 16),
+            compressedSize: datos.readU32(p + 20),
+            size: datos.readU32(p + 24),
+            offset: datos.readU32(p + 42)
+        })
+        p += 46 + largoNombre + largoExtra + largoComentario
+    }
+    return out
+}
+
+/// Nombres de los archivos que contiene un .zip.
+function list(ruta: text): list { return entries(File.readBytes(ruta)).map(e => e.name).filter(n => not n.endsWith("/")) }
+
+function contentOf(datos: Bytes, e: map): Bytes {
+    var p = e.offset
+    if datos.readU32(p) != 0x04034b50 { throw Error("zip: la entrada '${e.name}' está dañada") }
+    var inicio = p + 30 + datos.readU16(p + 26) + datos.readU16(p + 28)
+    var bruto = datos.slice(inicio, inicio + e.compressedSize)
+    var contenido: Bytes
+    if e.method == 0 { contenido = bruto }
+    else if e.method == 8 { contenido = bruto.decompress(true) }
+    else { throw Error("zip: '${e.name}' usa un método de compresión no soportado (${e.method})") }
+    if Hash.crc32(contenido) != e.crc { throw Error("zip: '${e.name}' está dañado (no coincide su CRC)") }
+    return contenido
+}
+
+/// Lee todos los archivos de un .zip: {nombre: Bytes}. Usa .toText() para los de texto.
+function read(ruta: text): map {
+    var datos = File.readBytes(ruta)
+    var out = {}
+    foreach e in entries(datos) {
+        if not e.name.endsWith("/") { out[e.name] = contentOf(datos, e) }
+    }
+    return out
+}
+
+/// Extrae un .zip en una carpeta (la crea si no existe). Devuelve los archivos extraídos.
+function extract(ruta: text, carpeta: text): list {
+    var hechos = []
+    foreach nombre, contenido in read(ruta) {
+        if nombre.contains("..") { throw Error("zip: ruta peligrosa dentro del zip: ${nombre}") }
+        var destino = Path.join(carpeta, nombre)
+        File.makeDir(Path.dir(destino))
+        File.writeBytes(destino, contenido)
+        hechos.add(destino)
+    }
+    return hechos
+}

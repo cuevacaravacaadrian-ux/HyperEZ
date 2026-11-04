@@ -1,4 +1,4 @@
-# Referencia de la API de HyperEZ 0.6.0
+# Referencia de la API de HyperEZ 0.7.0
 
 > Generada automáticamente con `hyper docs` a partir del catálogo de la máquina virtual.
 
@@ -48,6 +48,10 @@ Arcotangente (radianes).
 
 Ángulo (radianes) del vector (x, y).
 
+#### `cbrt(x: number): number`
+
+Raíz cúbica.
+
 #### `ceil(x: number): number`
 
 Redondea hacia arriba.
@@ -55,6 +59,10 @@ Redondea hacia arriba.
 #### `chance(probabilidad: number): bool`
 
 true con la probabilidad indicada (0 a 1). chance(0.25) es true 1 de cada 4 veces.
+
+#### `chr(codigo: number): text`
+
+Carácter con ese código Unicode: chr(65) es "A", chr(241) es "ñ".
 
 #### `clamp(x: number, minimo: number, maximo: number): number`
 
@@ -64,6 +72,10 @@ Limita x al intervalo [minimo, maximo].
 
 Coseno.
 
+#### `cosh(x: number): number`
+
+Coseno hiperbólico.
+
 #### `degrees(radianes: number): number`
 
 Convierte radianes a grados.
@@ -71,6 +83,10 @@ Convierte radianes a grados.
 #### `distance(x1: number, y1: number, x2: number, y2: number): number`
 
 Distancia entre dos puntos.
+
+#### `divisors(n: number): list<number>`
+
+Divisores de un número, ordenados: divisors(12) es [1, 2, 3, 4, 6, 12].
 
 #### `exit(codigo?: number): void`
 
@@ -80,9 +96,21 @@ Termina el programa inmediatamente.
 
 e elevado a x.
 
+#### `factorial(n: number): number`
+
+n! = 1 × 2 × ... × n: factorial(5) es 120.
+
 #### `floor(x: number): number`
 
 Redondea hacia abajo.
+
+#### `fract(x: number): number`
+
+Parte decimal: fract(3.25) es 0.25.
+
+#### `gcd(a: number, b: number): number`
+
+Máximo común divisor: gcd(12, 18) es 6.
 
 #### `hypot(x: number, y: number): number`
 
@@ -99,6 +127,14 @@ var nombre = input("¿Cómo te llamas? ")
 #### `isNaN(x: any): bool`
 
 true si x no es un número válido (NaN).
+
+#### `isPrime(n: number): bool`
+
+¿Es un número primo? isPrime(7) es true.
+
+#### `lcm(a: number, b: number): number`
+
+Mínimo común múltiplo: lcm(4, 6) es 12.
 
 #### `len(valor: any): number`
 
@@ -132,6 +168,14 @@ Tarea que se completa en el siguiente fotograma.
 await nextFrame()
 ```
 
+#### `noise(x: number, y?: number, z?: number): number`
+
+Ruido de Perlin entre -1 y 1 que cambia suavemente: terrenos, nubes, movimientos naturales.
+
+```hz
+var altura = noise(x * 0.1, y * 0.1)
+```
+
 #### `now(): number`
 
 Hora actual del sistema en segundos desde 1970 (con milisegundos).
@@ -140,6 +184,10 @@ Hora actual del sistema en segundos desde 1970 (con milisegundos).
 
 Cancela una suscripción de 'on', o todas las de un evento.
 
+#### `ord(caracter: text): number`
+
+Código Unicode del primer carácter: ord("A") es 65.
+
 #### `parseInt(texto: text, base: number = 10): number?`
 
 Número entero escrito en una base: parseInt("ff", 16) es 255; admite 0x, 0b y 0o. null si no es válido.
@@ -147,6 +195,10 @@ Número entero escrito en una base: parseInt("ff", 16) es 255; admite 0x, 0b y 0
 #### `pow(base: number, exponente: number): number`
 
 Potencia.
+
+#### `primes(hasta: number): list<number>`
+
+Todos los primos hasta un número (criba de Eratóstenes): primes(20).
 
 #### `print(...valores: any): void`
 
@@ -171,6 +223,10 @@ Número aleatorio: random() en [0,1), random(max) o random(min, max).
 #### `randomChoice(lista: list): any`
 
 Elemento aleatorio de una lista.
+
+#### `randomGaussian(media: number = 0, desviacion: number = 1): number`
+
+Número aleatorio con distribución normal (campana de Gauss). Usa la semilla de randomSeed.
 
 #### `randomInt(min: number, max: number): int`
 
@@ -208,6 +264,10 @@ var vistos = set(1, 2, 3)
 
 Seno.
 
+#### `sinh(x: number): number`
+
+Seno hiperbólico.
+
 #### `smoothstep(desde: number, hasta: number, x: number): number`
 
 Transición suave de 0 a 1 entre desde y hasta.
@@ -228,6 +288,10 @@ Convierte cualquier valor en texto.
 
 Tangente.
 
+#### `tanh(x: number): number`
+
+Tangente hiperbólica.
+
 #### `test(nombre: text, cuerpo: function): bool`
 
 Ejecuta una prueba con nombre. Muestra ✓ o ✗ sin detener el programa; 'hyper test' falla si alguna prueba falla.
@@ -247,6 +311,10 @@ Quita los decimales de un número.
 #### `toNumber(valor: any, porDefecto?: any): number?`
 
 Convierte texto o bool en número. Devuelve porDefecto (o null) si no es posible.
+
+#### `trunc(x: number): number`
+
+Quita los decimales (hacia el cero): trunc(-2.7) es -2.
 
 #### `typeof(valor: any): text`
 
@@ -295,9 +363,9 @@ Constructor: `Bytes(contenido: number|text|list = 0, relleno: number = 0)`
 |---|---|---|
 | `.length` | `number` | Número de bytes. *(solo lectura)* |
 
-#### `.compress(nivel: number = 8): Bytes`
+#### `.compress(nivel: number = 8, raw: bool = false): Bytes`
 
-Comprime con zlib (deflate); nivel de 1 (rápido) a 9 (pequeño).
+Comprime con zlib (deflate); nivel de 1 (rápido) a 9 (pequeño). raw = true: deflate puro, como en los .zip.
 
 #### `.concat(otro: Bytes|text): Bytes`
 
@@ -307,9 +375,9 @@ Nuevos Bytes con los dos bloques seguidos.
 
 Copia independiente.
 
-#### `.decompress(): Bytes`
+#### `.decompress(raw: bool = false): Bytes`
 
-Descomprime datos zlib.
+Descomprime datos zlib (o deflate puro con raw = true).
 
 #### `.equals(otro: Bytes): bool`
 
@@ -603,9 +671,21 @@ Constructor: `Image(ancho: number, alto: number, fondo?: Color)`
 | `.height` | `number` | Alto en píxeles. *(solo lectura)* |
 | `.width` | `number` | Ancho en píxeles. *(solo lectura)* |
 
+#### `.blur(radio: number = 2): Image`
+
+Desenfoca la imagen (en el sitio).
+
+#### `.brightness(factor: number): Image`
+
+Más clara (factor > 1) o más oscura (< 1).
+
 #### `.circle(x: number, y: number, radio: number, color?: Color, relleno: bool = true): Image`
 
 Círculo relleno o solo la circunferencia.
+
+#### `.contrast(factor: number): Image`
+
+Más contraste (factor > 1) o menos (< 1).
 
 #### `.copy(): Image`
 
@@ -614,6 +694,10 @@ Copia independiente.
 #### `.crop(x: number, y: number, ancho: number, alto: number): Image`
 
 Recorte (imagen nueva).
+
+#### `.ellipse(x: number, y: number, radioX: number, radioY: number, color?: Color, relleno: bool = true): Image`
+
+Elipse rellena o solo el borde.
 
 #### `.fill(color: Color): Image`
 
@@ -627,6 +711,10 @@ Voltea horizontalmente.
 
 Voltea verticalmente.
 
+#### `.floodFill(x: number, y: number, color: Color, tolerancia: number = 0): number`
+
+Bote de pintura: rellena la zona del mismo color que (x, y) y devuelve cuántos píxeles pintó.
+
 #### `Image.fromBytes(ancho: number, alto: number, pixeles: Bytes): Image`
 
 Imagen a partir de píxeles RGBA.
@@ -634,6 +722,10 @@ Imagen a partir de píxeles RGBA.
 #### `.get(x: number, y: number): Color`
 
 Color de un píxel.
+
+#### `.gradient(desde: Color, hasta: Color, vertical: bool = true): Image`
+
+Degradado de un color a otro en toda la imagen.
 
 #### `.grayscale(): Image`
 
@@ -659,6 +751,10 @@ Dibuja otra imagen encima (con su transparencia).
 
 Los píxeles como Bytes (R, G, B, A por píxel, fila a fila).
 
+#### `.polygon(puntos: list, color?: Color, relleno: bool = true): Image`
+
+Polígono con los puntos [[x, y], ...] (o Vec2): triángulos, estrellas, flechas...
+
 #### `.rect(x: number, y: number, ancho: number, alto: number, color?: Color, relleno: bool = true): Image`
 
 Rectángulo relleno o solo el borde.
@@ -667,9 +763,17 @@ Rectángulo relleno o solo el borde.
 
 Imagen nueva con otro tamaño.
 
+#### `.rotate(grados: number = 90): Image`
+
+Imagen nueva girada 90, 180 o 270 grados (sentido del reloj).
+
 #### `.save(ruta: text, calidad: number = 90): void`
 
 Guarda según la extensión: .png, .jpg, .bmp o .tga.
+
+#### `.sepia(): Image`
+
+Tono sepia de foto antigua.
 
 #### `.set(x: number, y: number, color: Color): void`
 
@@ -682,6 +786,10 @@ Escribe texto (fuente DejaVu Sans incluida, o un archivo .ttf) y devuelve su anc
 #### `Image.textWidth(texto: any, tamano: number = 16, fuente?: text): number`
 
 Ancho que ocupará un texto.
+
+#### `.threshold(umbral: number = 128): Image`
+
+Blanco y negro puro según el brillo de cada píxel.
 
 #### `.toString(): text`
 
@@ -719,9 +827,21 @@ Limita cada valor al intervalo.
 
 Una columna como lista.
 
+#### `Matrix.concat(a: Matrix|list, b: Matrix|list, eje: number = 0): Matrix`
+
+Une dos matrices: eje 0 una debajo de otra, eje 1 una al lado de otra.
+
 #### `.copy(): Matrix`
 
 Copia independiente.
+
+#### `.det(): number`
+
+Determinante (matriz cuadrada).
+
+#### `.diag(): list<number>`
+
+Valores de la diagonal.
 
 #### `.div(otra: Matrix|number): Matrix`
 
@@ -755,6 +875,10 @@ Valor en (fila, columna).
 
 Matriz identidad n×n.
 
+#### `.inverse(): Matrix`
+
+Matriz inversa (error si el determinante es 0).
+
 #### `.log(): Matrix`
 
 Logaritmo natural en cada valor.
@@ -778,6 +902,10 @@ Valor mínimo.
 #### `.mul(otra: Matrix|number): Matrix`
 
 Multiplica elemento a elemento (también con *). Para el producto de matrices usa dot().
+
+#### `.norm(): number`
+
+Norma (raíz de la suma de los cuadrados).
 
 #### `Matrix.ones(filas: number, columnas: number = 1): Matrix`
 
@@ -815,13 +943,25 @@ Cambia el valor en (fila, columna).
 
 Función sigmoide 1 / (1 + e^-x) en cada valor.
 
+#### `.slice(fila0: number, fila1?: number, col0: number = 0, col1?: number): Matrix`
+
+Submatriz con las filas fila0..fila1 y las columnas col0..col1 (sin incluir el final).
+
 #### `.softmax(): Matrix`
 
 Softmax por filas: cada fila pasa a ser una distribución de probabilidad.
 
+#### `.solve(b: Matrix|list): Matrix`
+
+Resuelve el sistema A·x = b: Matrix([[2, 1], [1, 3]]).solve([3, 5]) da la columna x.
+
 #### `.sqrt(): Matrix`
 
 Raíz cuadrada en cada valor.
+
+#### `.std(): number`
+
+Desviación típica de todos los valores.
 
 #### `.sub(otra: Matrix|number): Matrix`
 
@@ -842,6 +982,10 @@ Lista de filas [[...], [...]].
 #### `.toString(): text`
 
 Descripción con los primeros valores.
+
+#### `.trace(): number`
+
+Suma de la diagonal.
 
 #### `.transpose(): Matrix`
 
@@ -1134,6 +1278,10 @@ Añade elementos al final.
 
 Media de los números de la lista.
 
+#### `.binarySearch(valor: any): number`
+
+Búsqueda binaria en una lista ordenada: posición o -1. Muy rápida en listas grandes.
+
 #### `.chunk(tamano: number): list`
 
 Divide en grupos de 'tamano' elementos.
@@ -1141,6 +1289,10 @@ Divide en grupos de 'tamano' elementos.
 #### `.clear(): list`
 
 Vacía la lista.
+
+#### `.compact(): list`
+
+Sin los valores null.
 
 #### `.contains(valor: any): bool`
 
@@ -1153,6 +1305,18 @@ Copia superficial.
 #### `.count(f?: function): number`
 
 Cuántos cumplen f (o el total).
+
+#### `.countBy(f?: function): map`
+
+Cuántas veces aparece cada valor (o cada f(elemento)): ["a", "b", "a"].countBy() es {a: 2, b: 1}.
+
+#### `.difference(otra: list): list`
+
+Elementos que no están en la otra lista (sin repetir).
+
+#### `.enumerate(): list`
+
+Pares [posición, elemento].
 
 #### `.fill(valor: any): list`
 
@@ -1198,6 +1362,14 @@ Posición del valor (o -1).
 
 Inserta en una posición.
 
+#### `.insertSorted(valor: any): number`
+
+Inserta manteniendo la lista ordenada y devuelve la posición.
+
+#### `.intersect(otra: list): list`
+
+Elementos que están en las dos listas (sin repetir).
+
 #### `.isEmpty(): bool`
 
 ¿Está vacía?
@@ -1209,6 +1381,10 @@ Une los elementos en un texto.
 #### `.last(): T`
 
 Último elemento (o null).
+
+#### `.lastIndexOf(valor: any): number`
+
+Posición de la última aparición (o -1).
 
 #### `.map(f: function): list`
 
@@ -1222,6 +1398,10 @@ Mayor elemento.
 
 Elemento con el mayor valor de f(elemento).
 
+#### `.median(): number`
+
+Mediana: el valor del medio una vez ordenados.
+
 #### `.min(): T`
 
 Menor elemento.
@@ -1230,6 +1410,10 @@ Menor elemento.
 
 Elemento con el menor valor de f(elemento).
 
+#### `.none(f: function): bool`
+
+¿Ningún elemento cumple f?
+
 #### `.partition(f: function): list`
 
 [los que cumplen f, los que no].
@@ -1237,6 +1421,10 @@ Elemento con el menor valor de f(elemento).
 #### `.pop(): T`
 
 Quita y devuelve el último elemento (o null).
+
+#### `.product(): number`
+
+Producto de todos los números.
 
 #### `.push(...elementos: any): list`
 
@@ -1266,6 +1454,18 @@ Invierte el orden (en el sitio).
 
 Copia invertida.
 
+#### `.rotate(n: number = 1): list`
+
+Lista nueva girada n posiciones a la izquierda (negativo: a la derecha).
+
+#### `.sample(n: number): list`
+
+n elementos al azar distintos (usa la semilla de randomSeed).
+
+#### `.scan(f: function, inicial?: any): list`
+
+Como reduce, pero devuelve todos los pasos: [1, 2, 3].scan((a, b) => a + b) es [1, 3, 6].
+
 #### `.shift(): T`
 
 Quita y devuelve el primer elemento (o null).
@@ -1277,6 +1477,10 @@ Mezcla al azar (en el sitio).
 #### `.skip(n: number): list`
 
 Todos menos los n primeros.
+
+#### `.skipWhile(f: function): list`
+
+Salta los del principio mientras f sea verdadera.
 
 #### `.slice(inicio?: number, fin?: number): list`
 
@@ -1294,6 +1498,10 @@ Ordena en el sitio por clave(x).
 
 Suma de los elementos numéricos.
 
+#### `.sumBy(f: function): number`
+
+Suma de f(elemento): jugadores.sumBy(j => j.puntos).
+
 #### `.swap(i: number, j: number): list`
 
 Intercambia dos elementos (en el sitio).
@@ -1302,9 +1510,33 @@ Intercambia dos elementos (en el sitio).
 
 Los n primeros elementos.
 
+#### `.takeWhile(f: function): list`
+
+Elementos del principio mientras f sea verdadera.
+
+#### `.toMap(clave: function, valor?: function): map`
+
+Mapa con clave(elemento) → elemento (o valor(elemento)).
+
+#### `.toSet(): set`
+
+Conjunto con los elementos (sin repetidos).
+
+#### `.union(otra: list): list`
+
+Elementos de ambas listas sin repetir.
+
 #### `.unique(): list`
 
 Copia sin elementos repetidos.
+
+#### `.uniqueBy(f: function): list`
+
+Sin repetidos según f(elemento) (se queda con el primero).
+
+#### `.windowed(tamano: number, paso: number = 1): list`
+
+Ventanas deslizantes: [1, 2, 3, 4].windowed(2) es [[1, 2], [2, 3], [3, 4]].
 
 #### `.zip(otra: list): list`
 
@@ -1315,6 +1547,14 @@ Pares [a, b] con los elementos de ambas listas.
 | Propiedad | Tipo | Descripción |
 |---|---|---|
 | `.length` | `number` | Número de entradas. *(solo lectura)* |
+
+#### `.all(f: function): bool`
+
+¿Todas las entradas cumplen f(valor, clave)?
+
+#### `.any(f: function): bool`
+
+¿Alguna entrada cumple f(valor, clave)?
 
 #### `.clear(): map`
 
@@ -1328,6 +1568,10 @@ Vacía el mapa.
 
 Copia superficial.
 
+#### `.count(f: function): number`
+
+Cuántas entradas cumplen f(valor, clave).
+
 #### `.entries(): list`
 
 Lista de pares [clave, valor].
@@ -1335,6 +1579,10 @@ Lista de pares [clave, valor].
 #### `.filter(f: function): map`
 
 Nuevo mapa con las entradas para las que f(clave, valor) es verdadero.
+
+#### `.find(f: function): any`
+
+Primera clave cuya entrada cumple f(valor, clave) (o null).
 
 #### `.forEach(f: function): void`
 
@@ -1348,6 +1596,10 @@ Valor de la clave (o porDefecto).
 
 ¿Existe la clave?
 
+#### `.invert(): map`
+
+Intercambia claves y valores.
+
 #### `.isEmpty(): bool`
 
 ¿Está vacío?
@@ -1360,6 +1612,10 @@ Primera clave que tiene ese valor (o null).
 
 Lista de claves.
 
+#### `.mapKeys(f: function): map`
+
+Mapa nuevo con f(clave, valor) como claves.
+
 #### `.mapValues(f: function): map`
 
 Nuevo mapa con f(valor, clave) como valores.
@@ -1367,6 +1623,14 @@ Nuevo mapa con f(valor, clave) como valores.
 #### `.merge(otro: map): map`
 
 Copia las entradas de otro mapa.
+
+#### `.omit(claves: list): map`
+
+Mapa nuevo sin esas claves.
+
+#### `.pick(claves: list): map`
+
+Mapa nuevo solo con esas claves.
 
 #### `.remove(clave: any): bool`
 
@@ -1376,15 +1640,55 @@ Elimina una clave.
 
 Asigna un valor.
 
+#### `.sortByKey(descendente: bool = false): map`
+
+Mapa nuevo ordenado por las claves.
+
+#### `.sortByValue(descendente: bool = false): map`
+
+Mapa nuevo ordenado por los valores (p. ej. un ranking).
+
+#### `.update(clave: any, f: function, porDefecto?: any): any`
+
+Cambia el valor con f(valor actual o porDefecto) y lo devuelve: cuenta.update("a", n => n + 1, 0).
+
 #### `.values(): list`
 
 Lista de valores.
 
 ## Clase number
 
+#### `.between(minimo: number, maximo: number): bool`
+
+¿Está entre minimo y maximo (incluidos)?
+
+#### `.clamp(minimo: number, maximo: number): number`
+
+Limita el número al intervalo.
+
+#### `.digits(): list<number>`
+
+Cifras de la parte entera: (2026).digits() es [2, 0, 2, 6].
+
+#### `.format(decimales: number = 0, miles: text = ".", decimal: text = ","): text`
+
+Con separador de miles: (1234567.5).format(2) es "1.234.567,50".
+
+#### `.isEven(): bool`
+
+¿Es par?
+
 #### `.isInteger(): bool`
 
 ¿No tiene decimales?
+
+#### `.isOdd(): bool`
+
+¿Es impar?
+
+#### `.times(f: function): void`
+
+Repite f n veces (recibe 0, 1, 2...): (3).times(i => print(i)).
 
 #### `.toBase(base: number, digitos: number = 0): text`
 
@@ -1401,6 +1705,14 @@ Texto con N decimales fijos.
 #### `.toHex(digitos: number = 0): text`
 
 Entero en hexadecimal: (255).toHex() es "ff"; con dígitos rellena con ceros.
+
+#### `.toPercent(decimales: number = 0): text`
+
+Porcentaje: (0.256).toPercent(1) es "25,6 %".
+
+#### `.toRoman(): text`
+
+Número romano: (2026).toRoman() es "MMXXVI".
 
 #### `.toText(): text`
 
@@ -1428,6 +1740,14 @@ Vacía el conjunto.
 
 Copia.
 
+#### `.difference(otro: set|list): set`
+
+Elementos que no están en el otro.
+
+#### `.filter(f: function): set`
+
+Conjunto con los elementos que cumplen f.
+
 #### `.forEach(f: function): void`
 
 Llama a f(valor).
@@ -1436,23 +1756,59 @@ Llama a f(valor).
 
 ¿Contiene el valor?
 
+#### `.intersect(otro: set|list): set`
+
+Elementos comunes.
+
+#### `.isDisjoint(otro: set|list): bool`
+
+¿No tienen ningún elemento en común?
+
 #### `.isEmpty(): bool`
 
 ¿Está vacío?
+
+#### `.isSubset(otro: set|list): bool`
+
+¿Todos sus elementos están en el otro?
+
+#### `.isSuperset(otro: set|list): bool`
+
+¿Contiene todos los elementos del otro?
+
+#### `.map(f: function): set`
+
+Conjunto con f(elemento).
 
 #### `.remove(valor: any): bool`
 
 Quita un valor.
 
+#### `.symmetricDifference(otro: set|list): set`
+
+Elementos que están en uno solo de los dos.
+
 #### `.toList(): list`
 
 Convierte en lista.
+
+#### `.union(otro: set|list): set`
+
+Elementos de los dos conjuntos.
 
 ## Clase text
 
 | Propiedad | Tipo | Descripción |
 |---|---|---|
 | `.length` | `number` | Número de caracteres. *(solo lectura)* |
+
+#### `.between(inicio: text, fin: text): text?`
+
+El texto entre la primera aparición de inicio y la siguiente de fin (o null).
+
+#### `.camelCase(): text`
+
+"nombre del jugador" → "nombreDelJugador".
 
 #### `.capitalize(): text`
 
@@ -1466,6 +1822,10 @@ Centra el texto en 'ancho' caracteres.
 
 Lista de caracteres.
 
+#### `.codes(): list<number>`
+
+Códigos Unicode de cada carácter (lo contrario de chr).
+
 #### `.contains(sub: text): bool`
 
 ¿Contiene el subtexto?
@@ -1473,6 +1833,14 @@ Lista de caracteres.
 #### `.count(sub: text): number`
 
 Cuántas veces aparece sub.
+
+#### `.dedent(): text`
+
+Quita la sangría común de todas las líneas.
+
+#### `.distance(otro: text): number`
+
+Distancia de edición (Levenshtein): cuántos cambios hay entre dos textos.
 
 #### `.endsWith(sufijo: text): bool`
 
@@ -1482,9 +1850,17 @@ Cuántas veces aparece sub.
 
 Sustituye {} (o {0}, {1}...) por los valores: "{} tiene {} puntos".format(nombre, 10)
 
-#### `.indexOf(sub: text): number`
+#### `.indent(n: number = 4, relleno: text = " "): text`
 
-Posición de la primera aparición (o -1).
+Añade n espacios al principio de cada línea.
+
+#### `.indexOf(sub: text, desde: number = 0): number`
+
+Posición de la primera aparición a partir de 'desde' (o -1).
+
+#### `.isBlank(): bool`
+
+¿Está vacío o solo tiene espacios?
 
 #### `.isEmpty(): bool`
 
@@ -1493,6 +1869,10 @@ Posición de la primera aparición (o -1).
 #### `.isNumeric(): bool`
 
 ¿El texto es un número válido?
+
+#### `.kebabCase(): text`
+
+"Nombre del jugador" → "nombre-del-jugador".
 
 #### `.lastIndexOf(sub: text): number`
 
@@ -1518,6 +1898,14 @@ Rellena por la derecha hasta la longitud.
 
 Rellena por la izquierda hasta la longitud.
 
+#### `.pascalCase(): text`
+
+"nombre del jugador" → "NombreDelJugador".
+
+#### `.removeAccents(): text`
+
+Quita tildes y diéresis: "Canción pingüino" → "Cancion pinguino" (ñ → n).
+
 #### `.repeat(veces: number): text`
 
 Repite el texto.
@@ -1534,9 +1922,25 @@ Reemplaza todas las coincidencias de una expresión regular ($1, $2... son los g
 
 Texto al revés.
 
+#### `.reverseWords(): text`
+
+Invierte el orden de las palabras: "uno dos tres" → "tres dos uno".
+
+#### `.similarity(otro: text): number`
+
+Parecido entre 0 y 1 (sin distinguir mayúsculas): útil para "¿quisiste decir...?".
+
 #### `.slice(inicio: number, fin?: number): text`
 
 Igual que substring; admite índices negativos.
+
+#### `.slug(): text`
+
+Texto apto para direcciones web: "¡Hola, Señor!" → "hola-senor".
+
+#### `.snakeCase(): text`
+
+"Nombre del jugador" → "nombre_del_jugador".
 
 #### `.split(separador?: text): list<text>`
 
@@ -1549,6 +1953,10 @@ Divide el texto (por espacios si no se indica separador).
 #### `.substring(inicio: number, fin?: number): text`
 
 Parte del texto entre inicio y fin (excluido).
+
+#### `.title(): text`
+
+Mayúscula al principio de cada palabra: "hola mundo" → "Hola Mundo".
 
 #### `.toNumber(porDefecto?: any): number?`
 
@@ -1566,6 +1974,10 @@ Quita espacios al final.
 
 Quita espacios al principio.
 
+#### `.truncate(maximo: number, final: text = "…"): text`
+
+Recorta a 'maximo' caracteres añadiendo "…".
+
 #### `.upper(): text`
 
 Texto en mayúsculas.
@@ -1573,6 +1985,10 @@ Texto en mayúsculas.
 #### `.words(): list<text>`
 
 Palabras separadas por espacios.
+
+#### `.wrap(ancho: number = 80): text`
+
+Reparte el texto en líneas de como mucho 'ancho' caracteres sin cortar palabras.
 
 ## Módulo Base64
 
@@ -1740,6 +2156,18 @@ Suma de comprobación CRC-32 (la de ZIP y PNG).
 
 Hash FNV-1a de 32 bits (rápido; no criptográfico).
 
+#### `Hash.hmac(clave: text|Bytes, mensaje: text|Bytes): text`
+
+Firma HMAC-SHA256 en hexadecimal: comprueba que un mensaje viene de quien tiene la clave.
+
+#### `Hash.md5(datos: text|Bytes): text`
+
+Huella MD5 en hexadecimal (32 caracteres). Solo para comprobar archivos, no para seguridad.
+
+#### `Hash.sha1(datos: text|Bytes): text`
+
+Huella SHA-1 en hexadecimal (40 caracteres; la de Git). No la uses para seguridad.
+
 #### `Hash.sha256(datos: text|Bytes): text`
 
 Huella SHA-256 en hexadecimal (64 caracteres).
@@ -1809,9 +2237,21 @@ Http.serve(8080, req => "<h1>Hola desde ${req.path}</h1>")
 
 Convertir datos a texto JSON y viceversa.
 
+#### `JSON.load(ruta: text): any`
+
+Lee un archivo JSON y lo convierte en mapas y listas.
+
+```hz
+var ajustes = JSON.load("ajustes.json")
+```
+
 #### `JSON.parse(texto: text): any`
 
 Convierte texto JSON en mapas, listas, números...
+
+#### `JSON.save(ruta: text, valor: any, sangria: number = 2): void`
+
+Guarda un valor como archivo JSON (legible).
 
 #### `JSON.stringify(valor: any, sangria: number = 0): text`
 
@@ -1945,6 +2385,18 @@ Detiene el programa unos segundos (bloquea; dentro de async usa await wait()).
 
 Fechas, horas y medir cuánto tarda algo.
 
+#### `Time.addDays(momento: number, dias: number): number`
+
+Suma (o resta) días respetando el horario de verano.
+
+#### `Time.addMonths(momento: number, meses: number): number`
+
+Suma meses: el 31 de enero + 1 mes es el último día de febrero.
+
+#### `Time.ago(momento: number, ahora?: number): text`
+
+Tiempo relativo: "hace 5 minutos", "dentro de 2 días".
+
 #### `Time.clock(): number`
 
 Segundos desde que empezó el programa (reloj que nunca va hacia atrás).
@@ -1952,6 +2404,22 @@ Segundos desde que empezó el programa (reloj que nunca va hacia atrás).
 #### `Time.date(momento?: number): map`
 
 Partes de una fecha: {year, month, day, hour, minute, second, millisecond, weekday, dayName, yearDay}.
+
+#### `Time.dayName(diaSemana: number): text`
+
+Nombre del día en español (0 = "domingo").
+
+#### `Time.daysBetween(desde: number, hasta: number): number`
+
+Días de calendario entre dos momentos.
+
+#### `Time.daysInMonth(anio: number, mes: number): number`
+
+Días que tiene un mes (1 a 12).
+
+#### `Time.duration(segundos: number): text`
+
+Duración legible: Time.duration(3725) es "1 h 2 min 5 s".
 
 #### `Time.format(momento?: number, formato: text = "%Y-%m-%d %H:%M:%S"): text`
 
@@ -1961,6 +2429,10 @@ Fecha como texto. Formato de strftime: %Y año, %m mes, %d día, %H hora, %M min
 print(Time.format(Time.now(), "%d/%m/%Y"))
 ```
 
+#### `Time.isLeapYear(anio: number): bool`
+
+¿Es bisiesto?
+
 #### `Time.make(anio: number, mes: number = 1, dia: number = 1, hora: number = 0, minuto: number = 0, segundo: number = 0): number`
 
 Momento (segundos desde 1970) de una fecha y hora locales.
@@ -1969,9 +2441,21 @@ Momento (segundos desde 1970) de una fecha y hora locales.
 
 Ejecuta la función y devuelve cuántos segundos tardó.
 
+#### `Time.monthName(mes: number): text`
+
+Nombre del mes en español (1 = "enero").
+
 #### `Time.now(): number`
 
 Momento actual en segundos desde el 1 de enero de 1970 (con decimales).
+
+#### `Time.parse(texto: text): number?`
+
+Lee una fecha "2026-11-04", "2026-11-04 18:30" o "04/11/2026" (null si no es válida).
+
+#### `Time.today(): number`
+
+Hoy a las 00:00 (hora local).
 
 ## Bibliotecas
 

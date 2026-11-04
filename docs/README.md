@@ -3,7 +3,7 @@
 ## Empezar
 
 - [Instalación](empezar/instalacion.md): Windows, Linux, macOS y VS Code.
-- [Primeros pasos](empezar/primeros-pasos.md): consola interactiva, VS Code, la terminal y proyectos.
+- [Primeros pasos](empezar/primeros-pasos.md): HyperEZ Editor, consola interactiva, VS Code, la terminal y proyectos.
 - [Guía rápida](GUIA.md): todo el lenguaje en una página.
 - [Tutorial: un juego paso a paso](empezar/tutorial-juego.md)
 - [Tutorial: una red neuronal](empezar/tutorial-ia.md)
@@ -33,6 +33,8 @@
 | Archivos, procesos, rutas, fechas | [sistema.md](biblioteca/sistema.md) |
 | Datos binarios, hash, compresión | [binario.md](biblioteca/binario.md) |
 | Expresiones regulares | [regex.md](biblioteca/regex.md) |
+| Textos, números, fechas, plantillas, Markdown, INI, registro | [textos-documentos.md](biblioteca/textos-documentos.md) |
+| Colecciones (pilas, colas, grafos) y algoritmos (A*, combinatoria) | [colecciones-algoritmos.md](biblioteca/colecciones-algoritmos.md) |
 | Peticiones a internet | [red.md](biblioteca/red.md) |
 | Webs, APIs y bases de datos | [web.md](biblioteca/web.md) |
 | Inteligencia artificial y datos | [ia-datos.md](biblioteca/ia-datos.md) |
@@ -43,7 +45,8 @@
 
 ## Herramientas
 
-- [La orden `hyper`](herramientas/cli.md)
+- [HyperEZ Editor](herramientas/editor.md): el editor clásico que se instala con HyperEZ.
+- [La orden `hyper`](herramientas/cli.md): ejecutar, comprobar, probar, formatear, bytecode...
 - [Consola interactiva](herramientas/consola-interactiva.md)
 - [Visual Studio Code](herramientas/vscode.md)
 - [Instaladores y asociación de archivos](herramientas/instaladores.md)

@@ -63,11 +63,13 @@ Para medir el rendimiento: `sh tests/bench/minbench.sh build/hyper.exe 7`.
 | Quieres cambiar | Mira en |
 |---|---|
 | Sintaxis | `src/lang/syntax` (lexer, parser, `ast.h`) y `editors/vscode/tools/gen_grammar.py` |
+| Formateador (`hyper fmt`) | `src/lang/syntax/format.cpp` |
 | Mensajes de error y tipos | `src/lang/sema/analyzer.cpp` |
-| Bytecode y optimizaciones | `src/lang/compiler/codegen.cpp`, `src/lang/vm/interp.cpp` |
+| Bytecode y optimizaciones | `src/lang/compiler/codegen.cpp`, `src/lang/vm/interp.cpp`; el desensamblador (`hyper bytecode`) en `src/lang/compiler/disasm.cpp` |
 | Biblioteca nativa | `src/lang/stdlib/` (un archivo por área) |
 | Bibliotecas en HyperEZ | `src/lib/*.hz` (se incrustan al compilar) |
 | La orden `hyper` | `src/tools/cli`, `repl`, `watch`, `lsp` |
+| HyperEZ Editor | `src/editor/editor.cpp` (Win32 + RichEdit), recursos en `packaging/windows/editor.rc` |
 | Instaladores | `packaging/windows`, `packaging/unix` |
 
 [docs/interno](docs/interno) explica la arquitectura y [cómo ampliar HyperEZ](docs/interno/extender.md) paso a paso.
@@ -78,6 +80,8 @@ Para medir el rendimiento: `sh tests/bench/minbench.sh build/hyper.exe 7`.
 - **Mensajes en español**, claros y con una sugerencia de cómo arreglar el problema cuando sea posible.
 - **Sigue el estilo del código que rodea tu cambio** (C++20, 4 espacios, comentarios en español). En `.editorconfig` están las reglas básicas.
 - **Documenta** lo nuevo en `docs/` con ejemplos ` ```hz ` que funcionen (se ejecutan en las pruebas).
+- **Formato**: `hyper fmt` antes de enviar (la prueba `formato` comprueba los ejemplos, las pruebas y `src/lib`).
+- **Instrucciones nuevas de la VM**: añádelas también a `src/lang/compiler/disasm.cpp` (la prueba `bytecode` desensambla todo el código del repositorio).
 - **Portabilidad**: el código debe compilar en Windows, Linux y macOS. Lo específico de un sistema va entre `#ifdef _WIN32` / `#else`.
 
 ## Enviar los cambios

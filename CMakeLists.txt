@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 # macOS: std::to_chars con decimales necesita macOS 13.3 o posterior
 set(CMAKE_OSX_DEPLOYMENT_TARGET "13.3" CACHE STRING "Versión mínima de macOS")
-project(HyperEZ VERSION 0.6.0 LANGUAGES C CXX)
+project(HyperEZ VERSION 0.7.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -121,6 +121,32 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT APPLE)
   target_link_options(hyper PRIVATE -static-libgcc -static-libstdc++)
 endif()
 
+# ---------------------------------------------------------------------------
+# HyperEZ Editor (Windows): editor de código clásico con colores, errores en vivo y F5 para ejecutar
+# ---------------------------------------------------------------------------
+option(HYPEREZ_EDITOR "Construir HyperEZ Editor (Windows)" ON)
+if(WIN32 AND HYPEREZ_EDITOR)
+  add_executable(hyperez-editor WIN32 src/editor/editor.cpp packaging/windows/editor.rc)
+  set_source_files_properties(packaging/windows/editor.rc PROPERTIES OBJECT_DEPENDS
+    "${CMAKE_SOURCE_DIR}/packaging/windows/editor.manifest;${CMAKE_SOURCE_DIR}/src/core/version.h;${CMAKE_SOURCE_DIR}/assets/icons/hyperez.ico")
+  target_link_libraries(hyperez-editor PRIVATE hzlang comctl32 comdlg32 shell32 ole32 oleaut32 uuid)
+  if(MSVC)
+    target_compile_options(hyperez-editor PRIVATE /utf-8 /W3)
+  else()
+    target_compile_options(hyperez-editor PRIVATE -Wall -Wno-unused-parameter -Wno-sign-compare -municode)
+    target_link_options(hyperez-editor PRIVATE -municode)
+  endif()
+  if(MINGW)
+    target_link_options(hyperez-editor PRIVATE -static -static-libgcc -static-libstdc++ -s -Wno-stringop-overflow)
+  endif()
+  if(HZ_IPO)
+    set_property(TARGET hyperez-editor PROPERTY INTERPROCEDURAL_OPTIMIZATION ON)
+  endif()
+  if(HYPEREZ_PGO STREQUAL "generate" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_link_options(hyperez-editor PRIVATE "-fprofile-generate=${HYPEREZ_PGO_DIR}") # hzlang va instrumentada
+  endif()
+endif()
+
 # Instalador (Windows): empaqueta hyper.exe, ejemplos, documentación y la extensión de VS Code.
 if(WIN32 AND HYPEREZ_INSTALLER)
   add_subdirectory(packaging/windows)
@@ -138,6 +164,10 @@ add_test(NAME comprobar COMMAND hyper check ${CMAKE_SOURCE_DIR}/examples ${CMAKE
 add_test(NAME consola COMMAND ${CMAKE_COMMAND} -DHYPER=$<TARGET_FILE:hyper> -DRAIZ=${CMAKE_SOURCE_DIR}
          -DSESION=${CMAKE_SOURCE_DIR}/tests/repl/sesion.txt -DESPERADO=${CMAKE_SOURCE_DIR}/tests/repl/sesion.out
          -P ${CMAKE_SOURCE_DIR}/tests/repl/check_repl.cmake)
+add_test(NAME formato COMMAND ${CMAKE_COMMAND} -DHYPER=$<TARGET_FILE:hyper> -DRAIZ=${CMAKE_SOURCE_DIR}
+         -DTMP=${CMAKE_BINARY_DIR}/prueba-formato -P ${CMAKE_SOURCE_DIR}/tests/fmt/check_fmt.cmake)
+add_test(NAME bytecode COMMAND ${CMAKE_COMMAND} -DHYPER=$<TARGET_FILE:hyper> -DRAIZ=${CMAKE_SOURCE_DIR}
+         -P ${CMAKE_SOURCE_DIR}/tests/fmt/check_bytecode.cmake)
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_FOUND)
   # Cada bloque ```hz de la documentación se ejecuta y debe funcionar

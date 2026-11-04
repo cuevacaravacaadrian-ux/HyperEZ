@@ -1,6 +1,6 @@
 """Cambia la versión de HyperEZ en todos los sitios donde aparece.
 
-    python tools/set_version.py 0.6.0
+    python tools/set_version.py 0.7.0
 
 Actualiza src/core/version.h, CMakeLists.txt, los manifiestos de Windows, la extensión de
 VS Code (package.json) y el README. El CHANGELOG.md se escribe a mano.
@@ -37,7 +37,7 @@ def main():
     sub("src/core/version.h", r"HYPEREZ_VERSION_MINOR \d+", "HYPEREZ_VERSION_MINOR " + minor)
     sub("src/core/version.h", r"HYPEREZ_VERSION_PATCH \d+", "HYPEREZ_VERSION_PATCH " + patch)
     sub("CMakeLists.txt", r"project\(HyperEZ VERSION [\d.]+", "project(HyperEZ VERSION " + v)
-    for m in ("packaging/windows/hyper.manifest", "packaging/windows/setup.manifest"):
+    for m in ("packaging/windows/hyper.manifest", "packaging/windows/setup.manifest", "packaging/windows/editor.manifest"):
         sub(m, r'(<assemblyIdentity [^>]*version=")[\d.]+"', r'\g<1>%s.0"' % v)
     pkg_path = os.path.join(ROOT, "editors/vscode/package.json")
     with open(pkg_path, encoding="utf-8") as f:
@@ -48,7 +48,11 @@ def main():
         json.dump(pkg, f, ensure_ascii=False, indent=2)
         f.write("\n")
     print("  editors/vscode/package.json")
-    sub("README.md", r"HyperEZ-Setup-[\d.]+\.exe", "HyperEZ-Setup-%s.exe" % v, count=0)
+    for doc in ("README.md", "docs/empezar/instalacion.md"):
+        sub(doc, r"HyperEZ-Setup-[\d.]+\.exe", "HyperEZ-Setup-%s.exe" % v, count=0)
+        sub(doc, r"HyperEZ-[\d.]+-(linux|macos)", r"HyperEZ-%s-\1" % v, count=0)
+        sub(doc, r"hyperez-[\d.]+\.vsix", "hyperez-%s.vsix" % v, count=0)
+    sub("editors/vscode/PUBLICAR.md", r"hyperez-[\d.]+\.vsix", "hyperez-%s.vsix" % v, count=0)
     print("Recuerda añadir la sección " + v + " a CHANGELOG.md.")
     return 0
 

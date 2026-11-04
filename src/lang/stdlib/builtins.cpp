@@ -346,7 +346,14 @@ NATIVE(t_replace) {
     return vm.str(r);
 }
 static double byteToChar(const std::string& s, size_t byte) { return byte == std::string::npos ? -1 : (double)utf8Length(std::string_view(s).substr(0, byte)); }
-NATIVE(t_indexOf) { const auto& s = S(args); return Value(byteToChar(s, s.find(argStr(vm, args, argc, 0, "indexOf")))); }
+NATIVE(t_indexOf) {
+    const auto& s = S(args);
+    std::string sub = argStr(vm, args, argc, 0, "indexOf");
+    double from = argNum(vm, args, argc, 1, "indexOf", 0);
+    size_t start = from <= 0 ? 0 : utf8Offset(s, (size_t)from); // posición en caracteres, no en bytes
+    if (start > s.size()) return Value(-1);
+    return Value(byteToChar(s, s.find(sub, start)));
+}
 NATIVE(t_lastIndexOf) { const auto& s = S(args); return Value(byteToChar(s, s.rfind(argStr(vm, args, argc, 0, "lastIndexOf")))); }
 NATIVE(t_substring) {
     const auto& s = S(args);
@@ -1056,7 +1063,7 @@ void registerStdlib(VM& vm) {
     vm.defineMethod(t, "startsWith", "(prefijo: text): bool", "¿Empieza por...?", t_startsWith);
     vm.defineMethod(t, "endsWith", "(sufijo: text): bool", "¿Termina en...?", t_endsWith);
     vm.defineMethod(t, "replace", "(buscar: text, poner: text): text", "Reemplaza todas las apariciones.", t_replace);
-    vm.defineMethod(t, "indexOf", "(sub: text): number", "Posición de la primera aparición (o -1).", t_indexOf);
+    vm.defineMethod(t, "indexOf", "(sub: text, desde?: number = 0): number", "Posición de la primera aparición a partir de 'desde' (o -1).", t_indexOf);
     vm.defineMethod(t, "lastIndexOf", "(sub: text): number", "Posición de la última aparición (o -1).", t_lastIndexOf);
     vm.defineMethod(t, "substring", "(inicio: number, fin?: number): text", "Parte del texto entre inicio y fin (excluido).", t_substring);
     vm.defineMethod(t, "slice", "(inicio: number, fin?: number): text", "Igual que substring; admite índices negativos.", t_substring);

@@ -80,5 +80,8 @@ La columna «Operandos y pila» indica qué lee de la pila y qué deja (`a b -> 
 | 69 | `OP_JUMP_IF_NOT_NE` | u16 |
 | 70 | `OP_FOR_NEXT` | u16 slot, u8 inclusivo, u16 distancia hacia atrás |
 | 71 | `OP_CHECK_NUMBER` | u16 slot, u16 const nombre del parámetro (parámetro ": number") |
+| 72 | `OP_SET_LOCAL_POP` | u16 slot   (consume el valor: "x = ..." como sentencia; SET_LOCAL + POP) |
+| 73 | `OP_FOR_CHECK_V` | u16 slot contador, u8 inclusivo, u16 slot variable, u16 salto adelante |
+| 74 | `OP_FOR_NEXT_V` | u16 slot contador, u8 inclusivo, u16 slot variable, u16 distancia hacia atrás |
 
-Hay 72 instrucciones.
+Hay 75 instrucciones.

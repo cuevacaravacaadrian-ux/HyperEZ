@@ -45,6 +45,7 @@ void registerNet(VM& vm);        // net.cpp: Http
 void registerMatrix(VM& vm);     // matrix.cpp: Matrix (álgebra lineal para IA y ciencia)
 void registerImage(VM& vm);      // image.cpp: Image (gráficos) y compresión de Bytes
 void registerServer(VM& vm);     // server.cpp: Http.serve y Process.start
+void registerMore(VM& vm);       // more.cpp: matemáticas, textos, colecciones, números, fechas y JSON (0.7)
 
 // Acceso directo a los datos de un objeto Bytes (binary.cpp)
 Value newBytes(VM& vm, std::vector<uint8_t> data);

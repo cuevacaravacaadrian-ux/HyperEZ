@@ -16,7 +16,8 @@ PRIM = ("number|int|float|double|text|string|char|bool|boolean|list|array|map|di
 BUILTIN_FN = ("print|println|write|input|len|typeof|str|toNumber|toInt|assert|assertEqual|assertThrows|test|exit|range|time|now|"
               "wait|nextFrame|spawn|off|abs|sqrt|pow|floor|ceil|round|sign|min|max|clamp|lerp|sin|cos|tan|asin|acos|atan|atan2|"
               "hypot|exp|log|log10|radians|degrees|random|randomInt|randomChoice|randomSeed|remap|wrap|approach|smoothstep|"
-              "chance|distance|isNaN|awaitAll|awaitAny|parseInt")
+              "chance|distance|isNaN|awaitAll|awaitAny|parseInt|gcd|lcm|factorial|isPrime|primes|divisors|cbrt|trunc|fract|"
+              "sinh|cosh|tanh|randomGaussian|noise|chr|ord")
 BUILTIN_CLS = ("Console|File|System|JSON|Vec2|Vec3|Color|Error|EventData|HyperCore|HyperMath|Process|Path|Time|Bytes|Hash|"
                "Base64|Regex|Http|Matrix|Image|ProcessHandle")
 

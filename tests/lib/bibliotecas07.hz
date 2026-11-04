@@ -1,0 +1,202 @@
+// Bibliotecas nuevas en 0.7: collections, algo, log, template, markdown, ini, svg y zip
+import collections
+import algo
+import log
+import template
+import markdown
+import ini
+import svg
+import zip
+
+test("collections: pila, cola y cola doble", () => {
+    var p = collections.Stack()
+    p.push(1)
+    p.push(2)
+    assertEqual(p.pop(), 2)
+    assertEqual(p.peek(), 1)
+    assertEqual(len(p), 1)
+    assertThrows(() => collections.Stack().pop())
+
+    var c = collections.Queue()
+    for i in 0..200 { c.push(i) }
+    var suma = 0
+    for i in 0..150 { suma += c.pop() }
+    assertEqual(suma, 11175)
+    assertEqual(c.peek(), 150)
+    assertEqual(len(c), 50)
+
+    var d = collections.Deque()
+    d.pushBack(2)
+    d.pushFront(1)
+    d.pushBack(3)
+    assertEqual(d.toList(), [1, 2, 3])
+    assertEqual([d.popFront(), d.popBack()], [1, 3])
+})
+
+test("collections: cola de prioridad", () => {
+    var q = collections.PriorityQueue()
+    q.push("c", 3)
+    q.push("a", 1)
+    q.push("b", 2)
+    q.push("a2", 1)
+    assertEqual([q.pop(), q.pop(), q.pop(), q.pop()], ["a", "a2", "b", "c"])
+    var mayor = collections.PriorityQueue(true)
+    foreach n in [5, 9, 1] { mayor.push(n, n) }
+    assertEqual(mayor.pop(), 9)
+})
+
+test("collections: contador y caché", () => {
+    var c = collections.Counter("abracadabra".chars())
+    assertEqual(c.get("a"), 5)
+    assertEqual(c.mostCommon(2), [["a", 5], ["b", 2]])
+    assertEqual(c.total(), 11)
+    var cache = collections.LRUCache(2)
+    cache.set("x", 1)
+    cache.set("y", 2)
+    cache.get("x")
+    cache.set("z", 3) // se olvida "y", el menos usado
+    assert(cache.has("x") and cache.has("z") and not cache.has("y"))
+    var calculos = 0
+    var doble = k => {
+        calculos += 1
+        return k * 2
+    }
+    assertEqual(cache.getOrCompute(21, doble), 42)
+    assertEqual(cache.getOrCompute(21, doble), 42)
+    assertEqual(calculos, 1)
+})
+
+test("collections: grafos", () => {
+    var g = collections.Graph()
+    g.addEdge("Madrid", "Toledo", 70)
+    g.addEdge("Toledo", "Ciudad Real", 120)
+    g.addEdge("Madrid", "Ciudad Real", 250)
+    g.addEdge("Madrid", "Segovia", 90)
+    var r = g.shortestPath("Madrid", "Ciudad Real")
+    assertEqual(r.path, ["Madrid", "Toledo", "Ciudad Real"])
+    assertEqual(r.distance, 190)
+    assertEqual(g.bfs("Segovia")[0], "Segovia")
+    assertEqual(g.distancesFrom("Madrid")["Ciudad Real"], 190)
+    g.addNode("Mallorca")
+    assertEqual(g.components().length, 2)
+    assertEqual(g.shortestPath("Madrid", "Mallorca"), null)
+
+    var tareas = collections.Graph(true)
+    tareas.addEdge("comprar", "cocinar")
+    tareas.addEdge("cocinar", "comer")
+    tareas.addEdge("poner la mesa", "comer")
+    var orden = tareas.topologicalSort()
+    assert(orden.indexOf("comprar") < orden.indexOf("cocinar") and orden.indexOf("cocinar") < orden.indexOf("comer"))
+    assert(not tareas.hasCycle())
+    tareas.addEdge("comer", "comprar")
+    assert(tareas.hasCycle())
+})
+
+test("algo: combinatoria y más", () => {
+    assertEqual(algo.permutations([1, 2, 3]).length, 6)
+    assertEqual(algo.combinations(["a", "b", "c"], 2), [["a", "b"], ["a", "c"], ["b", "c"]])
+    assertEqual(algo.product([1, 2], ["x"]), [[1, "x"], [2, "x"]])
+    assertEqual(algo.powerset([1, 2]).length, 4)
+    assertEqual(algo.lcs("ABCBDAB", "BDCABA").length, 4)
+    var llamadas = 0
+    var lento = algo.memoize(n => {
+        llamadas += 1
+        return n * n
+    })
+    assertEqual(lento(9) + lento(9), 162)
+    assertEqual(llamadas, 1)
+})
+
+test("algo: caminos en una cuadrícula", () => {
+    var mapa = ["S..#....",
+                ".#.#.##.",
+                ".#...#G."]
+    var camino = algo.gridPath(mapa, [0, 0], [6, 2])
+    assertEqual(camino[0], [0, 0])
+    assertEqual(camino.last(), [6, 2])
+    assertEqual(camino.length, 15) // la única entrada a G es por la derecha
+    assert(camino.all(p => algo.walkable(mapa, p[0], p[1])))
+    assertEqual(algo.gridPath(["S#G"], [0, 0], [2, 0]), null)
+    assertEqual(algo.floodFill(["..#", "..#", "###"], 0, 0).length, 4)
+    assertEqual(algo.drawPath(["...", "..."], [[0, 0], [1, 0]])[0], "**.")
+})
+
+test("log", () => {
+    var r = log.Logger("prueba", "warn")
+    r.showTime = false
+    r.info("no se muestra")
+    r.warn("cuidado")
+    r.error("fallo", 42)
+    assertEqual(r.recent().map(m => m.message), ["cuidado", "fallo 42"])
+    assert(r.enabled("error") and not r.enabled("debug"))
+    assertThrows(() => log.Logger("x", "mucho"))
+})
+
+test("template", () => {
+    var t = "Hola, {{nombre}}. {{#if vip}}Eres VIP.{{else}}Bienvenido.{{/if}} {{#each items}}[{{@index}}:{{this}}]{{/each}}"
+    assertEqual(template.render(t, { nombre: "Ana", vip: true, items: ["a", "b"] }), "Hola, Ana. Eres VIP. [0:a][1:b]")
+    assertEqual(template.render(t, { nombre: "Luis", vip: false, items: [] }), "Hola, Luis. Bienvenido. ")
+    assertEqual(template.render("{{#each p}}{{nombre}}={{puntos}};{{/each}}", { p: [{ nombre: "x", puntos: 1 }, { nombre: "y", puntos: 2 }] }), "x=1;y=2;")
+    assertEqual(template.render("{{a.b.c}} {{lista.length}}", { a: { b: { c: 7 } }, lista: [1, 2, 3] }), "7 3")
+    assertEqual(template.renderHtml("<p>{{x}}</p>{{{x}}}", { x: "<b>" }), "<p>&lt;b&gt;</p><b>")
+    assertEqual(template.render("{{! nada }}ok{{#unless no}}!{{/unless}}", { no: false }), "ok!")
+    assertThrows(() => template.render("{{#if x}}sin cerrar", {}))
+    // las líneas con solo una etiqueta de bloque no dejan líneas en blanco
+    assertEqual(template.render("Lista:\n{{#each n}}\n- {{this}}\n{{/each}}\nFin", { n: [1, 2] }), "Lista:\n- 1\n- 2\nFin")
+})
+
+test("markdown", () => {
+    assertEqual(markdown.toHtml("# Título"), "<h1 id=\"titulo\">Título</h1>")
+    assertEqual(markdown.inline("**a** y *b* y `c<d>`"), "<strong>a</strong> y <em>b</em> y <code>c&lt;d&gt;</code>")
+    assertEqual(markdown.toHtml("- uno\n- dos"), "<ul><li>uno</li><li>dos</li></ul>")
+    assertEqual(markdown.toHtml("1. uno\n2. dos"), "<ol><li>uno</li><li>dos</li></ol>")
+    assertEqual(markdown.inline("[web](https://x.es)"), "<a href=\"https://x.es\">web</a>")
+    var html = markdown.toHtml("Texto\nseguido.\n\n```hz\nprint(1 < 2)\n```\n\n> cita\n\n| a | b |\n|---|---|\n| 1 | 2 |")
+    assert(html.contains("<p>Texto seguido.</p>"))
+    assert(html.contains("<pre><code class=\"language-hz\">print(1 &lt; 2)</code></pre>"))
+    assert(html.contains("<blockquote><p>cita</p></blockquote>"))
+    assert(html.contains("<th>a</th>") and html.contains("<td>2</td>"))
+    assert(markdown.page("Hola", "# x").startsWith("<!DOCTYPE html>"))
+})
+
+test("ini", () => {
+    var datos = ini.parse("nombre = juego\n\n[pantalla]\nancho = 800\ncompleta = no ; comentario\n[jugador]\nnombre = \"Ana López\"")
+    assertEqual(datos[""].nombre, "juego")
+    assertEqual(datos.pantalla.ancho, 800)
+    assertEqual(datos.pantalla.completa, false)
+    assertEqual(datos.jugador.nombre, "Ana López")
+    var otra = ini.parse(ini.stringify(datos))
+    assertEqual(otra, datos)
+    assertThrows(() => ini.parse("[sin cerrar"))
+})
+
+test("svg", () => {
+    var d = svg.Drawing(100, 50)
+    d.rect(0, 0, 10, 10, { fill: "red", rx: 2 }).circle(50, 25, 5).text(5, 45, "a<b")
+    var s = d.toString()
+    assert(s.startsWith("<svg") and s.contains("rx=\"2\"") and s.contains("a&lt;b"))
+    var barras = svg.barChart({ ene: 120, feb: 95 }, { title: "Ventas" }).toString()
+    assert(barras.contains("Ventas") and barras.contains(">ene<"))
+    assert(svg.lineChart([1, 4, 2]).toString().contains("<polyline"))
+    assert(svg.pieChart({ si: 3, no: 1 }).toString().contains("si (75 %)"))
+})
+
+test("zip: crear, listar, leer y extraer", () => {
+    var carpeta = Path.join(Path.dir(File.tempFile()), "hz-zip-" + Hash.uuid())
+    var ruta = Path.join(carpeta, "prueba.zip")
+    File.makeDir(carpeta)
+    var grande = "HyperEZ " * 500
+    zip.create(ruta, { "hola.txt": "¡Hola, zip!", "datos/grande.txt": grande, "bin.dat": Bytes.fromHex("00ff10") })
+    assertEqual(zip.list(ruta).sort(), ["bin.dat", "datos/grande.txt", "hola.txt"])
+    var contenido = zip.read(ruta)
+    assertEqual(contenido["hola.txt"].toText(), "¡Hola, zip!")
+    assertEqual(contenido["datos/grande.txt"].toText(), grande)
+    assertEqual(contenido["bin.dat"].toHex(), "00ff10")
+    assert(File.size(ruta) < 1000, "el texto repetido se comprime")
+    var hechos = zip.extract(ruta, Path.join(carpeta, "fuera"))
+    assertEqual(hechos.length, 3)
+    assertEqual(File.read(Path.join(carpeta, "fuera", "datos", "grande.txt")), grande)
+    zip.createFromFolder(Path.join(carpeta, "carpeta.zip"), Path.join(carpeta, "fuera"))
+    assertEqual(zip.list(Path.join(carpeta, "carpeta.zip")).length, 3)
+    File.deleteDir(carpeta)
+})

@@ -79,8 +79,31 @@ async function run() {
   const colors = await vscode.commands.executeCommand('vscode.executeDocumentColorProvider', doc.uri);
   check('proveedor de colores registrado', Array.isArray(colors));
 
+  const lenses = await vscode.commands.executeCommand('vscode.executeCodeLensProvider', doc.uri);
+  const lensTitles = (lenses || []).map((l) => l.command && l.command.title);
+  check('botones ▶ Ejecutar / ⟳ / ✓ encima del código', lensTitles.includes('▶ Ejecutar') && lensTitles.includes('✓ Comprobar'), lensTitles.join(', '));
+
+  // Formato con el servidor de lenguaje (hyper fmt)
+  const messy = path.join(dir, 'desordenado.hez');
+  fs.writeFileSync(messy, 'if true {\nprint(1)   \n}\n');
+  const mdoc = await vscode.workspace.openTextDocument(messy);
+  check('los .hez también son hyperez', mdoc.languageId === 'hyperez', mdoc.languageId);
+  const fmtEdits = await waitFor(async () => {
+    const e = await vscode.commands.executeCommand('vscode.executeFormatDocumentProvider', mdoc.uri, { tabSize: 4, insertSpaces: true });
+    return e && e.length ? e : null;
+  }, 15000, 'formato');
+  // VS Code reduce el cambio a lo mínimo: se aplica y se compara el texto final
+  const we = new vscode.WorkspaceEdit();
+  we.set(mdoc.uri, fmtEdits);
+  await vscode.workspace.applyEdit(we);
+  check('dar formato (sangría y espacios)', mdoc.getText() === 'if true {\n    print(1)\n}\n', JSON.stringify(mdoc.getText()));
+
+  const lang = vscode.extensions.getExtension('hyperez.hyperez').packageJSON.contributes.languages[0];
+  check('.hez es la extensión por defecto', lang.extensions[0] === '.hez', lang.extensions.join(' '));
+
   const cmds = await vscode.commands.getCommands(true);
-  for (const c of ['hyperez.run', 'hyperez.watch', 'hyperez.repl', 'hyperez.newFile', 'hyperez.openGuide', 'hyperez.openWalkthrough', 'hyperez.check', 'hyperez.test', 'hyperez.newProject', 'hyperez.showDocs', 'hyperez.restartServer'])
+  for (const c of ['hyperez.run', 'hyperez.watch', 'hyperez.repl', 'hyperez.newFile', 'hyperez.openGuide', 'hyperez.openWalkthrough', 'hyperez.check', 'hyperez.test', 'hyperez.newProject', 'hyperez.showDocs', 'hyperez.restartServer',
+                   'hyperez.format', 'hyperez.showBytecode', 'hyperez.openInEditor', 'hyperez.runTests'])
     check('comando ' + c, cmds.includes(c));
 
   const tasks = await vscode.tasks.fetchTasks({ type: 'hyperez' });

@@ -1,0 +1,98 @@
+// Novedades del lenguaje en 0.7 y casos límite de las optimizaciones del compilador
+
+test("for: cambiar la variable dentro no altera las vueltas", () => {
+    var vistos = []
+    for i in 0..5 {
+        vistos.add(i)
+        i = 100
+    }
+    assertEqual(vistos, [0, 1, 2, 3, 4])
+})
+
+test("for: break y continue", () => {
+    var r = []
+    for i in 0..10 {
+        if i % 2 == 0 { continue }
+        if i > 7 { break }
+        r.add(i)
+    }
+    assertEqual(r, [1, 3, 5, 7])
+})
+
+test("for: cada vuelta tiene su propia variable si una función la captura", () => {
+    var fs = []
+    for i in 0..3 { fs.add(() => i) }
+    assertEqual(fs.map(f => f()), [0, 1, 2])
+})
+
+test("for: anidados, con paso, inclusivos y hacia atrás", () => {
+    var pares = []
+    for i in 0..3 {
+        for j in i..3 { pares.add([i, j]) }
+    }
+    assertEqual(pares.length, 6)
+    var r = []
+    for i in 10..=0 step -5 { r.add(i) }
+    assertEqual(r, [10, 5, 0])
+    var s = 0
+    for i in 1..=100 { s += i }
+    assertEqual(s, 5050)
+})
+
+test("for: locales dentro del cuerpo y valor tras el bucle", () => {
+    var total = 0
+    for i in 0..4 {
+        var doble = i * 2
+        var triple = i * 3
+        total += doble + triple
+    }
+    assertEqual(total, 30)
+    var i = "fuera"
+    for i in 0..2 { }
+    assertEqual(i, "fuera")
+})
+
+test("asignaciones como sentencia (SET + POP fusionados)", () => {
+    var a = 1
+    a = a + 1
+    a += 3
+    a++
+    var b = a++
+    assertEqual([a, b], [7, 6])
+    var c = 0
+    var d = (c = 5)
+    assertEqual([c, d], [5, 5])
+    var t = true ? (a = 10) : 0
+    assertEqual([a, t], [10, 10])
+})
+
+test("repetir listas con *", () => {
+    assertEqual([0] * 3, [0, 0, 0])
+    assertEqual([1, 2] * 2, [1, 2, 1, 2])
+    assertEqual([1] * 0, [])
+    var tablero = range(3).toList().map(i => ["."] * 3)
+    tablero[0][0] = "X"
+    assertEqual(tablero[1][0], ".") // filas independientes
+})
+
+test("text.indexOf con posición inicial", () => {
+    assertEqual("a-b-c".indexOf("-"), 1)
+    assertEqual("a-b-c".indexOf("-", 2), 3)
+    assertEqual("ñu-ñu".indexOf("ñu", 1), 3) // posiciones en caracteres
+    assertEqual("abc".indexOf("x", 0), -1)
+    assertEqual("abc".indexOf("a", 10), -1)
+})
+
+test("operaciones con números (casos límite del módulo)", () => {
+    assertEqual(7 % 3, 1)
+    assertEqual(-7 % 3, 2)
+    assertEqual(7 % -3, -2)
+    assertEqual(5.5 % 2, 1.5)
+    assertEqual(-2147483648 % -1, 0)
+    assertEqual(9007199254740991 % 10, 1)
+    assertThrows(() => 1 % 0)
+    assertEqual(6 / 4, 1.5)
+    assert(3 < 4 and 4 <= 4 and 5 > 4 and 4 >= 4)
+    assertEqual("b" > "a", true)
+    assertThrows(() => 1 / 0)
+})

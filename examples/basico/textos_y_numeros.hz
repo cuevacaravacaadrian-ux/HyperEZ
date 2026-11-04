@@ -1,0 +1,32 @@
+// Herramientas para textos, números y fechas que vienen con el lenguaje.
+
+// Textos
+var titulo = "¡Programar en español es genial!"
+print(titulo.removeAccents())          // ¡Programar en espanol es genial!
+print(titulo.slug())                   // programar-en-espanol-es-genial
+print("nombre del jugador".camelCase(), "·", "nombre del jugador".snakeCase())
+print("el señor de los anillos".title())
+print("Una frase bastante larga para la pantalla".truncate(20))
+print("gato".distance("pato"), "cambio entre gato y pato")
+print("¿Quisiste decir 'print'?", "pirnt".similarity("print") > 0.5)
+
+// Números
+print((1234567.891).format(2))         // 1.234.567,89
+print((2026).toRoman())                // MMXXVI
+print((0.256).toPercent(1))            // 25,6 %
+print(gcd(48, 36), lcm(4, 6), factorial(10))
+print("Primos hasta 30:", primes(30))
+print("Divisores de 28:", divisors(28), "¿es perfecto?", divisors(28).sum() - 28 == 28)
+
+// Listas y conjuntos
+var votos = ["rojo", "azul", "rojo", "verde", "rojo", "azul"]
+print(votos.countBy())                 // {rojo: 3, azul: 2, verde: 1}
+print([1, 2, 3, 4, 5].windowed(3))
+print(set(1, 2, 3).intersect([2, 3, 4]).toList())
+print([0] * 5)
+
+// Fechas
+var t = Time.make(2026, 1, 31)
+print(Time.format(Time.addMonths(t, 1), "%d/%m/%Y"), "(31 de enero + 1 mes)")
+print(Time.monthName(11), Time.isLeapYear(2028) ? "2028 es bisiesto" : "")
+print(Time.duration(3725))             // 1 h 2 min 5 s

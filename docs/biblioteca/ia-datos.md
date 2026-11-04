@@ -99,3 +99,22 @@ print(csv.stringify([{ a: 1, b: "x, y" }]))     // escapa comas y comillas
 ```
 
 `csv.read(ruta)` y `csv.write(ruta, filas)` trabajan con archivos. Mira [examples/datos/ventas.hz](../../examples/datos/ventas.hz) para un análisis completo.
+
+## Álgebra lineal con `Matrix`
+
+```hz
+var a = Matrix([[4, 7], [2, 6]])
+print(a.det())                              // determinante: 10
+print(a.inverse().toList())                 // inversa
+print(a.dot(a.inverse()).equals(Matrix.identity(2), 0.000001))
+
+// Sistema de ecuaciones: 2x + y = 3, x + 3y = 5
+var x = Matrix([[2, 1], [1, 3]]).solve([3, 5])
+print(x.toList())                           // [[0.8], [1.4]]
+
+print(a.trace(), a.norm(), a.std(), a.diag())
+print(Matrix([[1, 2, 3], [4, 5, 6]]).slice(0, 2, 1, 3).toList())   // filas 0..2, columnas 1..3
+print(Matrix.concat([[1, 2]], [[3, 4]]).toList(), Matrix.concat([[1], [2]], [[3], [4]], 1).toList())
+```
+
+`det`, `inverse` y `solve` usan descomposición LU con pivoteo parcial (estable y rápida, en C++).

@@ -355,6 +355,224 @@ NATIVE(im_save) {
     if (!ok) vm.raise("Image.save: no se puede escribir '" + p + "'");
     return Value();
 }
+// ---- más dibujo y filtros ---------------------------------------------------------
+
+NATIVE(im_ellipse) {
+    Img& im = I(args);
+    double cx = argNum(vm, args, argc, 0, "Image.ellipse"), cy = argNum(vm, args, argc, 1, "Image.ellipse");
+    double rx = std::max(0.5, argNum(vm, args, argc, 2, "Image.ellipse")), ry = std::max(0.5, argNum(vm, args, argc, 3, "Image.ellipse"));
+    C8 c = colorArg(vm, args, argc, 4, "Image.ellipse");
+    bool filled = argBool(args, argc, 5, true);
+    for (int y = std::max(0, (int)(cy - ry - 2)); y <= std::min(im.h - 1, (int)(cy + ry + 2)); y++)
+        for (int x = std::max(0, (int)(cx - rx - 2)); x <= std::min(im.w - 1, (int)(cx + rx + 2)); x++) {
+            double dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry;
+            double r = std::sqrt(dx * dx + dy * dy);
+            double px = r * std::min(rx, ry); // distancia aproximada en píxeles al borde
+            double edge = std::min(rx, ry);
+            double cover = filled ? std::clamp(edge + 0.5 - px, 0.0, 1.0) : std::clamp(1.0 - std::fabs(px - edge), 0.0, 1.0);
+            if (cover > 0) blend(im, x, y, c, (int)(cover * 255));
+        }
+    return args[-1];
+}
+
+// Puntos de un polígono: [[x, y], ...], [Vec2, ...] o [x0, y0, x1, y1, ...]
+static std::vector<std::pair<double, double>> pointsArg(VM& vm, const Value& v, const char* fname) {
+    if (!isObjType(v, OT::List)) vm.raise(std::string(fname) + ": se esperaba una lista de puntos [[x, y], ...]");
+    auto& items = static_cast<ObjList*>(v.o)->items;
+    std::vector<std::pair<double, double>> pts;
+    if (!items.empty() && items[0].isNum()) {
+        if (items.size() % 2) vm.raise(std::string(fname) + ": la lista de coordenadas debe tener un número par de valores");
+        for (size_t i = 0; i + 1 < items.size(); i += 2) {
+            if (!items[i].isNum() || !items[i + 1].isNum()) vm.raise(std::string(fname) + ": todas las coordenadas deben ser números");
+            pts.push_back({items[i].n, items[i + 1].n});
+        }
+        return pts;
+    }
+    for (auto& p : items) {
+        if (isObjType(p, OT::Vec)) { auto* vv = static_cast<ObjVec*>(p.o); pts.push_back({vv->v[0], vv->v[1]}); continue; }
+        if (isObjType(p, OT::List)) {
+            auto& xy = static_cast<ObjList*>(p.o)->items;
+            if (xy.size() >= 2 && xy[0].isNum() && xy[1].isNum()) { pts.push_back({xy[0].n, xy[1].n}); continue; }
+        }
+        vm.raise(std::string(fname) + ": cada punto debe ser [x, y] o un Vec2");
+    }
+    return pts;
+}
+
+NATIVE(im_polygon) {
+    Img& im = I(args);
+    auto pts = pointsArg(vm, optArg(args, argc, 0), "Image.polygon");
+    C8 c = colorArg(vm, args, argc, 1, "Image.polygon");
+    bool filled = argBool(args, argc, 2, true);
+    if (pts.size() < 2) return args[-1];
+    if (!filled) {
+        // solo el contorno: líneas entre puntos consecutivos (sin suavizado, con grosor 1)
+        for (size_t i = 0; i < pts.size(); i++) {
+            auto a = pts[i], b = pts[(i + 1) % pts.size()];
+            int steps = (int)std::max(std::fabs(b.first - a.first), std::fabs(b.second - a.second)) + 1;
+            for (int s = 0; s <= steps; s++) {
+                double t = (double)s / steps;
+                blend(im, (int)std::floor(a.first + (b.first - a.first) * t), (int)std::floor(a.second + (b.second - a.second) * t), c);
+            }
+        }
+        return args[-1];
+    }
+    // relleno por líneas con 4 submuestras verticales para suavizar los bordes
+    double ymin = pts[0].second, ymax = ymin;
+    for (auto& p : pts) { ymin = std::min(ymin, p.second); ymax = std::max(ymax, p.second); }
+    int y0 = std::max(0, (int)std::floor(ymin)), y1 = std::min(im.h - 1, (int)std::ceil(ymax));
+    const int SUB = 4;
+    std::vector<int> cover((size_t)im.w);
+    std::vector<double> xs;
+    for (int y = y0; y <= y1; y++) {
+        std::fill(cover.begin(), cover.end(), 0);
+        for (int sub = 0; sub < SUB; sub++) {
+            double sy = y + (sub + 0.5) / SUB;
+            xs.clear();
+            for (size_t i = 0; i < pts.size(); i++) {
+                auto a = pts[i], b = pts[(i + 1) % pts.size()];
+                if ((a.second <= sy && b.second > sy) || (b.second <= sy && a.second > sy))
+                    xs.push_back(a.first + (sy - a.second) / (b.second - a.second) * (b.first - a.first));
+            }
+            std::sort(xs.begin(), xs.end());
+            for (size_t k = 0; k + 1 < xs.size(); k += 2) {
+                int xa = std::max(0, (int)std::lround(xs[k])), xb = std::min(im.w, (int)std::lround(xs[k + 1]));
+                for (int x = xa; x < xb; x++) cover[(size_t)x]++;
+            }
+        }
+        for (int x = 0; x < im.w; x++)
+            if (cover[(size_t)x]) blend(im, x, y, c, cover[(size_t)x] * 255 / SUB);
+    }
+    return args[-1];
+}
+
+NATIVE(im_gradient) {
+    Img& im = I(args);
+    C8 a = colorArg(vm, args, argc, 0, "Image.gradient"), b = colorArg(vm, args, argc, 1, "Image.gradient", {0, 0, 0, 255});
+    bool vertical = argBool(args, argc, 2, true);
+    for (int y = 0; y < im.h; y++)
+        for (int x = 0; x < im.w; x++) {
+            double t = vertical ? (im.h > 1 ? (double)y / (im.h - 1) : 0) : (im.w > 1 ? (double)x / (im.w - 1) : 0);
+            uint8_t* d = im.at(x, y);
+            d[0] = (uint8_t)std::lround(a.r + (b.r - a.r) * t);
+            d[1] = (uint8_t)std::lround(a.g + (b.g - a.g) * t);
+            d[2] = (uint8_t)std::lround(a.b + (b.b - a.b) * t);
+            d[3] = (uint8_t)std::lround(a.a + (b.a - a.a) * t);
+        }
+    return args[-1];
+}
+
+// Desenfoque: tres pasadas de caja (aproxima un desenfoque gaussiano), separable y O(píxeles)
+static void boxBlurPass(Img& im, int r, bool horizontal) {
+    int n = horizontal ? im.w : im.h, lines = horizontal ? im.h : im.w;
+    std::vector<int> acc(4);
+    std::vector<uint8_t> line((size_t)n * 4);
+    for (int l = 0; l < lines; l++) {
+        auto px = [&](int i) { return horizontal ? im.at(i, l) : im.at(l, i); };
+        for (int i = 0; i < n; i++) std::memcpy(&line[(size_t)i * 4], px(i), 4);
+        std::fill(acc.begin(), acc.end(), 0);
+        auto get = [&](int i, int k) { return (int)line[(size_t)std::clamp(i, 0, n - 1) * 4 + k]; };
+        for (int i = -r; i <= r; i++) for (int k = 0; k < 4; k++) acc[k] += get(i, k);
+        int w = 2 * r + 1;
+        for (int i = 0; i < n; i++) {
+            uint8_t* d = px(i);
+            for (int k = 0; k < 4; k++) d[k] = (uint8_t)(acc[k] / w);
+            for (int k = 0; k < 4; k++) acc[k] += get(i + r + 1, k) - get(i - r, k);
+        }
+    }
+}
+NATIVE(im_blur) {
+    Img& im = I(args);
+    int r = (int)std::clamp(argNum(vm, args, argc, 0, "Image.blur", 2), 0.0, 200.0);
+    if (r > 0)
+        for (int pass = 0; pass < 3; pass++) { boxBlurPass(im, r, true); boxBlurPass(im, r, false); }
+    return args[-1];
+}
+
+NATIVE(im_rotate) {
+    Img& im = I(args);
+    double deg = argNum(vm, args, argc, 0, "Image.rotate", 90);
+    int q = (int)std::lround(deg / 90.0);
+    if (std::fabs(deg - q * 90.0) > 1e-9) vm.raise("Image.rotate: solo se admiten giros de 90, 180 o 270 grados");
+    q = ((q % 4) + 4) % 4;
+    if (q == 0) return wrap(vm, im);
+    Img out(q == 2 ? im.w : im.h, q == 2 ? im.h : im.w);
+    for (int y = 0; y < im.h; y++)
+        for (int x = 0; x < im.w; x++) {
+            int nx, ny;
+            if (q == 1) { nx = im.h - 1 - y; ny = x; }        // 90° en el sentido de las agujas del reloj
+            else if (q == 2) { nx = im.w - 1 - x; ny = im.h - 1 - y; }
+            else { nx = y; ny = im.w - 1 - x; }
+            std::memcpy(out.at(nx, ny), im.at(x, y), 4);
+        }
+    return wrap(vm, std::move(out));
+}
+
+template <class F> static Value mapPixels(Value* args, F f) {
+    Img& im = I(args);
+    for (size_t i = 0; i < im.px.size(); i += 4) f(&im.px[i]);
+    return args[-1];
+}
+static uint8_t clamp8(double v) { return (uint8_t)std::clamp((int)std::lround(v), 0, 255); }
+NATIVE(im_brightness) {
+    double f = argNum(vm, args, argc, 0, "Image.brightness");
+    return mapPixels(args, [&](uint8_t* p) { for (int k = 0; k < 3; k++) p[k] = clamp8(p[k] * f); });
+}
+NATIVE(im_contrast) {
+    double f = argNum(vm, args, argc, 0, "Image.contrast");
+    return mapPixels(args, [&](uint8_t* p) { for (int k = 0; k < 3; k++) p[k] = clamp8((p[k] - 128.0) * f + 128.0); });
+}
+NATIVE(im_sepia) {
+    UNUSED;
+    return mapPixels(args, [](uint8_t* p) {
+        double r = p[0], g = p[1], b = p[2];
+        p[0] = clamp8(r * 0.393 + g * 0.769 + b * 0.189);
+        p[1] = clamp8(r * 0.349 + g * 0.686 + b * 0.168);
+        p[2] = clamp8(r * 0.272 + g * 0.534 + b * 0.131);
+    });
+}
+NATIVE(im_threshold) {
+    double t = argNum(vm, args, argc, 0, "Image.threshold", 128);
+    return mapPixels(args, [&](uint8_t* p) {
+        uint8_t v = (0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2]) >= t ? 255 : 0;
+        p[0] = p[1] = p[2] = v;
+    });
+}
+
+// Bote de pintura: rellena la zona del mismo color (con tolerancia) que contiene (x, y)
+NATIVE(im_floodFill) {
+    Img& im = I(args);
+    int sx = (int)argNum(vm, args, argc, 0, "Image.floodFill"), sy = (int)argNum(vm, args, argc, 1, "Image.floodFill");
+    C8 c = colorArg(vm, args, argc, 2, "Image.floodFill");
+    int tol = (int)std::clamp(argNum(vm, args, argc, 3, "Image.floodFill", 0), 0.0, 255.0);
+    if (sx < 0 || sy < 0 || sx >= im.w || sy >= im.h) return Value(0);
+    uint8_t target[4];
+    std::memcpy(target, im.at(sx, sy), 4);
+    auto same = [&](const uint8_t* p) {
+        for (int k = 0; k < 4; k++) if (std::abs(p[k] - target[k]) > tol) return false;
+        return true;
+    };
+    std::vector<uint8_t> seen((size_t)im.w * im.h, 0);
+    std::vector<std::pair<int, int>> stack{{sx, sy}};
+    long count = 0;
+    while (!stack.empty()) {
+        auto [x, y] = stack.back();
+        stack.pop_back();
+        if (x < 0 || y < 0 || x >= im.w || y >= im.h) continue;
+        size_t idx = (size_t)y * im.w + x;
+        if (seen[idx] || !same(im.at(x, y))) continue;
+        seen[idx] = 1;
+        uint8_t* d = im.at(x, y);
+        d[0] = c.r; d[1] = c.g; d[2] = c.b; d[3] = c.a;
+        count++;
+        stack.push_back({x + 1, y});
+        stack.push_back({x - 1, y});
+        stack.push_back({x, y + 1});
+        stack.push_back({x, y - 1});
+    }
+    return Value((double)count);
+}
+
 NATIVE(im_toString) { UNUSED; return vm.str("Image(" + std::to_string(I(args).w) + "×" + std::to_string(I(args).h) + ")"); }
 
 // ---- compresión (zlib) para Bytes --------------------------------------
@@ -368,17 +586,21 @@ NATIVE(b_compress) {
     auto in = bytesOf(vm, args[-1], "Bytes.compress");
     int level = std::clamp((int)argNum(vm, args, argc, 0, "Bytes.compress", 8), 1, 9);
     int outLen = 0;
+    bool raw = argBool(args, argc, 1, false);
     unsigned char* z = stbi_zlib_compress(in.data(), (int)in.size(), &outLen, level);
     if (!z) vm.raise("Bytes.compress: no se pudo comprimir");
-    Value r = toBytes(vm, z, (size_t)outLen);
+    // raw: deflate puro, sin la cabecera zlib (2 bytes) ni la suma Adler-32 (4 bytes), como dentro de los .zip
+    Value r = raw && outLen >= 6 ? toBytes(vm, z + 2, (size_t)outLen - 6) : toBytes(vm, z, (size_t)outLen);
     STBIW_FREE(z);
     return r;
 }
 NATIVE(b_decompress) {
     auto in = bytesOf(vm, args[-1], "Bytes.decompress");
     int outLen = 0;
-    char* d = stbi_zlib_decode_malloc((const char*)in.data(), (int)in.size(), &outLen);
-    if (!d) vm.raise("Bytes.decompress: los datos no están comprimidos con zlib (Bytes.compress)");
+    bool raw = argBool(args, argc, 0, false);
+    char* d = raw ? stbi_zlib_decode_noheader_malloc((const char*)in.data(), (int)in.size(), &outLen)
+                  : stbi_zlib_decode_malloc((const char*)in.data(), (int)in.size(), &outLen);
+    if (!d) vm.raise(raw ? "Bytes.decompress: los datos no son deflate válido" : "Bytes.decompress: los datos no están comprimidos con zlib (Bytes.compress)");
     Value r = toBytes(vm, (const unsigned char*)d, (size_t)outLen);
     STBI_FREE(d);
     return r;
@@ -414,12 +636,27 @@ void registerImage(VM& vm) {
     vm.defineMethod(c, "pixels", "(): Bytes", "Los píxeles como Bytes (R, G, B, A por píxel, fila a fila).", im_pixels);
     vm.defineMethod(c, "save", "(ruta: text, calidad?: number = 90): void", "Guarda según la extensión: .png, .jpg, .bmp o .tga.", im_save);
     vm.defineMethod(c, "toString", "(): text", "Descripción.", im_toString);
+    vm.defineMethod(c, "ellipse", "(x: number, y: number, radioX: number, radioY: number, color?: Color, relleno?: bool = true): Image",
+                    "Elipse rellena o solo el borde.", im_ellipse);
+    vm.defineMethod(c, "polygon", "(puntos: list, color?: Color, relleno?: bool = true): Image",
+                    "Polígono con los puntos [[x, y], ...] (o Vec2): triángulos, estrellas, flechas...", im_polygon);
+    vm.defineMethod(c, "gradient", "(desde: Color, hasta: Color, vertical?: bool = true): Image", "Degradado de un color a otro en toda la imagen.",
+                    im_gradient);
+    vm.defineMethod(c, "blur", "(radio?: number = 2): Image", "Desenfoca la imagen (en el sitio).", im_blur);
+    vm.defineMethod(c, "rotate", "(grados?: number = 90): Image", "Imagen nueva girada 90, 180 o 270 grados (sentido del reloj).", im_rotate);
+    vm.defineMethod(c, "brightness", "(factor: number): Image", "Más clara (factor > 1) o más oscura (< 1).", im_brightness);
+    vm.defineMethod(c, "contrast", "(factor: number): Image", "Más contraste (factor > 1) o menos (< 1).", im_contrast);
+    vm.defineMethod(c, "sepia", "(): Image", "Tono sepia de foto antigua.", im_sepia);
+    vm.defineMethod(c, "threshold", "(umbral?: number = 128): Image", "Blanco y negro puro según el brillo de cada píxel.", im_threshold);
+    vm.defineMethod(c, "floodFill", "(x: number, y: number, color: Color, tolerancia?: number = 0): number",
+                    "Bote de pintura: rellena la zona del mismo color que (x, y) y devuelve cuántos píxeles pintó.", im_floodFill);
     vm.defineStatic(c, "load", "(ruta: text): Image", "Lee una imagen PNG, JPG, BMP, GIF o TGA.", im_load);
     vm.defineStatic(c, "fromBytes", "(ancho: number, alto: number, pixeles: Bytes): Image", "Imagen a partir de píxeles RGBA.", im_fromBytes);
 
     ObjClass* bytes = static_cast<ObjClass*>(vm.builtins[vm.builtinSlot("Bytes")].o);
-    vm.defineMethod(bytes, "compress", "(nivel?: number = 8): Bytes", "Comprime con zlib (deflate); nivel de 1 (rápido) a 9 (pequeño).", b_compress);
-    vm.defineMethod(bytes, "decompress", "(): Bytes", "Descomprime datos zlib.", b_decompress);
+    vm.defineMethod(bytes, "compress", "(nivel?: number = 8, raw?: bool = false): Bytes",
+                    "Comprime con zlib (deflate); nivel de 1 (rápido) a 9 (pequeño). raw = true: deflate puro, como en los .zip.", b_compress);
+    vm.defineMethod(bytes, "decompress", "(raw?: bool = false): Bytes", "Descomprime datos zlib (o deflate puro con raw = true).", b_decompress);
 }
 
 } // namespace hz

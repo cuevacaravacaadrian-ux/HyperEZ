@@ -58,6 +58,18 @@ int CodeGen::emitJump(uint8_t o, SrcLoc loc) {
     return here() - 2;
 }
 void CodeGen::patchJump(int at) { patchJumpTo(at, here()); }
+// Descarta el valor de una asignación usada como sentencia. Peephole: SET_GLOBAL + POP es DEFINE_GLOBAL
+// y SET_LOCAL + POP es SET_LOCAL_POP (una instrucción menos en cada "x = ..." o "x += ..."). Solo si
+// el SET es lo último emitido y ningún salto llega al POP.
+void CodeGen::discardTop() {
+    auto& code = fs->fn->code;
+    if (fs->lastOp == here() - 3 && fs->lastTarget < here()) {
+        uint8_t& last = code[(size_t)fs->lastOp];
+        if (last == OP_SET_GLOBAL) { last = OP_DEFINE_GLOBAL; return; }
+        if (last == OP_SET_LOCAL) { last = OP_SET_LOCAL_POP; return; }
+    }
+    op(OP_POP);
+}
 void CodeGen::patchJumpTo(int at, int target) {
     fs->lastTarget = std::max(fs->lastTarget, target);
     int dist = target - (at + 2);
@@ -406,6 +418,32 @@ void CodeGen::stmt(Stmt* s) {
             expr(f->end.get()); declareLocal(f->slotEnd, false, f->loc);
             if (f->step) expr(f->step.get()); else { op(OP_CONST); u16(addConst(Value(1.0))); }
             declareLocal(f->slotStep, false, f->loc);
+            if (!f->varCaptured) {
+                // La variable no la captura ninguna función: hueco fijo antes del bucle; FOR_CHECK_V y
+                // FOR_NEXT_V le copian el contador (2 instrucciones menos por vuelta).
+                op(OP_NULL, f->varLoc);
+                declareLocal(f->slotVar, false, f->varLoc);
+                LoopCtx loop;
+                loop.start = here();
+                op(OP_FOR_CHECK_V, f->loc); u16(f->slotCounter); u8(f->inclusive ? 1 : 0); u16(f->slotVar);
+                int exitJ = here(); u8(0xFF); u8(0xFF);
+                int bodyStart = here();
+                loop.breakDepth = base + 4;
+                loop.continueDepth = base + 4;
+                loop.tryDepth = (int)fs->tries.size();
+                fs->loops.push_back(loop);
+                stmt(f->body.get());
+                LoopCtx done = fs->loops.back();
+                fs->loops.pop_back();
+                for (int c : done.continues) patchJumpTo(c, here());
+                popLocalsTo(base + 4);
+                op(OP_FOR_NEXT_V, f->loc); u16(f->slotCounter); u8(f->inclusive ? 1 : 0); u16(f->slotVar);
+                u16(here() + 2 - bodyStart);
+                patchJump(exitJ);
+                for (int b : done.breaks) patchJump(b);
+                popLocalsTo(base);
+                break;
+            }
             LoopCtx loop;
             loop.start = here();
             op(OP_FOR_CHECK, f->loc); u16(f->slotCounter); u8(f->inclusive ? 1 : 0);
@@ -754,7 +792,7 @@ void CodeGen::assign(AssignExpr* a, bool discard) {
     } else {
         expr(a->value.get());
     }
-    if (discard) op(OP_POP);
+    if (discard) discardTop();
 }
 
 void CodeGen::incDec(IncDecExpr* e, bool discard) {
@@ -769,7 +807,7 @@ void CodeGen::incDec(IncDecExpr* e, bool discard) {
         op(OP_CONST); u16(one);
         op(o, e->loc);
         store(id->res, id->name, e->loc);
-        if (wantOld) op(OP_POP);
+        if (wantOld) discardTop();
     } else if (t->kind == ExprKind::Member) {
         auto* m = static_cast<MemberExpr*>(t);
         expr(m->object.get());
@@ -791,7 +829,7 @@ void CodeGen::incDec(IncDecExpr* e, bool discard) {
     } else {
         expr(t);
     }
-    if (discard) op(OP_POP);
+    if (discard) discardTop();
 }
 
 void CodeGen::args(std::vector<Arg>& as, SrcLoc loc, std::function<void(int, int, bool)> finish) {

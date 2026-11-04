@@ -1,0 +1,24 @@
+// Gráficas SVG (se abren con cualquier navegador): barras, líneas y tarta a partir de datos.
+// Las imágenes se guardan en la carpeta temporal; con --abrir se abren en el navegador.
+import svg
+import stats
+
+var ventas = { ene: 120, feb: 95, mar: 160, abr: 140, may: 185, jun: 210 }
+var carpeta = Path.dir(File.tempFile())
+
+var barras = svg.barChart(ventas, { title: "Ventas del semestre" })
+var lineas = svg.lineChart(ventas.values(), { title: "Evolución", color: "#3fb950" })
+var tarta = svg.pieChart({ web: 45, tienda: 35, teléfono: 20 }, { title: "Canales de venta" })
+
+var archivos = { "ventas-barras.svg": barras, "ventas-lineas.svg": lineas, "canales.svg": tarta }
+foreach nombre, dibujo in archivos {
+    var ruta = Path.join(carpeta, nombre)
+    dibujo.save(ruta)
+    print("✓ ${nombre} (${dibujo.parts.length} figuras)")
+    if System.args.contains("--abrir") { Process.open(ruta) }
+}
+
+var v = ventas.values()
+print()
+print("Media: ${round(stats.mean(v), 1)} · mediana: ${v.median()} · mejor mes: ${ventas.sortByValue(true).keys()[0]}")
+print("Total: ${v.sum().format()} € · crecimiento: ${((v.last() - v.first()) / v.first()).toPercent(1)}")

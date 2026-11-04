@@ -952,8 +952,23 @@ Value VM::arith(uint8_t op, Value a, Value b) {
     if (op == OP_MUL && isString(a) && b.isNum()) {
         std::string s;
         int n = (int)b.n;
-        if (n > 0) for (int i = 0; i < n; i++) s += asString(a)->str;
+        if (n > 0) {
+            if ((double)asString(a)->str.size() * n > 1e9) raise("El texto repetido sería demasiado grande");
+            s.reserve(asString(a)->str.size() * (size_t)n);
+            for (int i = 0; i < n; i++) s += asString(a)->str;
+        }
         return str(s);
+    }
+    if (op == OP_MUL && isObjType(a, OT::List) && b.isNum()) { // [0] * 5 = [0, 0, 0, 0, 0]
+        ObjList* r = newList();
+        auto& x = static_cast<ObjList*>(a.o)->items;
+        long long n = (long long)b.n;
+        if (n > 0) {
+            if ((double)x.size() * (double)n > 1e8) raise("La lista repetida sería demasiado grande");
+            r->items.reserve(x.size() * (size_t)n);
+            for (long long i = 0; i < n; i++) r->items.insert(r->items.end(), x.begin(), x.end());
+        }
+        return Value::object(r);
     }
     if (op == OP_ADD && isObjType(a, OT::List) && isObjType(b, OT::List)) {
         ObjList* r = newList();
@@ -1257,6 +1272,7 @@ RunResult VM::run(int exitDepth) {
             case OP_SWAP: std::swap(STK[f->sp - 1], STK[f->sp - 2]); break;
             case OP_GET_LOCAL: PUSH(slots[RD16()]); break;
             case OP_SET_LOCAL: slots[RD16()] = PEEK(0); break;
+            case OP_SET_LOCAL_POP: slots[RD16()] = POP(); break;
             case OP_GET_UPVAL: {
                 ObjUpvalue* u = frame->closure->upvalues[RD16()];
                 PUSH(u->open ? u->fiber->stack[u->slot] : u->closed);
@@ -1368,45 +1384,61 @@ RunResult VM::run(int exitDepth) {
                 f->sp--;
                 break;
             }
-            case OP_SUB: case OP_MUL: case OP_DIV: case OP_MOD: case OP_POW:
-            case OP_LT: case OP_LE: case OP_GT: case OP_GE:
-            case OP_BAND: case OP_BOR: case OP_BXOR: case OP_SHL: case OP_SHR: {
+            // Operaciones con dos números: cada una tiene su propio caso (sin un segundo switch) y, si los
+            // operandos no son números, todas comparten el camino lento (arith: textos, vectores, sobrecarga).
+#define NUM_BINOP(OPC, EXPR)                                         \
+            case OPC: {                                              \
+                Value b_ = PEEK(0), a_ = PEEK(1);                    \
+                if (a_.isNum() && b_.isNum()) {                      \
+                    double x = a_.n, y = b_.n;                       \
+                    (void)x; (void)y;                                \
+                    STK[f->sp - 2] = EXPR;                           \
+                    f->sp--;                                         \
+                    break;                                           \
+                }                                                    \
+                goto arithSlow;                                      \
+            }
+            NUM_BINOP(OP_SUB, Value(x - y))
+            NUM_BINOP(OP_MUL, Value(x * y))
+            NUM_BINOP(OP_LT, Value::boolean(x < y))
+            NUM_BINOP(OP_LE, Value::boolean(x <= y))
+            NUM_BINOP(OP_GT, Value::boolean(x > y))
+            NUM_BINOP(OP_GE, Value::boolean(x >= y))
+#undef NUM_BINOP
+            case OP_DIV: {
                 Value b = PEEK(0), a = PEEK(1);
-                if (a.isNum() && b.isNum()) {
-                    double x = a.n, y = b.n;
-                    Value r;
-                    switch (op) {
-                        case OP_SUB: r = Value(x - y); break;
-                        case OP_MUL: r = Value(x * y); break;
-                        case OP_LT: r = Value::boolean(x < y); break;
-                        case OP_LE: r = Value::boolean(x <= y); break;
-                        case OP_GT: r = Value::boolean(x > y); break;
-                        case OP_GE: r = Value::boolean(x >= y); break;
-                        case OP_DIV: if (y == 0) goto slow; r = Value(x / y); break;
-                        case OP_MOD: {
-                            if (y == 0) goto slow;
-                            double m;
-                            if (x >= -9e15 && x <= 9e15 && y >= -9e15 && y <= 9e15 && x == (double)(int64_t)x && y == (double)(int64_t)y)
-                                m = (double)((int64_t)x % (int64_t)y);
-                            else
-                                m = std::fmod(x, y);
-                            if (m != 0 && ((m < 0) != (y < 0))) m += y;
-                            r = Value(m);
-                            break;
-                        }
-                        default: goto slow;
+                if (a.isNum() && b.isNum() && b.n != 0) { STK[f->sp - 2] = Value(a.n / b.n); f->sp--; break; }
+                goto arithSlow;
+            }
+            case OP_MOD: {
+                Value b = PEEK(0), a = PEEK(1);
+                if (a.isNum() && b.isNum() && b.n != 0) {
+                    double x = a.n, y = b.n, m;
+                    // Enteros de 32 bits (lo normal: i % 7): la división de 32 bits es mucho más rápida
+                    if (x >= -2147483648.0 && x <= 2147483647.0 && y >= -2147483648.0 && y <= 2147483647.0 &&
+                        x == (double)(int32_t)x && y == (double)(int32_t)y) {
+                        int32_t yi = (int32_t)y;
+                        m = yi == -1 ? 0.0 : (double)((int32_t)x % yi);
+                    } else if (x >= -9e15 && x <= 9e15 && y >= -9e15 && y <= 9e15 && x == (double)(int64_t)x && y == (double)(int64_t)y) {
+                        m = (double)((int64_t)x % (int64_t)y);
+                    } else {
+                        m = std::fmod(x, y);
                     }
-                    STK[f->sp - 2] = r;
+                    if (m != 0 && ((m < 0) != (y < 0))) m += y;
+                    STK[f->sp - 2] = Value(m);
                     f->sp--;
                     break;
                 }
-            slow:
-                {
-                    Value r;
-                    GUARD(r = arith(op, a, b));
-                    STK[f->sp - 2] = r;
-                    f->sp--;
-                }
+                goto arithSlow;
+            }
+            case OP_POW:
+            case OP_BAND: case OP_BOR: case OP_BXOR: case OP_SHL: case OP_SHR:
+            arithSlow: {
+                Value b = PEEK(0), a = PEEK(1);
+                Value r;
+                GUARD(r = arith(op, a, b));
+                STK[f->sp - 2] = r;
+                f->sp--;
                 break;
             }
             case OP_NEG: {
@@ -1785,6 +1817,37 @@ RunResult VM::run(int exitDepth) {
                 if (s.n == 0) ERR("El paso (step) del bucle no puede ser 0");
                 bool go = s.n > 0 ? (incl ? c.n <= e.n : c.n < e.n) : (incl ? c.n >= e.n : c.n > e.n);
                 if (!go) ip += jump;
+                break;
+            }
+            case OP_FOR_CHECK_V: {
+                uint16_t slot = RD16();
+                bool incl = RD8();
+                uint16_t var = RD16();
+                uint16_t jump = RD16();
+                Value c = slots[slot], e = slots[slot + 1], s = slots[slot + 2];
+                if (!c.isNum() || !e.isNum() || !s.isNum()) ERR("Los límites del bucle 'for' deben ser números");
+                if (s.n == 0) ERR("El paso (step) del bucle no puede ser 0");
+                bool go = s.n > 0 ? (incl ? c.n <= e.n : c.n < e.n) : (incl ? c.n >= e.n : c.n > e.n);
+                if (go) slots[var] = c;
+                else ip += jump;
+                break;
+            }
+            case OP_FOR_NEXT_V: {
+                uint16_t slot = RD16();
+                bool incl = RD8();
+                uint16_t var = RD16();
+                uint16_t back = RD16();
+                double s = slots[slot + 2].n;
+                double c = (slots[slot].n += s), e = slots[slot + 1].n;
+                if (s > 0 ? (incl ? c <= e : c < e) : (incl ? c >= e : c > e)) {
+                    slots[var] = Value(c);
+                    ip -= back;
+                    if (bytesAllocated > nextGC && gcEnabled) { SAVE(); collectGarbage(); }
+                    if (g_interrupt.load(std::memory_order_relaxed)) [[unlikely]] {
+                        g_interrupt = false;
+                        ERR("Ejecución interrumpida (Ctrl+C)");
+                    }
+                }
                 break;
             }
             case OP_FOR_INCR: { uint16_t slot = RD16(); slots[slot].n += slots[slot + 2].n; break; }

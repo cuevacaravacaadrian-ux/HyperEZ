@@ -1,0 +1,139 @@
+// markdown — convierte texto Markdown en HTML (títulos, listas, enlaces, código, tablas, citas...).
+//
+//   import markdown
+//   var html = markdown.toHtml("# Hola\n\nTexto con **negrita**, *cursiva* y `código`.")
+//   File.write("pagina.html", markdown.page("Mi página", "# Hola\n\n- uno\n- dos"))
+
+function esc(t: text): text { return t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;") }
+
+/// Formato dentro de una línea: **negrita**, *cursiva*, `código`, [enlace](url), ![imagen](url), ~~tachado~~.
+function inline(t: text): text {
+    // el código va primero: lo de dentro no se interpreta
+    var partes = t.split("`")
+    var out = []
+    for i in 0..partes.length {
+        var p = partes[i]
+        if i % 2 == 1 and i < partes.length - 1 {
+            out.add("<code>" + esc(p) + "</code>")
+            continue
+        }
+        if i % 2 == 1 { p = "`" + p }
+        p = esc(p)
+        p = p.replaceRegex(r"!\[([^\]]*)\]\(([^)\s]+)\)", "<img src=\"$2\" alt=\"$1\">")
+        p = p.replaceRegex(r"\[([^\]]+)\]\(([^)\s]+)\)", "<a href=\"$2\">$1</a>")
+        p = p.replaceRegex(r"\*\*([^*]+)\*\*", "<strong>$1</strong>")
+        p = p.replaceRegex(r"__([^_]+)__", "<strong>$1</strong>")
+        p = p.replaceRegex(r"\*([^*]+)\*", "<em>$1</em>")
+        p = p.replaceRegex(r"(^|[\s(])_([^_]+)_", "$1<em>$2</em>")
+        p = p.replaceRegex(r"~~([^~]+)~~", "<del>$1</del>")
+        out.add(p)
+    }
+    return out.join("")
+}
+
+function isListItem(l: text): bool {
+    var t = l.trimStart()
+    return t.startsWith("- ") or t.startsWith("* ") or t.startsWith("+ ") or t.matches(r"^\d+[.)] .*")
+}
+
+function isTableRow(l: text): bool { return l.trim().startsWith("|") and l.trim().endsWith("|") }
+
+function cells(l: text): list {
+    var t = l.trim()
+    return t.substring(1, t.length - 1).split("|").map(c => c.trim())
+}
+
+/// Convierte un documento Markdown en HTML.
+function toHtml(md: text): text {
+    var lines = md.replace("\r\n", "\n").split("\n")
+    var out = []
+    var i = 0
+    var parrafo = []
+    function cerrarParrafo() {
+        if not parrafo.isEmpty() {
+            out.add("<p>" + inline(parrafo.join(" ")) + "</p>")
+            parrafo = []
+        }
+    }
+    while i < lines.length {
+        var l = lines[i]
+        var t = l.trim()
+        if t == "" {
+            cerrarParrafo()
+            i += 1
+        } else if t.startsWith("```") {
+            cerrarParrafo()
+            var lang = t.substring(3).trim()
+            var codigo = []
+            i += 1
+            while i < lines.length and not lines[i].trim().startsWith("```") {
+                codigo.add(lines[i])
+                i += 1
+            }
+            i += 1
+            var clase = lang == "" ? "" : " class=\"language-${esc(lang)}\""
+            out.add("<pre><code${clase}>" + esc(codigo.join("\n")) + "</code></pre>")
+        } else if t.matches(r"^#{1,6} .*") {
+            cerrarParrafo()
+            var n = t.indexOf(" ")
+            var titulo = t.substring(n + 1).trim()
+            var id = titulo.slug()
+            out.add("<h${n} id=\"${id}\">" + inline(titulo) + "</h${n}>")
+            i += 1
+        } else if t.matches(r"^(-{3,}|\*{3,}|_{3,})$") {
+            cerrarParrafo()
+            out.add("<hr>")
+            i += 1
+        } else if t.startsWith(">") {
+            cerrarParrafo()
+            var cita = []
+            while i < lines.length and lines[i].trim().startsWith(">") {
+                cita.add(lines[i].trim().substring(1).trimStart())
+                i += 1
+            }
+            out.add("<blockquote>" + toHtml(cita.join("\n")) + "</blockquote>")
+        } else if isListItem(l) {
+            cerrarParrafo()
+            var ordenada = l.trimStart().matches(r"^\d+[.)] .*")
+            var items = []
+            while i < lines.length and isListItem(lines[i]) {
+                var it = lines[i].trimStart()
+                var texto = ordenada ? it.substring(it.indexOf(" ") + 1) : it.substring(2)
+                if texto.startsWith("[ ] ") { texto = "<input type=\"checkbox\" disabled> " + inline(texto.substring(4)) }
+                else if texto.lower().startsWith("[x] ") { texto = "<input type=\"checkbox\" checked disabled> " + inline(texto.substring(4)) }
+                else { texto = inline(texto) }
+                items.add("<li>" + texto + "</li>")
+                i += 1
+            }
+            var tag = ordenada ? "ol" : "ul"
+            out.add("<${tag}>" + items.join("") + "</${tag}>")
+        } else if isTableRow(l) and i + 1 < lines.length and lines[i + 1].trim().matches(r"^\|[\s:|-]+\|$") {
+            cerrarParrafo()
+            var cabecera = cells(l)
+            i += 2
+            var filas = []
+            while i < lines.length and isTableRow(lines[i]) {
+                filas.add("<tr>" + cells(lines[i]).map(c => "<td>" + inline(c) + "</td>").join("") + "</tr>")
+                i += 1
+            }
+            out.add("<table><thead><tr>" + cabecera.map(c => "<th>" + inline(c) + "</th>").join("") + "</tr></thead><tbody>" +
+                    filas.join("") + "</tbody></table>")
+        } else {
+            parrafo.add(t)
+            i += 1
+        }
+    }
+    cerrarParrafo()
+    return out.join("\n")
+}
+
+const STYLE = "body{font-family:system-ui,'Segoe UI',sans-serif;max-width:46rem;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#1f2328}" +
+              "code{background:#f6f8fa;padding:.1em .3em;border-radius:4px}pre{background:#f6f8fa;padding:1em;overflow:auto;border-radius:6px}" +
+              "pre code{padding:0}table{border-collapse:collapse}td,th{border:1px solid #d0d7de;padding:.3em .7em}" +
+              "blockquote{border-left:4px solid #d0d7de;margin:0;padding-left:1em;color:#59636e}a{color:#0969da}img{max-width:100%}"
+
+/// Página HTML completa (con un estilo sencillo) a partir de Markdown.
+function page(titulo: text, md: text, estilo: text = STYLE): text {
+    return "<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n<meta charset=\"utf-8\">\n<title>${esc(titulo)}</title>\n<style>${estilo}</style>\n</head>\n<body>\n" +
+           toHtml(md) + "\n</body>\n</html>\n"
+}

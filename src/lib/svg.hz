@@ -1,0 +1,198 @@
+// svg — dibujos vectoriales y gráficas (barras, líneas, tarta) que se abren en cualquier navegador.
+//
+//   import svg
+//   var d = svg.Drawing(400, 200)
+//   d.rect(10, 10, 120, 80, { fill: "#2f81f7", rx: 8 })
+//   d.circle(250, 60, 40, { fill: "#ffc857" })
+//   d.text(20, 170, "Hecho con HyperEZ", { size: 22 })
+//   d.save("dibujo.svg")
+//
+//   svg.barChart({ ene: 120, feb: 95, mar: 160 }, { title: "Ventas" }).save("ventas.svg")
+
+const PALETTE = ["#2f81f7", "#f0883e", "#3fb950", "#db61a2", "#a371f7", "#d29922", "#39c5cf", "#f85149"]
+
+function esc(t: any): text { return str(t).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;") }
+
+function num(n: number): text { return str(round(n, 2)) }
+
+/// Atributos SVG a partir de un mapa de estilo: {fill, stroke, width (grosor del trazo), opacity, rx, size...}
+function attrs(estilo: map): text {
+    var nombres = { width: "stroke-width", size: "font-size", font: "font-family", anchor: "text-anchor", weight: "font-weight", dash: "stroke-dasharray" }
+    var out = []
+    foreach k, v in estilo {
+        var nombre = nombres.get(k, k)
+        out.add(" ${nombre}=\"${esc(v)}\"")
+    }
+    return out.join("")
+}
+
+/// Lienzo SVG de ancho × alto. Cada método añade una figura y devuelve el propio dibujo (se pueden encadenar).
+class Drawing {
+    var width: number
+    var height: number
+    var parts: list = []
+    var background: text?
+
+    constructor(ancho: number = 400, alto: number = 300, fondo: text? = null) {
+        width = ancho
+        height = alto
+        background = fondo
+    }
+
+    function rect(x: number, y: number, w: number, h: number, estilo: map = {}): Drawing {
+        parts.add("<rect x=\"${num(x)}\" y=\"${num(y)}\" width=\"${num(w)}\" height=\"${num(h)}\"${attrs(estilo)}/>")
+        return this
+    }
+
+    function circle(cx: number, cy: number, r: number, estilo: map = {}): Drawing {
+        parts.add("<circle cx=\"${num(cx)}\" cy=\"${num(cy)}\" r=\"${num(r)}\"${attrs(estilo)}/>")
+        return this
+    }
+
+    function ellipse(cx: number, cy: number, rx: number, ry: number, estilo: map = {}): Drawing {
+        parts.add("<ellipse cx=\"${num(cx)}\" cy=\"${num(cy)}\" rx=\"${num(rx)}\" ry=\"${num(ry)}\"${attrs(estilo)}/>")
+        return this
+    }
+
+    function line(x1: number, y1: number, x2: number, y2: number, estilo: map = { stroke: "#1f2328" }): Drawing {
+        var e = estilo.has("stroke") ? estilo : estilo.merge({ stroke: "#1f2328" })
+        parts.add("<line x1=\"${num(x1)}\" y1=\"${num(y1)}\" x2=\"${num(x2)}\" y2=\"${num(y2)}\"${attrs(e)}/>")
+        return this
+    }
+
+    /// Línea quebrada por los puntos [[x, y], ...] (cerrada = polígono).
+    function polyline(puntos: list, estilo: map = {}, cerrada: bool = false): Drawing {
+        var pts = puntos.map(p => "${num(p[0])},${num(p[1])}").join(" ")
+        var e = estilo.has("fill") ? estilo : estilo.merge({ fill: cerrada ? "#2f81f7" : "none" })
+        if not e.has("stroke") and not cerrada { e = e.merge({ stroke: "#1f2328" }) }
+        parts.add("<${cerrada ? "polygon" : "polyline"} points=\"${pts}\"${attrs(e)}/>")
+        return this
+    }
+
+    function polygon(puntos: list, estilo: map = {}): Drawing { return polyline(puntos, estilo, true) }
+
+    /// Trazado SVG libre ("M 10 10 L 50 50 Z").
+    function path(d: text, estilo: map = {}): Drawing {
+        parts.add("<path d=\"${esc(d)}\"${attrs(estilo)}/>")
+        return this
+    }
+
+    function text(x: number, y: number, contenido: any, estilo: map = {}): Drawing {
+        var e = estilo.has("font") ? estilo : estilo.merge({ font: "system-ui, Segoe UI, sans-serif" })
+        parts.add("<text x=\"${num(x)}\" y=\"${num(y)}\"${attrs(e)}>${esc(contenido)}</text>")
+        return this
+    }
+
+    /// Añade SVG escrito a mano.
+    function raw(codigo: text): Drawing {
+        parts.add(codigo)
+        return this
+    }
+
+    function toString(): text {
+        var fondo = background == null ? "" : "<rect width=\"100%\" height=\"100%\" fill=\"${esc(background)}\"/>"
+        return "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"${num(width)}\" height=\"${num(height)}\" viewBox=\"0 0 ${num(width)} ${num(height)}\">" +
+               fondo + parts.join("") + "</svg>"
+    }
+
+    /// Guarda como archivo .svg (se abre con el navegador).
+    function save(ruta: text) { File.write(ruta, toString()) }
+}
+
+/// Etiquetas y números {labels, nums} a partir de un mapa {etiqueta: valor} o de una lista de números.
+function series(datos: any): map {
+    if typeof(datos) == "map" { return { labels: datos.keys().map(k => str(k)), nums: datos.values() } }
+    return { labels: range(len(datos)).toList().map(i => str(i + 1)), nums: datos }
+}
+
+/// Gráfica de barras. opciones: {title, width, height, color}
+function barChart(datos: any, opciones: map = {}): Drawing {
+    var s = series(datos)
+    var w = opciones.get("width", 520)
+    var h = opciones.get("height", 300)
+    var d = Drawing(w, h, "#ffffff")
+    var top = opciones.has("title") ? 44 : 20
+    var base = h - 36
+    var izq = 44
+    var maximo = max(1, s.nums.max())
+    var n = max(1, s.nums.length)
+    var hueco = (w - izq - 16) / n
+    if opciones.has("title") { d.text(w / 2, 28, opciones.title, { size: 18, anchor: "middle", weight: "bold" }) }
+    for k in 0..=4 {
+        var y = base - (base - top) * k / 4
+        d.line(izq, y, w - 16, y, { stroke: "#d0d7de", width: 1 })
+        d.text(izq - 6, y + 4, round(maximo * k / 4, 1), { size: 11, anchor: "end", fill: "#59636e" })
+    }
+    for i in 0..s.nums.length {
+        var alto = (base - top) * s.nums[i] / maximo
+        var x = izq + hueco * i + hueco * 0.15
+        d.rect(x, base - alto, hueco * 0.7, alto, { fill: opciones.get("color", PALETTE[i % PALETTE.length]), rx: 3 })
+        d.text(x + hueco * 0.35, base + 18, s.labels[i], { size: 12, anchor: "middle" })
+    }
+    return d
+}
+
+/// Gráfica de líneas. opciones: {title, width, height, color}
+function lineChart(datos: any, opciones: map = {}): Drawing {
+    var s = series(datos)
+    var w = opciones.get("width", 520)
+    var h = opciones.get("height", 300)
+    var d = Drawing(w, h, "#ffffff")
+    var top = opciones.has("title") ? 44 : 20
+    var base = h - 36
+    var izq = 44
+    var minimo = min(0, s.nums.min())
+    var maximo = max(minimo + 1, s.nums.max())
+    var n = max(2, s.nums.length)
+    if opciones.has("title") { d.text(w / 2, 28, opciones.title, { size: 18, anchor: "middle", weight: "bold" }) }
+    for k in 0..=4 {
+        var y = base - (base - top) * k / 4
+        d.line(izq, y, w - 16, y, { stroke: "#d0d7de", width: 1 })
+        d.text(izq - 6, y + 4, round(minimo + (maximo - minimo) * k / 4, 1), { size: 11, anchor: "end", fill: "#59636e" })
+    }
+    var puntos = []
+    for i in 0..s.nums.length {
+        var x = izq + (w - izq - 24) * i / (n - 1)
+        var y = base - (base - top) * (s.nums[i] - minimo) / (maximo - minimo)
+        puntos.add([x, y])
+        d.text(x, base + 18, s.labels[i], { size: 12, anchor: "middle" })
+    }
+    var color = opciones.get("color", PALETTE[0])
+    d.polyline(puntos, { stroke: color, width: 3, fill: "none" })
+    foreach p in puntos { d.circle(p[0], p[1], 4, { fill: color }) }
+    return d
+}
+
+/// Gráfica de tarta (porcentajes de un total). opciones: {title, size}
+function pieChart(datos: any, opciones: map = {}): Drawing {
+    var s = series(datos)
+    var tam = opciones.get("size", 320)
+    var d = Drawing(tam + 180, tam + (opciones.has("title") ? 40 : 0), "#ffffff")
+    var dy = opciones.has("title") ? 40 : 0
+    if opciones.has("title") { d.text((tam + 180) / 2, 26, opciones.title, { size: 18, anchor: "middle", weight: "bold" }) }
+    var total = s.nums.sum()
+    if total <= 0 { return d }
+    var cx = tam / 2
+    var cy = tam / 2 + dy
+    var r = tam / 2 - 10
+    var angulo = -PI / 2
+    for i in 0..s.nums.length {
+        var frac = s.nums[i] / total
+        var fin = angulo + frac * 2 * PI
+        var color = PALETTE[i % PALETTE.length]
+        if frac >= 0.9999 {
+            d.circle(cx, cy, r, { fill: color })
+        } else {
+            var grande = frac > 0.5 ? 1 : 0
+            var x1 = cx + r * cos(angulo)
+            var y1 = cy + r * sin(angulo)
+            var x2 = cx + r * cos(fin)
+            var y2 = cy + r * sin(fin)
+            d.path("M ${num(cx)} ${num(cy)} L ${num(x1)} ${num(y1)} A ${num(r)} ${num(r)} 0 ${grande} 1 ${num(x2)} ${num(y2)} Z", { fill: color, stroke: "#ffffff", width: 2 })
+        }
+        d.rect(tam + 10, dy + 20 + i * 24, 14, 14, { fill: color, rx: 2 })
+        d.text(tam + 32, dy + 32 + i * 24, "${s.labels[i]} (${round(frac * 100)} %)", { size: 13 })
+        angulo = fin
+    }
+    return d
+}

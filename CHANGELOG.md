@@ -2,6 +2,58 @@
 
 Todas las versiones de HyperEZ. El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.7.0] - 2026-11-04
+
+Un editor propio, mucha más biblioteca y un compilador más rápido.
+
+### Añadido
+
+**HyperEZ Editor** (Windows, `bin\hyperez-editor.exe`)
+- Editor de código clásico con fondo blanco que se instala con HyperEZ y se abre al terminar la instalación.
+- Colores con el lexer del lenguaje (también dentro de `${...}`), números de línea, errores mientras escribes con el analizador del compilador (panel con doble clic para ir al error y marca en la línea).
+- F5 ejecuta, Ctrl+F5 repite al guardar, F6 consola interactiva, F7 comprueba; autocompletado (Ctrl+Espacio) con todas las funciones, módulos y los nombres del archivo; firma de la función al escribir `(`.
+- Sangría automática, Tab/Mayús+Tab, comentar (Ctrl+/), duplicar línea, formatear (Ctrl+Mayús+F), buscar y reemplazar, ir a la línea, zoom, ajuste de línea, archivos recientes, arrastrar y soltar, plantillas y todos los ejemplos en el menú.
+- Los programas nuevos se guardan como `.hez` en `Documentos\HyperEZ`.
+
+**Lenguaje y herramientas**
+- `hyper fmt [--check]`: formateador que ordena la sangría y los espacios sin cambiar los tokens (lo comprueba); también en el servidor de lenguaje, VS Code y HyperEZ Editor.
+- `hyper bytecode archivo`: desensamblador que muestra las instrucciones que genera el compilador.
+- Repetir listas: `[0] * 5`. `texto.indexOf(sub, desde)`.
+
+**Biblioteca nativa** (C++)
+- Matemáticas: `gcd`, `lcm`, `factorial`, `isPrime`, `primes`, `divisors`, `cbrt`, `trunc`, `fract`, `sinh`, `cosh`, `tanh`, `randomGaussian`, `noise` (ruido de Perlin), `chr` y `ord`.
+- Textos: `removeAccents`, `title`, `camelCase`, `pascalCase`, `snakeCase`, `kebabCase`, `slug`, `truncate`, `wrap`, `distance` (Levenshtein), `similarity`, `indent`, `dedent`, `between`, `isBlank`, `codes` y `reverseWords`.
+- Listas: `countBy`, `sumBy`, `uniqueBy`, `windowed`, `rotate`, `intersect`, `difference`, `union`, `takeWhile`, `skipWhile`, `none`, `sample`, `toSet`, `compact`, `product`, `lastIndexOf`, `binarySearch`, `scan`, `enumerate`, `toMap`, `median` e `insertSorted`.
+- Mapas: `pick`, `omit`, `invert`, `update`, `any`, `all`, `count`, `find`, `mapKeys`, `sortByKey` y `sortByValue`. Conjuntos: `union`, `intersect`, `difference`, `symmetricDifference`, `isSubset`, `isSuperset`, `isDisjoint`, `map` y `filter`.
+- Números: `isEven`, `isOdd`, `clamp`, `between`, `toRoman`, `format` (separador de miles al estilo español), `digits`, `times` y `toPercent`.
+- `Time`: `today`, `addDays`, `addMonths`, `daysBetween`, `isLeapYear`, `daysInMonth`, `monthName` y `dayName` (en español), `parse`, `duration` y `ago` ("hace 5 minutos").
+- `JSON.load` y `JSON.save`. `Hash.md5`, `Hash.sha1` y `Hash.hmac` (HMAC-SHA256). `Bytes.compress(nivel, raw)` y `decompress(raw)` para deflate puro.
+- `Matrix`: `det`, `inverse`, `solve` (sistemas de ecuaciones, LU con pivoteo), `trace`, `norm`, `std`, `diag`, `slice` y `Matrix.concat`.
+- `Image`: `ellipse`, `polygon`, `gradient`, `blur`, `rotate`, `brightness`, `contrast`, `sepia`, `threshold` y `floodFill`.
+
+**Bibliotecas escritas en HyperEZ** (8 nuevas, 17 en total)
+- `collections`: `Stack`, `Queue`, `Deque`, `PriorityQueue`, `Counter`, `LRUCache` y `Graph` (recorridos, Dijkstra, distancias, componentes, orden topológico, ciclos).
+- `algo`: permutaciones, combinaciones, producto cartesiano, subconjuntos, subsecuencia común más larga, `memoize` y cuadrículas (A*, vecinos, relleno, dibujar el camino).
+- `template` (plantillas con variables, `if`, `unless` y `each`), `markdown` (Markdown a HTML y páginas completas), `ini` (archivos de configuración), `log` (registro con niveles, colores y archivo), `svg` (dibujos y gráficas de barras, líneas y tarta) y `zip` (crear, listar, leer y extraer `.zip` compatibles).
+
+**Instalador**
+- Instala HyperEZ Editor y lo abre al terminar; casillas nuevas *Acceso directo en el escritorio* y *Abrir HyperEZ Editor al terminar*; opciones `/NODESKTOP` y `/OPENEDITOR`.
+- Clic derecho: *Editar con HyperEZ Editor* (y *Editar con Visual Studio Code* si está), HyperEZ Editor en *Abrir con* y *Nuevo → Programa HyperEZ* (`.hez`).
+- Crea `Documentos\HyperEZ` para los programas (al desinstalar solo se quita si está vacía).
+
+**VS Code**
+- Botones ▶ Ejecutar · ⟳ Repetir al guardar · ✓ Comprobar encima del código y ▶ Probar sobre cada `test(...)`; dar formato (Mayús+Alt+F, y al guardar si se activa); ver el bytecode; abrir en HyperEZ Editor; `.hez` como extensión por defecto.
+
+**Documentación y ejemplos**
+- Guías nuevas: [HyperEZ Editor](docs/herramientas/editor.md), [colecciones y algoritmos](docs/biblioteca/colecciones-algoritmos.md) y [textos, números, fechas y documentos](docs/biblioteca/textos-documentos.md); secciones nuevas sobre `.zip`, SVG, filtros de imagen y álgebra lineal; README más claro con capturas.
+- Ejemplos nuevos: laberinto con A*, rutas entre ciudades, gráficas SVG, comprimir en `.zip`, página web desde Markdown y textos y números.
+- Pruebas nuevas: formateador (`ctest -R formato`), desensamblador de todo el código (`ctest -R bytecode`) y 32 pruebas de las novedades.
+
+### Cambiado
+- Compilador: los `for` numéricos cuya variable no captura ninguna función usan `FOR_CHECK_V`/`FOR_NEXT_V` (dos instrucciones menos por vuelta) y las asignaciones como sentencia guardan y descartan en una sola instrucción (`DEFINE_GLOBAL`, `SET_LOCAL_POP`).
+- Máquina virtual: cada operación aritmética y de comparación tiene su propio caso, `%` usa división de 32 bits cuando los números caben, y el hash de los textos largos se calcula por muestras (concatenar a un texto que crece ya no lo recorre entero: `texto` pasa de 148 a 121 ms). Un `for` vacío tarda la mitad. Números en [rendimiento](docs/interno/rendimiento.md).
+- El editor de texto, la ayuda y la extensión proponen `.hez` como extensión de los programas nuevos.
+
 ## [0.6.0] - 2026-11-03
 
 Una base para hacer de todo: HyperEZ deja de ser solo un lenguaje para juegos.

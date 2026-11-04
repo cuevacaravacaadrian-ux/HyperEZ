@@ -188,8 +188,24 @@ void Obj::operator delete(void* p, size_t n) {
     g_free[c] = node;
 }
 
+// Hash de los textos internados. Los cortos se recorren enteros; los largos (más de 256 bytes) no:
+// se mezclan la longitud, los 64 primeros y 64 últimos bytes y unas 64 muestras repartidas por el
+// medio (la misma idea que Lua). Así concatenar a un texto que crece no cuesta O(n) en el hash, solo
+// en la copia. Si dos textos largos distintos coinciden en todo lo muestreado, la tabla los distingue
+// igualmente comparándolos enteros.
+static inline size_t textHash(std::string_view s) {
+    if (s.size() <= 256) return std::hash<std::string_view>()(s);
+    uint64_t h = 0xcbf29ce484222325ull ^ (uint64_t)s.size();
+    auto mix = [&](uint64_t v) { h ^= v + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2); };
+    mix(std::hash<std::string_view>()(s.substr(0, 64)));
+    mix(std::hash<std::string_view>()(s.substr(s.size() - 64)));
+    size_t step = (s.size() - 128) / 64 + 1;
+    for (size_t i = 64; i < s.size() - 64; i += step) h = (h ^ (unsigned char)s[i]) * 0x100000001b3ull;
+    return (size_t)h;
+}
+
 ObjString* VM::intern(std::string_view s) {
-    size_t h = std::hash<std::string_view>()(s);
+    size_t h = textHash(s);
     auto it = strings.find(InternKey{s, h});
     if (it != strings.end()) return it->second;
     ObjString* o = alloc<ObjString>();
@@ -201,7 +217,7 @@ ObjString* VM::intern(std::string_view s) {
 }
 
 ObjString* VM::internMove(std::string&& s) {
-    size_t h = std::hash<std::string_view>()(s);
+    size_t h = textHash(s);
     auto it = strings.find(InternKey{s, h});
     if (it != strings.end()) return it->second;
     ObjString* o = alloc<ObjString>();

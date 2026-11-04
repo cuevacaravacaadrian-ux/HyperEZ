@@ -29,9 +29,9 @@ Todo el proceso tarda unos milisegundos: `hyper programa.hz` arranca, compila y 
 src/
   core/               utilidades comunes: texto, UTF-8, archivos, consola, procesos
   lang/
-    syntax/           lexer, parser y árbol sintáctico
+    syntax/           lexer, parser, árbol sintáctico y formateador (hyper fmt)
     sema/             analizador (tipos, nombres) y diagnósticos
-    compiler/         generador de bytecode y lista de instrucciones
+    compiler/         generador de bytecode, lista de instrucciones y desensamblador (hyper bytecode)
     vm/               máquina virtual: valores, objetos, GC, intérprete, fibras, eventos
     stdlib/           biblioteca nativa, un archivo por área
       builtins.cpp      funciones globales, texto, listas, mapas, JSON, tareas, eventos
@@ -40,10 +40,15 @@ src/
       binary.cpp        Bytes, Hash, Base64, bases numéricas
       regex.cpp         Regex
       net.cpp           Http
-      matrix.cpp        Matrix
+      matrix.cpp        Matrix (también inversa, determinante y sistemas de ecuaciones)
+      image.cpp         Image (dibujo, texto, filtros) y compresión de Bytes
+      server.cpp        Http.serve y Process.start
+      more.cpp          matemáticas, textos, colecciones, números, fechas y JSON en archivos (0.7)
       mathtypes.cpp     Vec2, Vec3, Color
     prelude/          preludio escrito en HyperEZ (awaitAll, awaitAny...)
-  lib/                bibliotecas escritas en HyperEZ: ai, stats, csv, cli, x86
+  lib/                bibliotecas escritas en HyperEZ: ai, stats, csv, cli, x86, web, html, db, audio,
+                      collections, algo, template, markdown, ini, log, svg, zip
+  editor/             HyperEZ Editor (Windows): editor clásico que enlaza la misma biblioteca del lenguaje
   tools/
     cli/              la orden hyper y sus plantillas de proyecto
     repl/             consola interactiva
@@ -60,7 +65,7 @@ tools/                scripts de mantenimiento (versión, documentación generad
 
 ## Un solo ejecutable
 
-`hyper` contiene el compilador, la máquina virtual, la biblioteca estándar, las bibliotecas `.hz` (incrustadas al compilar con `cmake/embed_hz.cmake`), la consola interactiva, el modo watch y el servidor de lenguaje. En Windows se enlaza de forma estática: no depende de ninguna DLL.
+`hyper` contiene el compilador, el formateador, el desensamblador, la máquina virtual, la biblioteca estándar, las bibliotecas `.hz` (incrustadas al compilar con `cmake/embed_hz.cmake`), la consola interactiva, el modo watch y el servidor de lenguaje. En Windows se enlaza de forma estática: no depende de ninguna DLL. `hyperez-editor.exe` enlaza la misma biblioteca `hzlang` (lexer, analizador, catálogo de la API y formateador) y lanza el `hyper.exe` que tiene al lado para ejecutar.
 
 ## El servidor de lenguaje
 

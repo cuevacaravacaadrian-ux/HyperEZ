@@ -4,7 +4,7 @@
 
 Un `Value` ocupa 16 bytes: una etiqueta (`null`, `bool`, número, objeto, "sin valor") y el dato. Los números son `double`. Todo lo demás es un **objeto** en el montón (`Obj`): textos, listas, mapas, funciones, clausuras, clases, instancias, vectores, tareas, fibras, módulos, eventos y objetos nativos (`Bytes`, `Matrix`, `Regex`...).
 
-Los **textos están internados**: cada texto distinto existe una sola vez, así que comparar textos es comparar punteros y las claves de los mapas se buscan muy rápido.
+Los **textos están internados**: cada texto distinto existe una sola vez, así que comparar textos es comparar punteros y las claves de los mapas se buscan muy rápido. Para internarlos hace falta su *hash*: los textos de hasta 256 bytes se recorren enteros; en los más largos se mezclan la longitud, los 64 primeros y últimos bytes y unas 64 muestras del medio (como hace Lua), así que añadir a un texto que crece no recorre el texto entero cada vez. Si dos textos largos distintos coinciden en todo lo muestreado, la tabla los distingue comparándolos enteros.
 
 ## Intérprete
 

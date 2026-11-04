@@ -12,7 +12,9 @@ Todo HyperEZ está en un solo ejecutable: `hyper` (`hyper.exe` en Windows).
 | `hyper check [archivos o carpetas]` | Busca errores sin ejecutar |
 | `hyper test [carpeta o archivos] [--update]` | Ejecuta las pruebas (por defecto `tests/`); `--update` regraba los `.out` |
 | `hyper new <nombre> [--tipo juego\|app\|ia\|script]` | Crea un proyecto |
+| `hyper fmt [archivos o carpetas] [--check]` | Ordena la sangría y los espacios (`--check`: solo dice qué archivos lo necesitan) |
 | `hyper docs [salida.md]` | Genera la referencia de toda la API en Markdown |
+| `hyper bytecode <archivo.hz>` | Muestra las instrucciones que genera el compilador |
 | `hyper lsp` | Servidor de lenguaje (lo usan los editores) |
 | `hyper register` / `hyper unregister` | Asocia (o desasocia) los `.hz`/`.hez` con este `hyper` |
 | `hyper version` | Versión |
@@ -49,3 +51,33 @@ print("hola desde un script")
 ```
 
 Con `chmod +x saludo.hz` se ejecuta como `./saludo.hz`. También funciona con archivos sin extensión si la primera línea es `#!`.
+
+## Formato: `hyper fmt`
+
+Deja el código con la sangría de 4 espacios que marcan las llaves, quita los espacios al final de las líneas y las líneas en blanco de sobra, y termina el archivo con un salto de línea. **No cambia nada de lo que hace el programa**: antes de escribir comprueba que los tokens son exactamente los mismos. Respeta la alineación a mano de las líneas que continúan una expresión y no toca el interior de los textos `"""..."""` ni de los comentarios `/* */`.
+
+```text
+hyper fmt                    formatea todos los .hz y .hez de la carpeta (y subcarpetas)
+hyper fmt juego.hez          un archivo
+hyper fmt --check src        no cambia nada; termina con código 1 si algún archivo necesita formato
+```
+
+Lo mismo hacen *Formatear* (Ctrl+Mayús+F) en HyperEZ Editor y *Dar formato al documento* (Mayús+Alt+F) en VS Code.
+
+## El bytecode: `hyper bytecode`
+
+Enseña cómo traduce el compilador tu programa a instrucciones de la máquina virtual (útil para aprender cómo funciona por dentro o para ver qué optimizaciones aplica):
+
+```text
+> hyper bytecode suma.hz
+== <principal> ==  29 bytes · 4 constantes · 5 huecos · 0 parámetro(s)
+     0     1  CONST                  #0                ; 0
+     3     |  DEFINE_GLOBAL          g0                ; suma
+     ...
+    13     2  FOR_CHECK_V            s1 0 s4  → 28
+    21     |  GET_GLOBAL             g0                ; suma
+    24     |  GET_LOCAL              s4
+    ...
+```
+
+Cada línea: posición, línea del código fuente, instrucción, operandos (`#` constante, `s` hueco local, `g` variable global, `→`/`↑` destino de un salto) y, tras `;`, lo que significan. Las instrucciones se explican en [bytecode.md](../interno/bytecode.md).

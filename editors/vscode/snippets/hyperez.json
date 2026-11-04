@@ -511,5 +511,115 @@
       "File.writeBytes(\"${2:arranque.img}\", x86.bootSector(a))"
     ],
     "description": "Sector de arranque x86 (qemu-system-x86_64)"
+  },
+  "Grafo y camino más corto": {
+    "prefix": [
+      "grafo",
+      "graph",
+      "dijkstra"
+    ],
+    "body": [
+      "import collections",
+      "",
+      "var ${1:mapa} = collections.Graph()",
+      "${1:mapa}.addEdge(\"${2:A}\", \"${3:B}\", ${4:10})",
+      "print(${1:mapa}.shortestPath(\"${2:A}\", \"${3:B}\"))"
+    ],
+    "description": "Grafo con pesos y camino más corto (import collections)"
+  },
+  "Cola de prioridad": {
+    "prefix": [
+      "colaprioridad",
+      "priorityqueue"
+    ],
+    "body": [
+      "import collections",
+      "",
+      "var ${1:cola} = collections.PriorityQueue()",
+      "${1:cola}.push(\"${2:tarea}\", ${3:1})",
+      "while not ${1:cola}.isEmpty() { print(${1:cola}.pop()) }"
+    ],
+    "description": "Cola de prioridad: sale antes la prioridad más baja"
+  },
+  "Camino en una cuadrícula (A*)": {
+    "prefix": [
+      "camino",
+      "astar",
+      "laberinto"
+    ],
+    "body": [
+      "import algo",
+      "",
+      "var mapa = [\"S..#\",",
+      "            \".#..\",",
+      "            \"...G\"]",
+      "var camino = algo.gridPath(mapa, [0, 0], [3, 2])",
+      "foreach fila in algo.drawPath(mapa, camino) { print(fila) }"
+    ],
+    "description": "Camino más corto en una cuadrícula con A* (import algo)"
+  },
+  "Plantilla de texto": {
+    "prefix": [
+      "plantilla",
+      "template"
+    ],
+    "body": [
+      "import template",
+      "",
+      "var texto = template.render(\"Hola, {{nombre}}.\\n{{#each items}}\\n- {{this}}\\n{{/each}}\", { nombre: \"${1:Ana}\", items: [${2:\"uno\", \"dos\"}] })",
+      "print(texto)"
+    ],
+    "description": "Rellenar una plantilla con datos (import template)"
+  },
+  "Markdown a HTML": {
+    "prefix": [
+      "markdown",
+      "md"
+    ],
+    "body": [
+      "import markdown",
+      "",
+      "File.write(\"${1:pagina.html}\", markdown.page(\"${2:Título}\", \"# ${2:Título}\\n\\n${3:Texto con **negrita**.}\"))"
+    ],
+    "description": "Página HTML a partir de Markdown (import markdown)"
+  },
+  "Crear un zip": {
+    "prefix": [
+      "zip",
+      "comprimir"
+    ],
+    "body": [
+      "import zip",
+      "",
+      "zip.create(\"${1:copia.zip}\", { \"${2:notas.txt}\": \"${3:contenido}\" })",
+      "print(zip.list(\"${1:copia.zip}\"))"
+    ],
+    "description": "Crear y listar un archivo .zip (import zip)"
+  },
+  "Gráfica SVG": {
+    "prefix": [
+      "grafica",
+      "svg",
+      "chart"
+    ],
+    "body": [
+      "import svg",
+      "",
+      "svg.barChart({ ${1:ene: 120, feb: 95, mar: 160} }, { title: \"${2:Ventas}\" }).save(\"${3:grafica.svg}\")"
+    ],
+    "description": "Gráfica de barras en SVG (import svg)"
+  },
+  "Registro de mensajes": {
+    "prefix": [
+      "log",
+      "registro"
+    ],
+    "body": [
+      "import log",
+      "",
+      "var ${1:registro} = log.Logger(\"${2:app}\", \"info\")",
+      "${1:registro}.info(\"${3:Arrancando}\")"
+    ],
+    "description": "Registro con niveles y colores (import log)"
   }
 }

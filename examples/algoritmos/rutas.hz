@@ -1,0 +1,37 @@
+// Rutas entre ciudades: grafos, camino más corto (Dijkstra) y tareas con dependencias.
+import collections
+
+var mapa = collections.Graph()
+var carreteras = [["Madrid", "Toledo", 72], ["Madrid", "Segovia", 91], ["Madrid", "Guadalajara", 60],
+                  ["Toledo", "Ciudad Real", 117], ["Madrid", "Ciudad Real", 190], ["Segovia", "Valladolid", 110],
+                  ["Guadalajara", "Soria", 170], ["Valladolid", "Soria", 213]]
+foreach c in carreteras { mapa.addEdge(c[0], c[1], c[2]) }
+
+foreach destino in ["Ciudad Real", "Soria", "Valladolid"] {
+    var r = mapa.shortestPath("Madrid", destino)
+    print("Madrid → ${destino}: ${r.distance} km por ${r.path.join(" → ")}")
+}
+
+print()
+print("Distancias desde Toledo:")
+foreach ciudad, km in mapa.distancesFrom("Toledo").sortByValue() { print("  ${ciudad.padEnd(12)} ${str(km).padStart(4)} km") }
+
+// Orden para cocinar una receta (cada paso después de los que necesita)
+var receta = collections.Graph(true)
+receta.addEdge("comprar", "lavar")
+receta.addEdge("lavar", "cortar")
+receta.addEdge("cortar", "freír")
+receta.addEdge("calentar aceite", "freír")
+receta.addEdge("freír", "servir")
+print()
+print("Pasos:", receta.topologicalSort().join(", "))
+
+// Cola de prioridad: los pedidos urgentes salen antes
+var pedidos = collections.PriorityQueue()
+pedidos.push("pizza", 3)
+pedidos.push("ambulancia", 1)
+pedidos.push("libro", 5)
+pedidos.push("medicinas", 2)
+var orden = []
+while not pedidos.isEmpty() { orden.add(pedidos.pop()) }
+print("Reparto:", orden.join(" > "))

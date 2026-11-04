@@ -1,9 +1,10 @@
 // Servidor de lenguaje de HyperEZ (Language Server Protocol 3.17) por stdin/stdout.
 // Reutiliza el analizador del compilador: diagnósticos, autocompletado, hover, firmas,
-// ir a la definición, referencias, renombrar, resaltado, esquema y arreglos rápidos.
+// ir a la definición, referencias, renombrar, resaltado, esquema, arreglos rápidos y formato.
 #include "tools/tools.h"
 #include "lang/vm/vm.h"
 #include "lang/sema/analyzer.h"
+#include "lang/syntax/format.h"
 
 #include <nlohmann/json.hpp>
 
@@ -352,6 +353,7 @@ private:
     void onPrepareRename(const json& id, const json& p);
     void onDocumentSymbol(const json& id, const json& p);
     void onCodeAction(const json& id, const json& p);
+    void onFormatting(const json& id, const json& p);
     void handle(const json& msg);
 };
 
@@ -926,6 +928,16 @@ void Server::onDocumentSymbol(const json& id, const json& p) {
     reply(id, out);
 }
 
+// Dar formato al documento (hyper fmt): un solo cambio con el texto completo
+void Server::onFormatting(const json& id, const json& p) {
+    auto it = docs.find(p["textDocument"]["uri"].get<std::string>());
+    if (it == docs.end()) { reply(id, json::array()); return; }
+    FormatResult r = formatSource(it->second.text);
+    if (!r.ok || !r.changed) { reply(id, json::array()); return; }
+    LineIndex li(it->second.text);
+    reply(id, json::array({{{"range", li.range(0, it->second.text.size())}, {"newText", r.text}}}));
+}
+
 void Server::onCodeAction(const json& id, const json& p) {
     json out = json::array();
     std::string uri = p["textDocument"]["uri"];
@@ -959,6 +971,7 @@ void Server::handle(const json& msg) {
                 {"documentSymbolProvider", true},
                 {"renameProvider", {{"prepareProvider", true}}},
                 {"codeActionProvider", {{"codeActionKinds", json::array({"quickfix"})}}},
+                {"documentFormattingProvider", true},
             };
             reply(id, {{"capabilities", caps}, {"serverInfo", {{"name", "hyperez-lsp"}, {"version", HYPEREZ_VERSION}}}});
         } else if (method == "initialized" || method == "$/cancelRequest" || method == "$/setTrace" || method == "workspace/didChangeConfiguration") {
@@ -996,6 +1009,7 @@ void Server::handle(const json& msg) {
         else if (method == "textDocument/rename") onRename(id, p);
         else if (method == "textDocument/documentSymbol") onDocumentSymbol(id, p);
         else if (method == "textDocument/codeAction") onCodeAction(id, p);
+        else if (method == "textDocument/formatting") onFormatting(id, p);
         else if (!id.is_null()) replyError(id, -32601, "Método no soportado: " + method);
     } catch (std::exception& e) {
         if (!id.is_null()) replyError(id, -32603, std::string("Error interno del servidor de HyperEZ: ") + e.what());

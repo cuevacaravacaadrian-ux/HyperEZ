@@ -1,8 +1,11 @@
 # Prepara la carpeta con todo lo que instala HyperEZ-Setup.exe.
-#   cmake -DSRC=<repo> -DSTAGE=<carpeta> -DHYPER=<hyper.exe> -P stage.cmake
+#   cmake -DSRC=<repo> -DSTAGE=<carpeta> -DHYPER=<hyper.exe> [-DEDITOR=<hyperez-editor.exe>] -P stage.cmake
 file(REMOVE_RECURSE "${STAGE}")
 file(MAKE_DIRECTORY "${STAGE}/bin" "${STAGE}/docs" "${STAGE}/examples" "${STAGE}/icons")
 file(COPY "${HYPER}" DESTINATION "${STAGE}/bin")
+if(EDITOR)
+  file(COPY "${EDITOR}" DESTINATION "${STAGE}/bin") # HyperEZ Editor
+endif()
 execute_process(COMMAND "${HYPER}" docs "${STAGE}/docs/API.md" RESULT_VARIABLE rc OUTPUT_QUIET ERROR_QUIET)
 if(rc)
   message(FATAL_ERROR "hyper docs falló (${rc})")

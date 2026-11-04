@@ -29,7 +29,7 @@ npx vsce publish                compila y publica la versión de package.json
 
 ```text
 npx ovsx create-namespace hyperez -p <token de open-vsx.org>
-npx ovsx publish hyperez-0.6.0.vsix -p <token>
+npx ovsx publish hyperez-0.7.0.vsix -p <token>
 ```
 
 ## Antes de publicar

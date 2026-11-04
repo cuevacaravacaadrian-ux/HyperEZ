@@ -2,7 +2,7 @@
 
 HyperEZ es un lenguaje pensado para aprender a programar y para crear juegos. Los mensajes de error están en español y explican cómo arreglar el problema. Esta guía recorre el lenguaje de principio a fin; la lista completa de funciones está en la referencia de la API (`hyper docs API.md`).
 
-Para ejecutar un programa guárdalo como `programa.hz` y escribe `hyper programa.hz`, haz doble clic en el archivo o pulsa **F5** en VS Code.
+Lo más fácil es **HyperEZ Editor** (se instala con HyperEZ en Windows): escribe y pulsa **F5**. También puedes guardar el programa como `programa.hez` y escribir `hyper programa.hez`, hacer doble clic en el archivo o pulsar **F5** en VS Code.
 Con `hyper watch programa.hz` (o **Ctrl+Alt+F5** en VS Code) se vuelve a ejecutar cada vez que guardas.
 
 Para probar ideas sin crear un archivo, escribe `hyper` en una terminal: es la **consola interactiva**. Cada línea se ejecuta al pulsar Intro, el valor de una expresión se muestra solo y lo que defines se conserva:
@@ -373,6 +373,20 @@ print(base.collection("notas").count(), html.escape("<b>"))
 | Gráficos y sonido | `Image`, `import audio` |
 | Scripts y herramientas | `Process`, `File`, `Path`, `Time`, `import cli` |
 | Bajo nivel | `Bytes`, `Hash`, operadores de bits, `import x86` |
+| Estructuras de datos y algoritmos | `import collections` (pilas, colas, grafos), `import algo` (A*, combinatoria) |
+| Documentos | `import template`, `import markdown`, `import ini`, `import log`, `import zip`, `import svg` |
+
+```hz
+import collections
+import algo
+import template
+
+var g = collections.Graph()
+g.addEdge("A", "B", 2)
+g.addEdge("B", "C", 3)
+print(g.shortestPath("A", "C").distance, algo.gridPath(["S.#", "..G"], [0, 0], [2, 1]).length)
+print(template.render("{{#each n}}{{this}}{{/each}}", { n: [1, 2, 3] }), (1234.5).format(1), "Canción".removeAccents())
+```
 
 ## 16. Herramientas
 
@@ -384,6 +398,10 @@ print(base.collection("notas").count(), html.escape("<b>"))
 | `hyper check programa.hz` | Busca errores sin ejecutar |
 | `hyper test` | Ejecuta las pruebas |
 | `hyper new nombre --tipo juego\|app\|ia\|script` | Crea un proyecto |
+| `hyper fmt` | Ordena la sangría y los espacios del código |
+| `hyper bytecode programa.hz` | Muestra las instrucciones que genera el compilador |
 | `hyper docs API.md` | Genera la referencia de la API |
+
+En **HyperEZ Editor** tienes colores, errores mientras escribes, autocompletado (Ctrl+Espacio), F5 para ejecutar y Ctrl+Mayús+F para formatear: mira [su guía](herramientas/editor.md).
 
 En **VS Code** tienes errores mientras escribes, autocompletado, documentación al pasar el ratón, F12 para ir a la definición, F2 para renombrar, F5 para ejecutar y Ctrl+Alt+F5 para ejecutar cada vez que guardas.

@@ -1,0 +1,31 @@
+// Comprimir y descomprimir archivos .zip (compatibles con Windows, macOS y Linux).
+//   hyper comprimir.hz                     demostración en una carpeta temporal
+//   hyper comprimir.hz carpeta copia.zip   comprime una carpeta tuya
+import zip
+
+if System.args.length >= 2 {
+    zip.createFromFolder(System.args[1], System.args[0])
+    print("✓ ${System.args[1]}: ${zip.list(System.args[1]).length} archivos, ${File.size(System.args[1]).format()} bytes")
+    exit(0)
+}
+
+var base = Path.join(Path.dir(File.tempFile()), "hz-comprimir-" + Hash.uuid())
+var ruta = Path.join(base, "copia.zip")
+File.makeDir(base)
+
+var informe = "Informe de ventas\n" + "Enero: 120 unidades\n" * 200
+zip.create(ruta, {
+    "léeme.txt": "Archivos de ejemplo creados con HyperEZ",
+    "datos/informe.txt": informe,
+    "datos/puntos.json": JSON.stringify({ ana: 120, luis: 95 }, 2)
+})
+
+print("Contenido del zip:")
+foreach nombre in zip.list(ruta).sort() { print("  " + nombre) }
+var original = informe.length
+print("El informe ocupa ${original.format()} bytes; el zip entero, ${File.size(ruta).format()}")
+
+var hechos = zip.extract(ruta, Path.join(base, "extraido"))
+var igual = File.read(Path.join(base, "extraido", "datos", "informe.txt")) == informe
+print("Extraídos ${hechos.length} archivos · ¿idénticos al original? ${igual ? "sí" : "no"}")
+File.deleteDir(base)
