@@ -63,7 +63,7 @@ Estas palabras están reservadas y no se pueden usar como nombres:
 
 ```text
 and       as*       async     await     break     catch     class     const
-constructor         continue  else      emit*     enum      event*    extends
+constructor         continue  do*       else      emit*     enum      event*    extends
 false     finally   for       foreach   from*     function  get*      if
 implements          import    in        interface is        let       match
 new       not       null      on*       once*     or        priority* private
@@ -92,6 +92,37 @@ var nombre = "Ana"
 print("Hola, ${nombre}. Dentro de un año tendrás ${30 + 1} años.")
 print('Comillas simples: "dobles" dentro sin escapar')
 ```
+
+### Dar formato dentro de `${...}`
+
+Detrás de la expresión, después de `:`, puede ir un **formato** (el mismo que el de Python): decimales, ancho, alineación, separador de miles, porcentaje...
+
+```hz
+var precio = 1234.5
+print("Total: ${precio:.2f} €")          // Total: 1234.50 €
+print("Con miles: ${precio:,.2f}")       // Con miles: 1,234.50
+print("[${"Ana":<8}] [${"Ana":>8}] [${"Ana":^9}]")
+print("${0.256:.1%} · ${255:x} · ${5:08b} · ${7:03}")   // 25.6% · ff · 00000101 · 007
+foreach fila in [["Espada", 120], ["Poción", 15.5]] {
+    print("${fila[0]:<10}${fila[1]:>8.2f}")              // una tabla alineada
+}
+```
+
+| Formato | Qué hace | Ejemplo |
+|---|---|---|
+| `.2f` | número con 2 decimales | `${3.14159:.2f}` → `3.14` |
+| `10` · `>10` · `<10` · `^10` | ancho 10 (los números a la derecha, los textos a la izquierda) · a la derecha · a la izquierda · centrado | `${"Ana":^7}` → `  Ana  ` |
+| `*^10` | rellena con otro carácter | `${"Ana":*^7}` → `**Ana**` |
+| `05` | rellena con ceros | `${42:05}` → `00042` |
+| `,` · `_` | separa los miles | `${1234567:,}` → `1,234,567` |
+| `+` | pone el signo también a los positivos | `${42:+}` → `+42` |
+| `%` · `.1%` | porcentaje | `${0.256:.1%}` → `25.6%` |
+| `d` | entero (redondea) | `${3.7:d}` → `4` |
+| `x` `X` `b` `o` | hexadecimal, binario y octal | `${255:x}` → `ff` |
+| `e` | notación científica | `${12345.6:.2e}` → `1.23e+04` |
+| `.3` en un texto | como mucho 3 caracteres | `${"HyperEZ":.5}` → `Hyper` |
+
+Si la expresión lleva una condición `a ? b : c`, ponla entre paréntesis para darle formato: `${(ok ? 1 : 0):>3}`. La función `format(valor, "formato")` hace lo mismo fuera de un texto, y `numero.format(2)` escribe los números al estilo español (`1.234,50`).
 
 | Escape | Significado |
 |---|---|

@@ -10,7 +10,7 @@ Es una referencia para quien quiera escribir herramientas o entender el parser (
 programa      = { sentencia NL } ;
 bloque        = "{" { sentencia NL } "}" ;
 
-sentencia     = declaracion | if | while | for | foreach | repeat | try | match
+sentencia     = declaracion | if | while | do_while | for | foreach | repeat | try | match
               | "return" [ expresion ] | "break" | "continue" | "throw" expresion
               | emit | on | expresion ;
 
@@ -58,6 +58,7 @@ tipo          = ( NOMBRE [ "<" tipo { "," tipo } ">" ] | "(" [ tipo { "," tipo }
 ```ebnf
 if            = "if" expresion bloque [ "else" ( if | bloque ) ] ;
 while         = "while" expresion bloque ;
+do_while      = "do" bloque "while" expresion ;           (* "do" solo es especial delante de '{' *)
 for           = "for" NOMBRE [ "," NOMBRE ] "in" expresion [ "step" expresion ] bloque ;
 foreach       = "foreach" NOMBRE [ "," NOMBRE ] "in" expresion bloque ;
 repeat        = "repeat" expresion bloque ;
@@ -118,10 +119,13 @@ NOMBRE        = letra { letra | digito } ;          (* letra incluye "_", acento
 NUMERO        = digitos [ "." digitos ] [ ( "e" | "E" ) [ "+" | "-" ] digitos ]
               | "0x" hex { hex } | "0b" ( "0" | "1" ) { "0" | "1" } | "0o" octal { octal } ;
 digitos       = digito { digito | "_" } ;
-TEXTO         = '"' { caracter | escape | "${" expresion "}" } '"'
-              | "'" { caracter | escape | "${" expresion "}" } "'"
+TEXTO         = '"' { caracter | escape | interpolacion } '"'
+              | "'" { caracter | escape | interpolacion } "'"
               | '"""' { cualquiera } '"""'
               | "r" '"' { cualquiera } '"' | "r" "'" { cualquiera } "'" ;
+interpolacion = "${" expresion [ ":" formato ] "}" ;
+formato       = [ [ relleno ] ( "<" | ">" | "^" ) ] [ "+" ] [ "0" ] [ digitos ] [ "," | "_" ] [ "." digitos ]
+                [ "f" | "e" | "E" | "%" | "d" | "x" | "X" | "b" | "o" | "s" ] ;
 escape        = "\n" | "\t" | "\r" | "\0" | "\\" | '\"' | "\'" | "\$" | "\u{" hex { hex } "}" ;
 comentario    = "//" { cualquiera } fin_de_linea | "/*" { cualquiera } "*/" ;
 ```

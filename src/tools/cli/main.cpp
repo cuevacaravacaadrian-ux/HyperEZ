@@ -52,7 +52,7 @@ static void printHelp() {
     row("hyper version", "versión y datos de compilación");
     std::printf("\n");
     section("Opciones de run");
-    row("--pause", "espera una tecla al terminar (doble clic)");
+    row("--pause", "espera una tecla al terminar (doble clic, VS Code); también en check y test");
     row("--", "lo que sigue se pasa al programa aunque empiece por -");
     std::printf("\n%sDocumentación: %s%s%s\n\n", G, HYPEREZ_REPO_URL "/tree/main/docs", R, "");
 }
@@ -259,7 +259,7 @@ static int cmdTest(const std::vector<std::string>& paths, bool update) {
         std::string n = pathFilename(f);
         return n.empty() || n[0] == '_' || f.find("/bench/") != std::string::npos;
     }), files.end());
-    if (files.empty()) { std::fprintf(stderr, "No se encontraron pruebas (.hz) en %s\n", roots[0].c_str()); return 2; }
+    if (files.empty()) { std::fprintf(stderr, "No se encontraron pruebas (.hez o .hz) en %s\n", roots[0].c_str()); return 2; }
     std::string self = exePath();
     int passed = 0, failed = 0;
     double t0 = nowSeconds();
@@ -391,7 +391,7 @@ static int cmdNew(const std::vector<std::string>& args) {
         if (pathFilename(f.path) != ".gitkeep" && pathFilename(f.path) != ".gitignore")
             std::printf("  %s%s%s\n", color::gray(), f.path.c_str(), color::reset());
     }
-    std::printf("\n  cd %s\n  hyper watch        %s# ejecuta main.hz y lo repite al guardar%s\n  hyper test         %s# ejecuta las pruebas%s\n",
+    std::printf("\n  cd %s\n  hyper watch        %s# ejecuta main.hez y lo repite al guardar%s\n  hyper test         %s# ejecuta las pruebas%s\n",
                 name.c_str(), color::gray(), color::reset(), color::gray(), color::reset());
     return 0;
 }
@@ -509,10 +509,16 @@ int main(int argc, char** argv) {
         return cmdCheck(rest);
     }
     if (cmd == "test") {
-        bool update = false;
+        bool update = false, pause = false;
         std::vector<std::string> paths;
-        for (auto& a : rest) { if (a == "--update") update = true; else paths.push_back(a); }
-        return cmdTest(paths, update);
+        for (auto& a : rest) {
+            if (a == "--update") update = true;
+            else if (a == "--pause") pause = true;
+            else paths.push_back(a);
+        }
+        int r = cmdTest(paths, update);
+        if (pause) waitForKey();
+        return r;
     }
     if (cmd == "new") return cmdNew(rest);
     if (cmd == "fmt" || cmd == "format") return cmdFmt(rest);

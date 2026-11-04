@@ -2,17 +2,40 @@
 
 Todas las versiones de HyperEZ. El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
-## [Sin publicar]
+## [0.8.1] - 2026-11-04
 
-### Añadido
-- HyperEZ Editor: el panel de abajo (*Problemas* y *Salida*) cambia de alto arrastrando el separador que lo une al código, y se recuerda.
-
-### Cambiado
-- Capturas del editor y del instalador de la 0.8.0 en el README y la documentación.
-- El repositorio ya es público: la documentación lo indica (kit de Linguist, publicar la extensión).
+La extensión de VS Code, lista para el Marketplace; textos con formato, `do`-`while`, la biblioteca `validate` y todo preparado para que GitHub reconozca HyperEZ.
 
 ### Arreglado
+- **VS Code: la salida de F5 ya no desaparece.** VS Code cierra la terminal en cuanto el programa termina bien, así que el resultado de un programa rápido no llegaba a verse. Ahora *Ejecutar*, *Comprobar* y las pruebas esperan una tecla al terminar ("Pulsa una tecla para cerrar...").
 - La compilación para Windows con `build.ps1` ya no avisa de "serial compilation of LTRANS jobs" al enlazar con LTO.
+- `x is text ? {...} : y` ya funciona: tras `is`, un `?` seguido de un mapa es la condición, no el tipo `text?`.
+
+### Cambiado
+- La extensión de VS Code se llama ahora **`hyperez.hyperezprogramminglanguage`** (el nombre `hyperez` estaba cogido en el Marketplace). El instalador lee el identificador de `package.json` y quita la extensión antigua `hyperez.hyperez` para que no haya dos.
+- Página de la extensión renovada para el Marketplace: capturas en VS Code, primeros pasos, ejemplos, insignias, palabras clave y la categoría *Formatters*.
+- Capturas del editor y del instalador al día en el README y la documentación.
+- El repositorio ya es público: la documentación lo indica (kit de Linguist, publicar la extensión).
+
+- **Los proyectos nuevos usan `.hez`** (`main.hez`, `src/*.hez`, `tests/*.hez`), la extensión por defecto, y traen `.github/workflows/pruebas.yml` (las pruebas se ejecutan en GitHub con cada cambio) y la insignia *Hecho con HyperEZ*.
+
+### Añadido
+
+**Lenguaje**
+- **Formato en las interpolaciones**, como en Python: `"${precio:.2f}"`, `"${nombre:<10}"`, `"${n:>8,}"`, `"${0.25:%}"`, `"${255:x}"`, `"${7:03}"`, `"${"Ana":*^9}"`... y la función `format(valor, "formato")`.
+- **`do { ... } while condición`**: el bloque se ejecuta al menos una vez (`do` solo es especial delante de `{`).
+
+**Bibliotecas**
+- **`import validate`**: correos, webs, teléfonos, **DNI/NIE** con su letra, **IBAN** con sus dígitos de control, tarjetas (Luhn), ISBN, códigos postales, colores, fechas y contraseñas; y `validate.check(datos, reglas)` para comprobar formularios y JSON con mensajes en español. Ver [validar.md](docs/biblioteca/validar.md).
+
+**GitHub**
+- **Kit para GitHub Linguist** completo (`editors/linguist/`): la entrada (`.hez`, color `#62d962`, intérprete `hyper`), 7 muestras reales, el repositorio de la gramática, el texto de la *pull request* y los [objetivos por fases](editors/linguist/OBJETIVOS.md) para llegar al requisito de uso. `tools/linguist_kit.py` lo genera, `--progress` mide los `.hez` de GitHub y `ctest -R linguist` lo comprueba.
+- **Acción `setup-hyperez`** para GitHub Actions: `uses: cuevacaravacaadrian-ux/HyperEZ/actions/setup-hyperez@main` instala `hyper` en Windows, Linux o macOS.
+
+**Herramientas**
+- `hyper test --pause` (y `--pause` en la ayuda para `check` y `test`).
+- VS Code y HyperEZ Editor colorean `do` y el formato de `${...}`; dos fragmentos nuevos, `hacer` y `formato` (54 en total).
+- HyperEZ Editor: el panel de abajo (*Problemas* y *Salida*) cambia de alto arrastrando el separador que lo une al código, y se recuerda.
 
 ## [0.8.0] - 2026-11-04
 

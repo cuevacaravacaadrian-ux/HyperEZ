@@ -1,8 +1,8 @@
 {
-  "name": "hyperez",
+  "name": "hyperezprogramminglanguage",
   "displayName": "HyperEZ",
-  "description": "Lenguaje de programación en español para hacer de todo: juegos, IA, web, datos, gráficos y sistemas. Errores en vivo, autocompletado, F5 para ejecutar, modo watch, consola interactiva, tema y tutorial.",
-  "version": "0.8.0",
+  "description": "Lenguaje de programación en español para hacer de todo: juegos, webs, IA, datos, gráficos y sistemas. Colores, errores en vivo, autocompletado, F5 para ejecutar, formato, pruebas, consola interactiva, tema propio y tutorial.",
+  "version": "0.8.1",
   "publisher": "hyperez",
   "license": "MIT",
   "author": {
@@ -30,6 +30,7 @@
     "Snippets",
     "Linters",
     "Themes",
+    "Formatters",
     "Education",
     "Testing"
   ],
@@ -47,7 +48,39 @@
     "inteligencia artificial",
     "lenguaje",
     "language server",
-    "repl"
+    "repl",
+    "programación",
+    "programming language",
+    "principiantes",
+    "beginner",
+    "web",
+    "datos",
+    "compilador",
+    "intérprete",
+    "formatter",
+    "lsp"
+  ],
+  "badges": [
+    {
+      "url": "https://img.shields.io/github/v/release/cuevacaravacaadrian-ux/HyperEZ?label=HyperEZ&color=e8572a",
+      "href": "https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest",
+      "description": "Última versión de HyperEZ"
+    },
+    {
+      "url": "https://img.shields.io/badge/licencia-MIT-2e7dd7",
+      "href": "https://github.com/cuevacaravacaadrian-ux/HyperEZ/blob/main/LICENSE",
+      "description": "Licencia MIT"
+    },
+    {
+      "url": "https://img.shields.io/badge/idioma-espa%C3%B1ol-c8102e",
+      "href": "https://github.com/cuevacaravacaadrian-ux/HyperEZ/blob/main/docs/GUIA.md",
+      "description": "Programa en español"
+    },
+    {
+      "url": "https://img.shields.io/github/stars/cuevacaravacaadrian-ux/HyperEZ?style=flat&label=estrellas",
+      "href": "https://github.com/cuevacaravacaadrian-ux/HyperEZ",
+      "description": "Estrellas en GitHub"
+    }
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
@@ -505,7 +538,7 @@
   "scripts": {
     "bundle": "node tools/bundle.js",
     "vscode:prepublish": "node tools/bundle.js",
-    "package": "vsce package --no-dependencies --allow-missing-repository --allow-star-activation -o hyperez-0.8.0.vsix",
+    "package": "vsce package --no-dependencies --allow-missing-repository --allow-star-activation -o hyperez-0.8.1.vsix",
     "test": "node test/grammar.test.js",
     "test:vscode": "node test/runTest.js"
   },

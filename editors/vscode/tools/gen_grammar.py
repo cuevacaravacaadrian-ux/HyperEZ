@@ -85,7 +85,12 @@ grammar = {
             "begin": r"\$\{", "end": r"\}",
             "beginCaptures": {"0": name("punctuation.section.interpolation.begin.hyperez")},
             "endCaptures": {"0": name("punctuation.section.interpolation.end.hyperez")},
-            "patterns": [{"include": "#nested-braces"}, {"include": "#statements"}],
+            "patterns": [{"include": "#format-spec"}, {"include": "#nested-braces"}, {"include": "#statements"}],
+        },
+        # "${precio:.2f}": el formato que va al final de la interpolación
+        "format-spec": {
+            "match": r"(:)((?:[^\s{}]?[<>^])?\+?0?\d*[,_]?(?:\.\d+)?[feE%dxXbos]?)(?=\})",
+            "captures": {"1": name("punctuation.separator.format.hyperez"), "2": name("constant.other.format-spec.hyperez")},
         },
         "nested-braces": {
             "begin": r"\{", "end": r"\}",
@@ -163,6 +168,7 @@ grammar = {
             {"name": "keyword.control.conditional.hyperez", "match": r"\b(?:if|else|match)\b"},
             {"name": "keyword.control.loop.hyperez", "match": r"\b(?:for|foreach|in|while|repeat|break|continue)\b"},
             {"name": "keyword.control.loop.hyperez", "match": r"\bstep\b(?=\s*-?[\d(\p{L}_])"},
+            {"name": "keyword.control.loop.hyperez", "match": r"\bdo\b(?=\s*\{)"},
             {"name": "keyword.control.flow.hyperez", "match": r"\b(?:return|await|throw)\b"},
             {"name": "keyword.control.trycatch.hyperez", "match": r"\b(?:try|catch|finally)\b"},
             {"name": "keyword.control.event.hyperez", "match": r"\bpriority\b(?=\s*-?[\d(\p{L}_])"},

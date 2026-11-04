@@ -45,6 +45,8 @@ const cases = [
   ['print("¡Hola, ${nombre}!")', '${', 'punctuation.section.interpolation.begin'],
   ['print("¡Hola, ${nombre}!")', 'nombre', 'meta.interpolation'],
   ['print("total: ${ {a: 1}.a }")', '}', 'meta.interpolation'],
+  ['print("total: ${precio:,.2f} €")', ',.2f', 'constant.other.format-spec'],
+  ['do { n += 1 } while n < 3', 'do', 'keyword.control.loop'],
   ['for i in 10..0 step -2 {', 'step', 'keyword.control.loop'],
   ['for i in 10..0 step -2 {', '..', 'keyword.operator.range'],
   ['on Golpe priority 10 as e {', 'on', 'keyword.control.event'],

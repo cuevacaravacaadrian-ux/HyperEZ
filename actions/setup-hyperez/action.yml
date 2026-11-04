@@ -1,0 +1,71 @@
+# Instala HyperEZ (la orden hyper) en un runner de GitHub Actions: Windows, Linux o macOS.
+#
+#   steps:
+#     - uses: actions/checkout@v4
+#     - uses: cuevacaravacaadrian-ux/HyperEZ/actions/setup-hyperez@main
+#       with:
+#         version: latest          # o una versión concreta: 0.8.1
+#     - run: hyper test
+name: Instalar HyperEZ
+description: Instala el lenguaje de programación HyperEZ (la orden hyper) en Windows, Linux o macOS.
+author: Adrián Cueva Caravaca
+branding:
+  icon: code
+  color: green
+inputs:
+  version:
+    description: 'Versión de HyperEZ: "latest" (la última publicada) o una versión, como "0.8.1"'
+    required: false
+    default: latest
+outputs:
+  version:
+    description: La versión de HyperEZ instalada
+    value: ${{ steps.install.outputs.version }}
+runs:
+  using: composite
+  steps:
+    - id: install
+      shell: bash
+      env:
+        HZ_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        repo="cuevacaravacaadrian-ux/HyperEZ"
+        if [ "$HZ_VERSION" = "latest" ] || [ -z "$HZ_VERSION" ]; then
+          # /releases/latest redirige a /releases/tag/vX.Y.Z
+          url=$(curl -fsSLI --retry 3 -o /dev/null -w '%{url_effective}' "https://github.com/$repo/releases/latest")
+          tag="${url##*/}"
+        else
+          tag="v${HZ_VERSION#v}"
+        fi
+        version="${tag#v}"
+        base="https://github.com/$repo/releases/download/$tag"
+        dest="${RUNNER_TEMP}/hyperez-$version"
+        mkdir -p "$dest/bin"
+        fail() { echo "::error::No se pudo descargar HyperEZ $version para $1 ($base). ¿Existe esa versión con ese paquete?"; exit 1; }
+        case "$RUNNER_OS" in
+          Windows)
+            curl -fsSL --retry 3 -o "$dest/bin/hyper.exe" "$base/hyper.exe" || fail "Windows"
+            echo "$(cygpath -w "$dest/bin")" >> "$GITHUB_PATH"
+            ;;
+          Linux|macOS)
+            if [ "$RUNNER_OS" = "Linux" ]; then os=linux; else os=macos; fi
+            case "$(uname -m)" in
+              x86_64|amd64) arch=x64 ;;
+              arm64|aarch64) arch=arm64 ;;
+              *) arch="$(uname -m)" ;;
+            esac
+            name="HyperEZ-$version-$os-$arch"
+            curl -fsSL --retry 3 -o "$RUNNER_TEMP/$name.tar.gz" "$base/$name.tar.gz" || fail "$os-$arch"
+            tar -xzf "$RUNNER_TEMP/$name.tar.gz" -C "$RUNNER_TEMP"
+            cp "$RUNNER_TEMP/$name/bin/hyper" "$dest/bin/hyper"
+            chmod +x "$dest/bin/hyper"
+            echo "$dest/bin" >> "$GITHUB_PATH"
+            ;;
+          *)
+            echo "::error::Sistema no soportado: $RUNNER_OS"
+            exit 1
+            ;;
+        esac
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+        "$dest/bin/hyper" version

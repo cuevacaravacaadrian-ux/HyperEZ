@@ -68,7 +68,7 @@ struct FuncDecl;
 struct NumberExpr : Expr { double value; bool isInt; NumberExpr(SrcLoc l, double v, bool i) : Expr(ExprKind::Number, l), value(v), isInt(i) {} };
 struct StringExpr : Expr {
     // Si no hay interpolación, parts tiene un único literal.
-    struct Part { bool isExpr; std::string text; ExprP expr; };
+    struct Part { bool isExpr = false; std::string text; ExprP expr; };
     std::vector<Part> parts;
     StringExpr(SrcLoc l) : Expr(ExprKind::String, l) {}
     bool isPlain() const { return parts.size() == 1 && !parts[0].isExpr; }

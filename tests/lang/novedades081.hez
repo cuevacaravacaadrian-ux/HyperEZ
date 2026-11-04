@@ -1,0 +1,80 @@
+// Sintaxis nueva en 0.8.1: formato en las interpolaciones "${x:.2f}", format() y do { } while
+
+test("formato de números en las interpolaciones", () => {
+    var precio = 1234.5
+    assertEqual("${precio:.2f}", "1234.50")
+    assertEqual("${precio:,.2f}", "1,234.50")
+    assertEqual("${precio:>10.1f}", "    1234.5")
+    assertEqual("${precio:012.3f}", "00001234.500")
+    assertEqual("${1234567:,}", "1,234,567")
+    assertEqual("${1234567:_}", "1_234_567")
+    assertEqual("${0.256:%}", "26%")
+    assertEqual("${0.256:.1%}", "25.6%")
+    assertEqual("${42:+d}", "+42")
+    assertEqual("${-3.7:d}", "-4")
+    assertEqual("${-42:06}", "-00042")
+    assertEqual("${12345.678:.2e}", "1.23e+04")
+})
+
+test("hexadecimal, binario y octal", () => {
+    assertEqual("${255:x} ${255:X} ${5:b} ${8:o}", "ff FF 101 10")
+    assertEqual("${10:08b}", "00001010")
+})
+
+test("alinear y rellenar textos", () => {
+    var n = "Ana"
+    assertEqual("[${n:<6}]", "[Ana   ]")
+    assertEqual("[${n:>6}]", "[   Ana]")
+    assertEqual("[${n:^7}]", "[  Ana  ]")
+    assertEqual("[${n:*^7}]", "[**Ana**]")
+    assertEqual("[${n:.2}]", "[An]")
+    assertEqual("[${7:·>4}]", "[···7]") // el relleno puede ser cualquier carácter
+    assertEqual("[${"ñandú":>7}]", "[  ñandú]") // cuenta caracteres, no bytes
+})
+
+test("el ':' de la condición y de los textos no es un formato", () => {
+    var ok = true
+    assertEqual("${ok ? "sí" : "no"}", "sí")
+    assertEqual("${(ok ? 1 : 0):>3}", "  1")
+    assertEqual("${null ?? 2.5:.1f}", "2.5")
+    assertEqual("${"a:b"}", "a:b")
+    assertEqual("${ {a: 1}.a }", "1")
+})
+
+test("format()", () => {
+    assertEqual(format(3.14159, ".3f"), "3.142")
+    assertEqual(format("x", ">3"), "  x")
+    assertEqual(format(0.5, "%"), "50%")
+    assertThrows(() => format(1, ".q"))
+    assertThrows(() => format("texto", ".2f"))
+})
+
+test("una función propia llamada format no cambia el formato de las interpolaciones", () => {
+    function format(a: any, b: any): text { return "propia" }
+    assertEqual("${3.14159:.2f}", "3.14")
+    assertEqual(format(1, 2), "propia")
+})
+
+test("do { } while: el cuerpo va al menos una vez", () => {
+    var n = 10
+    do { n -= 1 } while false
+    assertEqual(n, 9)
+    var vueltas = []
+    var i = 0
+    do {
+        i += 1
+        if i == 2 { continue } // continue vuelve a comprobar la condición
+        vueltas.add(i)
+    } while i < 4
+    assertEqual(vueltas, [1, 3, 4])
+    var do = 3 // "do" sigue siendo un nombre válido
+    assertEqual(do, 3)
+})
+
+test("x is Tipo ? {mapa} : otro es una condición (no el tipo Tipo?)", () => {
+    var regla: any = "email"
+    var r = regla is text ? { type: regla } : regla
+    assertEqual(r, { type: "email" })
+    var n: any = 3
+    assertEqual(n is text ? { a: 1 } : n, 3)
+})

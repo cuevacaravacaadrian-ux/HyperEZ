@@ -670,5 +670,27 @@
       "// míralo con: hyper serve ${2:web}"
     ],
     "description": "Web estática a partir de archivos Markdown (import site)"
+  },
+  "Bucle do-while": {
+    "prefix": [
+      "hacer",
+      "do"
+    ],
+    "body": [
+      "do {",
+      "\t${1:// se ejecuta al menos una vez}",
+      "} while ${2:condicion}"
+    ],
+    "description": "do { } while: repite el bloque mientras se cumpla la condición (al menos una vez)"
+  },
+  "Texto con formato": {
+    "prefix": [
+      "formato",
+      "fmt"
+    ],
+    "body": [
+      "print(\"\\${${1:nombre}:<${2:10}} \\${${3:precio}:>${4:8}.2f}\")"
+    ],
+    "description": "Texto con formato: ${nombre:<10} alinea a la izquierda y ${precio:>8.2f} pone 2 decimales a la derecha"
   }
 }

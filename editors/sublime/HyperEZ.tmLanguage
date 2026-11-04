@@ -407,6 +407,10 @@
 			<array>
 				<dict>
 					<key>include</key>
+					<string>#format-spec</string>
+				</dict>
+				<dict>
+					<key>include</key>
 					<string>#nested-braces</string>
 				</dict>
 				<dict>
@@ -414,6 +418,24 @@
 					<string>#statements</string>
 				</dict>
 			</array>
+		</dict>
+		<key>format-spec</key>
+		<dict>
+			<key>match</key>
+			<string>(:)((?:[^\s{}]?[&lt;&gt;^])?\+?0?\d*[,_]?(?:\.\d+)?[feE%dxXbos]?)(?=\})</string>
+			<key>captures</key>
+			<dict>
+				<key>1</key>
+				<dict>
+					<key>name</key>
+					<string>punctuation.separator.format.hyperez</string>
+				</dict>
+				<key>2</key>
+				<dict>
+					<key>name</key>
+					<string>constant.other.format-spec.hyperez</string>
+				</dict>
+			</dict>
 		</dict>
 		<key>nested-braces</key>
 		<dict>
@@ -960,6 +982,12 @@
 					<string>keyword.control.loop.hyperez</string>
 					<key>match</key>
 					<string>\bstep\b(?=\s*-?[\d(\p{L}_])</string>
+				</dict>
+				<dict>
+					<key>name</key>
+					<string>keyword.control.loop.hyperez</string>
+					<key>match</key>
+					<string>\bdo\b(?=\s*\{)</string>
 				</dict>
 				<dict>
 					<key>name</key>

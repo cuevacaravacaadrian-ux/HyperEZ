@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstring>
 #include <iostream>
 #include <random>
 
@@ -224,6 +225,112 @@ NATIVE(n_round) {
     double d = argNum(vm, args, argc, 1, "round", 0);
     double m = std::pow(10.0, d);
     return Value(std::round(x * m) / m);
+}
+// format(valor, "formato"): el mismo miniformato que "${valor:formato}"
+//   [[relleno]alineación][+][0][ancho][, o _][.precisión][tipo]
+//   alineación < > ^ · tipos: f (decimales), e (científica), % (porcentaje), d (entero),
+//   x X (hexadecimal), b (binario), o (octal), s (texto)
+static size_t utf8CharLen(unsigned char c) { return c >= 0xF0 ? 4 : c >= 0xE0 ? 3 : c >= 0xC0 ? 2 : 1; }
+static std::string groupDigits(const std::string& digits, char sep) {
+    std::string out;
+    int n = 0;
+    for (size_t i = digits.size(); i-- > 0;) {
+        if (n > 0 && n % 3 == 0) out += sep;
+        out += digits[i];
+        n++;
+    }
+    return std::string(out.rbegin(), out.rend());
+}
+NATIVE(n_format) {
+    Value v = argc > 0 ? args[0] : Value();
+    std::string spec = argStr(vm, args, argc, 1, "format", "");
+    auto bad = [&](const std::string& why) {
+        vm.raise("formato '" + spec + "' no válido: " + why + " (ejemplos: \".2f\", \">8\", \",\", \"08.3f\", \"%\", \"x\")");
+    };
+    size_t i = 0;
+    std::string fill = " ";
+    char align = 0;
+    auto isAlign = [](char c) { return c == '<' || c == '>' || c == '^'; };
+    if (!spec.empty()) {
+        size_t cl = utf8CharLen((unsigned char)spec[0]);
+        if (spec.size() > cl && isAlign(spec[cl])) { fill = spec.substr(0, cl); align = spec[cl]; i = cl + 1; }
+        else if (isAlign(spec[0])) { align = spec[0]; i = 1; }
+    }
+    bool plus = false, zero = false;
+    if (i < spec.size() && spec[i] == '+') { plus = true; i++; }
+    if (i < spec.size() && spec[i] == '0') { zero = true; i++; }
+    int width = 0;
+    while (i < spec.size() && std::isdigit((unsigned char)spec[i])) { width = width * 10 + (spec[i] - '0'); i++; if (width > 1000) bad("ancho demasiado grande"); }
+    char group = 0;
+    if (i < spec.size() && (spec[i] == ',' || spec[i] == '_')) group = spec[i++];
+    int prec = -1;
+    if (i < spec.size() && spec[i] == '.') {
+        i++;
+        if (i >= spec.size() || !std::isdigit((unsigned char)spec[i])) bad("falta el número de decimales después del punto");
+        prec = 0;
+        while (i < spec.size() && std::isdigit((unsigned char)spec[i])) { prec = prec * 10 + (spec[i] - '0'); i++; if (prec > 60) bad("demasiados decimales"); }
+    }
+    char type = 0;
+    if (i < spec.size()) type = spec[i++];
+    if (i != spec.size()) bad("sobra '" + spec.substr(i) + "'");
+    if (type && !std::strchr("feE%dxXbos", type)) bad(std::string("el tipo '") + type + "' no existe");
+
+    std::string body, sign;
+    bool numeric = v.isNum() && type != 's';
+    if (type && type != 's' && !v.isNum()) vm.raise("el formato '" + spec + "' necesita un número, no " + vm.typeName(v));
+    if (numeric) {
+        double x = v.n;
+        if (!std::isfinite(x)) body = formatNumber(x);
+        else {
+            bool neg = std::signbit(x) && x != 0;
+            double a = std::fabs(x);
+            char buf[512];
+            switch (type) {
+                case 'f': std::snprintf(buf, sizeof buf, "%.*f", prec < 0 ? 6 : prec, a); body = buf; break;
+                case 'e': case 'E': std::snprintf(buf, sizeof buf, type == 'e' ? "%.*e" : "%.*E", prec < 0 ? 6 : prec, a); body = buf; break;
+                case '%': std::snprintf(buf, sizeof buf, "%.*f", prec < 0 ? 0 : prec, a * 100); body = std::string(buf) + "%"; break;
+                case 'd': std::snprintf(buf, sizeof buf, "%.0f", std::round(a)); body = buf; break;
+                case 'x': case 'X': case 'b': case 'o': {
+                    if (a >= 9.007199254740992e15) vm.raise("el número es demasiado grande para el formato '" + spec + "'");
+                    unsigned long long u = (unsigned long long)std::llround(a);
+                    if (type == 'b') { do { body.insert(body.begin(), char('0' + (u & 1))); u >>= 1; } while (u); }
+                    else { std::snprintf(buf, sizeof buf, type == 'x' ? "%llx" : type == 'X' ? "%llX" : "%llo", u); body = buf; }
+                    break;
+                }
+                default:
+                    if (prec >= 0) { std::snprintf(buf, sizeof buf, "%.*f", prec, a); body = buf; }
+                    else body = formatNumber(a);
+            }
+            if (neg && body.find_first_not_of("0.%") != std::string::npos) sign = "-";
+            else if (plus) sign = "+";
+            if (group && type != 'e' && type != 'E' && type != 'x' && type != 'X' && type != 'b' && type != 'o') {
+                size_t end = body.find_first_not_of("0123456789");
+                body = groupDigits(body.substr(0, end == std::string::npos ? body.size() : end), group) +
+                       (end == std::string::npos ? "" : body.substr(end));
+            }
+        }
+    } else {
+        body = isString(v) ? vm.toString(v) : vm.toString(v);
+        if (prec >= 0) { // ".5" en un texto: como mucho 5 caracteres
+            size_t pos = 0;
+            for (int k = 0; k < prec && pos < body.size(); k++) pos += utf8CharLen((unsigned char)body[pos]);
+            body = body.substr(0, pos);
+        }
+    }
+    std::string out = sign + body;
+    int len = (int)utf8Length(out);
+    if (width > len) {
+        int pad = width - len;
+        if (zero && numeric && !align) out = sign + std::string(pad, '0') + body;
+        else {
+            char al = align ? align : (numeric ? '>' : '<');
+            auto rep = [&](int n) { std::string r; for (int k = 0; k < n; k++) r += fill; return r; };
+            if (al == '<') out += rep(pad);
+            else if (al == '>') out = rep(pad) + out;
+            else out = rep(pad / 2) + out + rep(pad - pad / 2);
+        }
+    }
+    return vm.str(out);
 }
 NATIVE(n_pow) { return Value(std::pow(argNum(vm, args, argc, 0, "pow"), argNum(vm, args, argc, 1, "pow"))); }
 NATIVE(n_atan2) { return Value(std::atan2(argNum(vm, args, argc, 0, "atan2"), argNum(vm, args, argc, 1, "atan2"))); }
@@ -1005,6 +1112,13 @@ void registerStdlib(VM& vm) {
     vm.defineGlobalFn("floor", "(x: number): number", "Redondea hacia abajo.", n_floor);
     vm.defineGlobalFn("ceil", "(x: number): number", "Redondea hacia arriba.", n_ceil);
     vm.defineGlobalFn("round", "(x: number, decimales?: number = 0): number", "Redondea al entero (o a N decimales) más cercano.", n_round);
+    {
+        ObjNative* f = vm.defineGlobalFn("format", "(valor: any, formato: text): text",
+            "Da formato a un valor como \"${valor:formato}\": \".2f\" (2 decimales), \">8\" (a la derecha en 8), \"^8\" (centrado), "
+            "\",\" (miles), \"08.3f\", \"+\", \"%\" (porcentaje), \"x\" (hexadecimal), \"b\" (binario), \"e\" (científica).",
+            n_format, "format(3.14159, \".2f\")  // \"3.14\"");
+        vm.builtins[vm.builtinSlot("__format")] = Value::object(f); // lo usa "${x:.2f}" (no se puede tapar con una función propia)
+    }
     vm.defineGlobalFn("sign", "(x: number): number", "-1, 0 o 1 según el signo.", n_sign);
     vm.defineGlobalFn("min", "(...valores: number|list): number", "El menor de los valores (o de una lista).", n_min);
     vm.defineGlobalFn("max", "(...valores: number|list): number", "El mayor de los valores (o de una lista).", n_max);

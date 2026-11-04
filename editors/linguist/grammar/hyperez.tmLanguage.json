@@ -1,0 +1,859 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "HyperEZ",
+  "scopeName": "source.hyperez",
+  "fileTypes": [
+    "hz",
+    "hez"
+  ],
+  "patterns": [
+    {
+      "include": "#statements"
+    }
+  ],
+  "repository": {
+    "statements": {
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#strings"
+        },
+        {
+          "include": "#numbers"
+        },
+        {
+          "include": "#import"
+        },
+        {
+          "include": "#function-decl"
+        },
+        {
+          "include": "#class-decl"
+        },
+        {
+          "include": "#inherit"
+        },
+        {
+          "include": "#event-decl"
+        },
+        {
+          "include": "#event-use"
+        },
+        {
+          "include": "#accessor"
+        },
+        {
+          "include": "#var-decl"
+        },
+        {
+          "include": "#return-type"
+        },
+        {
+          "include": "#keywords"
+        },
+        {
+          "include": "#constants"
+        },
+        {
+          "include": "#builtins"
+        },
+        {
+          "include": "#calls"
+        },
+        {
+          "include": "#members"
+        },
+        {
+          "include": "#identifiers"
+        },
+        {
+          "include": "#operators"
+        },
+        {
+          "include": "#punctuation"
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.documentation.hyperez",
+          "begin": "/\\*\\*(?!/)",
+          "end": "\\*/",
+          "captures": {
+            "0": {
+              "name": "punctuation.definition.comment.hyperez"
+            }
+          }
+        },
+        {
+          "name": "comment.block.hyperez",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "captures": {
+            "0": {
+              "name": "punctuation.definition.comment.hyperez"
+            }
+          }
+        },
+        {
+          "name": "comment.line.triple-slash.documentation.hyperez",
+          "begin": "///",
+          "end": "$",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.hyperez"
+            }
+          }
+        },
+        {
+          "name": "comment.line.double-slash.hyperez",
+          "begin": "//",
+          "end": "$",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.hyperez"
+            }
+          }
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.raw.hyperez",
+          "begin": "\\br\"",
+          "end": "\"|$",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.hyperez"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.hyperez"
+            }
+          }
+        },
+        {
+          "name": "string.quoted.raw.hyperez",
+          "begin": "\\br'",
+          "end": "'|$",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.hyperez"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.hyperez"
+            }
+          }
+        },
+        {
+          "name": "string.quoted.triple.double.hyperez",
+          "begin": "\"\"\"",
+          "end": "\"\"\"",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.hyperez"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.hyperez"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#escapes"
+            },
+            {
+              "include": "#interpolation"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.triple.single.hyperez",
+          "begin": "'''",
+          "end": "'''",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.hyperez"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.hyperez"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#escapes"
+            },
+            {
+              "include": "#interpolation"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.double.hyperez",
+          "begin": "\"",
+          "end": "\"|$",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.hyperez"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.hyperez"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#escapes"
+            },
+            {
+              "include": "#interpolation"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.hyperez",
+          "begin": "'",
+          "end": "'|$",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.hyperez"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.hyperez"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#escapes"
+            },
+            {
+              "include": "#interpolation"
+            }
+          ]
+        }
+      ]
+    },
+    "escapes": {
+      "name": "constant.character.escape.hyperez",
+      "match": "\\\\(?:u\\{[0-9a-fA-F]+\\}|x[0-9a-fA-F]{2}|.)"
+    },
+    "interpolation": {
+      "name": "meta.interpolation.hyperez",
+      "contentName": "meta.embedded.line.hyperez",
+      "begin": "\\$\\{",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.interpolation.begin.hyperez"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.interpolation.end.hyperez"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#format-spec"
+        },
+        {
+          "include": "#nested-braces"
+        },
+        {
+          "include": "#statements"
+        }
+      ]
+    },
+    "format-spec": {
+      "match": "(:)((?:[^\\s{}]?[<>^])?\\+?0?\\d*[,_]?(?:\\.\\d+)?[feE%dxXbos]?)(?=\\})",
+      "captures": {
+        "1": {
+          "name": "punctuation.separator.format.hyperez"
+        },
+        "2": {
+          "name": "constant.other.format-spec.hyperez"
+        }
+      }
+    },
+    "nested-braces": {
+      "begin": "\\{",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.braces.hyperez"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.braces.hyperez"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#nested-braces"
+        },
+        {
+          "include": "#statements"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.hyperez",
+          "match": "\\b0[xX][0-9a-fA-F_]+\\b"
+        },
+        {
+          "name": "constant.numeric.binary.hyperez",
+          "match": "\\b0[bB][01_]+\\b"
+        },
+        {
+          "name": "constant.numeric.decimal.hyperez",
+          "match": "(?<![\\p{L}_])(?:\\d[\\d_]*(?:\\.(?!\\.)\\d[\\d_]*)?(?:[eE][+-]?\\d+)?)\\b"
+        }
+      ]
+    },
+    "import": {
+      "patterns": [
+        {
+          "match": "^\\s*(from)\\s+(\\\"[^\\\"]*\\\"|[\\p{L}_][\\p{L}\\p{N}_]*(?:\\.[\\p{L}_][\\p{L}\\p{N}_]*)*)\\s+(import)\\b",
+          "captures": {
+            "1": {
+              "name": "keyword.control.import.hyperez"
+            },
+            "2": {
+              "name": "entity.name.namespace.hyperez"
+            },
+            "3": {
+              "name": "keyword.control.import.hyperez"
+            }
+          }
+        },
+        {
+          "match": "^\\s*(import)\\s+(\\\"[^\\\"]*\\\"|[\\p{L}_][\\p{L}\\p{N}_]*(?:\\.[\\p{L}_][\\p{L}\\p{N}_]*)*)(?:\\s+(as)\\s+([\\p{L}_][\\p{L}\\p{N}_]*))?",
+          "captures": {
+            "1": {
+              "name": "keyword.control.import.hyperez"
+            },
+            "2": {
+              "name": "entity.name.namespace.hyperez"
+            },
+            "3": {
+              "name": "keyword.control.as.hyperez"
+            },
+            "4": {
+              "name": "entity.name.namespace.hyperez"
+            }
+          }
+        },
+        {
+          "match": "\\b(as)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.control.as.hyperez"
+            },
+            "2": {
+              "name": "variable.other.readwrite.alias.hyperez"
+            }
+          }
+        }
+      ]
+    },
+    "function-decl": {
+      "begin": "\\b(?:(async)\\s+)?(?:(static)\\s+)?(function)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*(\\()",
+      "beginCaptures": {
+        "1": {
+          "name": "storage.modifier.async.hyperez"
+        },
+        "2": {
+          "name": "storage.modifier.hyperez"
+        },
+        "3": {
+          "name": "storage.type.function.hyperez"
+        },
+        "4": {
+          "name": "entity.name.function.hyperez"
+        },
+        "5": {
+          "name": "punctuation.definition.parameters.begin.hyperez"
+        }
+      },
+      "end": "\\)",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.parameters.end.hyperez"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#parameters"
+        }
+      ]
+    },
+    "parameters": {
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#strings"
+        },
+        {
+          "include": "#numbers"
+        },
+        {
+          "match": "(\\.\\.\\.)?([\\p{L}_][\\p{L}\\p{N}_]*)\\s*(\\?)?\\s*(:)\\s*((?:[\\p{L}_][\\p{L}\\p{N}_.]*)(?:<[^<>()=]*(?:<[^<>()=]*>[^<>()=]*)*>)?\\??)",
+          "captures": {
+            "1": {
+              "name": "keyword.operator.spread.hyperez"
+            },
+            "2": {
+              "name": "variable.parameter.hyperez"
+            },
+            "3": {
+              "name": "keyword.operator.optional.hyperez"
+            },
+            "4": {
+              "name": "punctuation.separator.type.hyperez"
+            },
+            "5": {
+              "patterns": [
+                {
+                  "include": "#type-name"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "match": "(\\.\\.\\.)?([\\p{L}_][\\p{L}\\p{N}_]*)(?=\\s*(?:[,=)]|$))",
+          "captures": {
+            "1": {
+              "name": "keyword.operator.spread.hyperez"
+            },
+            "2": {
+              "name": "variable.parameter.hyperez"
+            }
+          }
+        },
+        {
+          "include": "#constants"
+        },
+        {
+          "include": "#operators"
+        }
+      ]
+    },
+    "type-name": {
+      "patterns": [
+        {
+          "name": "support.type.primitive.hyperez",
+          "match": "\\b(?:number|int|float|double|text|string|char|bool|boolean|list|array|map|dict|set|any|object|void|null|function|Function|Task|Promise|Range|Event|Subscription)\\b"
+        },
+        {
+          "name": "entity.name.type.hyperez",
+          "match": "[\\p{L}_][\\p{L}\\p{N}_]*"
+        },
+        {
+          "name": "punctuation.definition.typeparameters.hyperez",
+          "match": "[<>,]"
+        },
+        {
+          "name": "keyword.operator.optional.hyperez",
+          "match": "\\?"
+        }
+      ]
+    },
+    "return-type": {
+      "match": "(?<=\\))\\s*(:)\\s*((?:[\\p{L}_][\\p{L}\\p{N}_.]*)(?:<[^<>()=]*(?:<[^<>()=]*>[^<>()=]*)*>)?\\??)",
+      "captures": {
+        "1": {
+          "name": "punctuation.separator.type.hyperez"
+        },
+        "2": {
+          "patterns": [
+            {
+              "include": "#type-name"
+            }
+          ]
+        }
+      }
+    },
+    "class-decl": {
+      "match": "\\b(class|struct|interface|enum)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)",
+      "captures": {
+        "1": {
+          "name": "storage.type.class.hyperez"
+        },
+        "2": {
+          "name": "entity.name.type.class.hyperez"
+        }
+      }
+    },
+    "inherit": {
+      "match": "\\b(extends|implements)\\s+([\\p{L}_][\\p{L}\\p{N}_]*(?:\\s*,\\s*[\\p{L}_][\\p{L}\\p{N}_]*)*)",
+      "captures": {
+        "1": {
+          "name": "storage.modifier.hyperez"
+        },
+        "2": {
+          "patterns": [
+            {
+              "name": "entity.other.inherited-class.hyperez",
+              "match": "[\\p{L}_][\\p{L}\\p{N}_]*"
+            }
+          ]
+        }
+      }
+    },
+    "event-decl": {
+      "match": "\\b(event)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)",
+      "captures": {
+        "1": {
+          "name": "storage.type.event.hyperez"
+        },
+        "2": {
+          "name": "entity.name.function.event.hyperez"
+        }
+      }
+    },
+    "event-use": {
+      "match": "\\b(on|once|emit)\\s+([\\p{L}_][\\p{L}\\p{N}_]*(?:\\.[\\p{L}_][\\p{L}\\p{N}_]*)*)",
+      "captures": {
+        "1": {
+          "name": "keyword.control.event.hyperez"
+        },
+        "2": {
+          "name": "entity.name.function.event.hyperez"
+        }
+      }
+    },
+    "accessor": {
+      "match": "\\b(get|set)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)(?=\\s*\\()",
+      "captures": {
+        "1": {
+          "name": "storage.type.property.hyperez"
+        },
+        "2": {
+          "name": "entity.name.function.accessor.hyperez"
+        }
+      }
+    },
+    "var-decl": {
+      "patterns": [
+        {
+          "match": "\\b(const)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)(?:\\s*(:)\\s*((?:[\\p{L}_][\\p{L}\\p{N}_.]*)(?:<[^<>()=]*(?:<[^<>()=]*>[^<>()=]*)*>)?\\??))?",
+          "captures": {
+            "1": {
+              "name": "storage.type.const.hyperez"
+            },
+            "2": {
+              "name": "variable.other.constant.hyperez"
+            },
+            "3": {
+              "name": "punctuation.separator.type.hyperez"
+            },
+            "4": {
+              "patterns": [
+                {
+                  "include": "#type-name"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "match": "\\b(var|let)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)(?:\\s*(:)\\s*((?:[\\p{L}_][\\p{L}\\p{N}_.]*)(?:<[^<>()=]*(?:<[^<>()=]*>[^<>()=]*)*>)?\\??))?",
+          "captures": {
+            "1": {
+              "name": "storage.type.var.hyperez"
+            },
+            "2": {
+              "name": "variable.other.readwrite.hyperez"
+            },
+            "3": {
+              "name": "punctuation.separator.type.hyperez"
+            },
+            "4": {
+              "patterns": [
+                {
+                  "include": "#type-name"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "match": "\\b(catch)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.control.trycatch.hyperez"
+            },
+            "2": {
+              "name": "variable.parameter.hyperez"
+            }
+          }
+        },
+        {
+          "match": "\\b(for|foreach)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)(?:\\s*,\\s*([\\p{L}_][\\p{L}\\p{N}_]*))?\\s+(in)\\b",
+          "captures": {
+            "1": {
+              "name": "keyword.control.loop.hyperez"
+            },
+            "2": {
+              "name": "variable.other.readwrite.hyperez"
+            },
+            "3": {
+              "name": "variable.other.readwrite.hyperez"
+            },
+            "4": {
+              "name": "keyword.control.loop.hyperez"
+            }
+          }
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.conditional.hyperez",
+          "match": "\\b(?:if|else|match)\\b"
+        },
+        {
+          "name": "keyword.control.loop.hyperez",
+          "match": "\\b(?:for|foreach|in|while|repeat|break|continue)\\b"
+        },
+        {
+          "name": "keyword.control.loop.hyperez",
+          "match": "\\bstep\\b(?=\\s*-?[\\d(\\p{L}_])"
+        },
+        {
+          "name": "keyword.control.loop.hyperez",
+          "match": "\\bdo\\b(?=\\s*\\{)"
+        },
+        {
+          "name": "keyword.control.flow.hyperez",
+          "match": "\\b(?:return|await|throw)\\b"
+        },
+        {
+          "name": "keyword.control.trycatch.hyperez",
+          "match": "\\b(?:try|catch|finally)\\b"
+        },
+        {
+          "name": "keyword.control.event.hyperez",
+          "match": "\\bpriority\\b(?=\\s*-?[\\d(\\p{L}_])"
+        },
+        {
+          "name": "keyword.control.import.hyperez",
+          "match": "\\bimport\\b"
+        },
+        {
+          "name": "keyword.operator.word.hyperez",
+          "match": "\\b(?:and|or|not|is|new)\\b"
+        },
+        {
+          "name": "storage.modifier.hyperez",
+          "match": "\\b(?:public|private|protected|static|async)\\b"
+        },
+        {
+          "name": "storage.type.hyperez",
+          "match": "\\b(?:var|let|const|function|class|struct|interface|enum|event)\\b"
+        },
+        {
+          "name": "storage.type.constructor.hyperez",
+          "match": "\\bconstructor\\b"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.hyperez",
+          "match": "\\b(?:true|false)\\b"
+        },
+        {
+          "name": "constant.language.null.hyperez",
+          "match": "\\bnull\\b"
+        },
+        {
+          "name": "variable.language.this.hyperez",
+          "match": "\\b(?:this|super)\\b"
+        },
+        {
+          "name": "support.constant.math.hyperez",
+          "match": "\\b(?:PI|TAU|E|INFINITY)\\b"
+        }
+      ]
+    },
+    "builtins": {
+      "patterns": [
+        {
+          "name": "support.class.builtin.hyperez",
+          "match": "\\b(?:Console|File|System|JSON|Vec2|Vec3|Color|Error|EventData|HyperCore|HyperMath|Process|Path|Time|Bytes|Hash|Base64|Regex|Http|Matrix|Image|ProcessHandle)\\b"
+        },
+        {
+          "name": "support.function.builtin.hyperez",
+          "match": "\\b(?:print|println|write|input|len|typeof|str|toNumber|toInt|assert|assertEqual|assertThrows|test|exit|range|time|now|wait|nextFrame|spawn|off|abs|sqrt|pow|floor|ceil|round|sign|min|max|clamp|lerp|sin|cos|tan|asin|acos|atan|atan2|hypot|exp|log|log10|radians|degrees|random|randomInt|randomChoice|randomSeed|remap|wrap|approach|smoothstep|chance|distance|isNaN|awaitAll|awaitAny|parseInt|gcd|lcm|factorial|isPrime|primes|divisors|cbrt|trunc|fract|sinh|cosh|tanh|randomGaussian|noise|chr|ord)\\b(?=\\s*\\()"
+        }
+      ]
+    },
+    "calls": {
+      "match": "([\\p{L}_][\\p{L}\\p{N}_]*)(?=\\s*\\()",
+      "captures": {
+        "1": {
+          "name": "entity.name.function.call.hyperez"
+        }
+      }
+    },
+    "members": {
+      "patterns": [
+        {
+          "match": "(\\??\\.)([\\p{L}_][\\p{L}\\p{N}_]*)(?=\\s*\\()",
+          "captures": {
+            "1": {
+              "name": "punctuation.accessor.hyperez"
+            },
+            "2": {
+              "name": "entity.name.function.member.hyperez"
+            }
+          }
+        },
+        {
+          "match": "(\\??\\.)(\\p{Lu}[\\p{Lu}\\p{N}_]+)\\b",
+          "captures": {
+            "1": {
+              "name": "punctuation.accessor.hyperez"
+            },
+            "2": {
+              "name": "variable.other.constant.property.hyperez"
+            }
+          }
+        },
+        {
+          "match": "(\\??\\.)([\\p{L}_][\\p{L}\\p{N}_]*)",
+          "captures": {
+            "1": {
+              "name": "punctuation.accessor.hyperez"
+            },
+            "2": {
+              "name": "variable.other.property.hyperez"
+            }
+          }
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "variable.other.constant.hyperez",
+          "match": "\\b\\p{Lu}[\\p{Lu}\\p{N}_]+\\b"
+        },
+        {
+          "name": "entity.name.type.hyperez",
+          "match": "\\b\\p{Lu}[\\p{L}\\p{N}_]*\\b"
+        },
+        {
+          "name": "variable.other.readwrite.hyperez",
+          "match": "[\\p{L}_][\\p{L}\\p{N}_]*"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "storage.type.function.arrow.hyperez",
+          "match": "=>|->"
+        },
+        {
+          "name": "keyword.operator.range.hyperez",
+          "match": "\\.\\.=|\\.\\.\\.|\\.\\."
+        },
+        {
+          "name": "keyword.operator.nullish.hyperez",
+          "match": "\\?\\?=?|\\?\\."
+        },
+        {
+          "name": "keyword.operator.pipe.hyperez",
+          "match": "\\|>"
+        },
+        {
+          "name": "keyword.operator.assignment.compound.hyperez",
+          "match": "\\*\\*=|\\+=|-=|\\*=|/=|%="
+        },
+        {
+          "name": "keyword.operator.comparison.hyperez",
+          "match": "==|!=|<=|>=|<|>"
+        },
+        {
+          "name": "keyword.operator.logical.hyperez",
+          "match": "&&|\\|\\||!"
+        },
+        {
+          "name": "keyword.operator.increment.hyperez",
+          "match": "\\+\\+|--"
+        },
+        {
+          "name": "keyword.operator.arithmetic.hyperez",
+          "match": "\\*\\*|[-+*/%]"
+        },
+        {
+          "name": "keyword.operator.bitwise.hyperez",
+          "match": "<<|>>|[&|^~]"
+        },
+        {
+          "name": "keyword.operator.assignment.hyperez",
+          "match": "="
+        },
+        {
+          "name": "keyword.operator.ternary.hyperez",
+          "match": "\\?"
+        },
+        {
+          "name": "keyword.operator.decorator.hyperez",
+          "match": "@"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.comma.hyperez",
+          "match": ","
+        },
+        {
+          "name": "punctuation.terminator.statement.hyperez",
+          "match": ";"
+        },
+        {
+          "name": "punctuation.separator.key-value.hyperez",
+          "match": ":"
+        },
+        {
+          "name": "punctuation.section.block.hyperez",
+          "match": "[{}]"
+        },
+        {
+          "name": "meta.brace.round.hyperez",
+          "match": "[()]"
+        },
+        {
+          "name": "meta.brace.square.hyperez",
+          "match": "[\\[\\]]"
+        }
+      ]
+    }
+  }
+}

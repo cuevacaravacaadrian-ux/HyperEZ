@@ -260,7 +260,7 @@ void buildCatalog() {
     for (const char* kw : {"var", "let", "const", "function", "return", "if", "else", "for", "foreach", "in", "while", "repeat", "break",
                            "continue", "class", "struct", "constructor", "this", "super", "extends", "implements", "interface", "enum",
                            "import", "from", "as", "private", "static", "true", "false", "null", "and", "or", "not", "is", "try",
-                           "catch", "finally", "throw", "async", "await", "match", "event", "on", "once", "emit", "step", "get", "set"})
+                           "catch", "finally", "throw", "async", "await", "match", "event", "on", "once", "emit", "step", "get", "set", "do"})
         globals.insert(widen(kw));
     for (auto& e : vm.catalog) {
         std::wstring name = widen(e.name);
@@ -289,7 +289,7 @@ const COLORREF C_TEXT = RGB(31, 35, 40), C_KEYWORD = RGB(0, 0, 220), C_STRING = 
                C_COMMENT = RGB(0, 128, 0), C_TYPE = RGB(38, 127, 153), C_BUILTIN = RGB(121, 94, 38), C_ERRORBG = RGB(255, 222, 222),
                C_GUTTER_BG = RGB(246, 248, 250), C_GUTTER_FG = RGB(140, 149, 159);
 
-const std::set<std::string> kContextual = {"event", "on", "once", "emit", "from", "as", "step", "priority"};
+const std::set<std::string> kContextual = {"event", "on", "once", "emit", "from", "as", "step", "priority", "do"};
 // Tipos básicos (en minúscula) que se colorean cuando aparecen como anotación de tipo
 const std::set<std::string> kBasicTypes = {"number", "int", "text", "bool", "list", "map", "set", "any", "void", "function", "object", "never"};
 
@@ -311,10 +311,16 @@ void collectSpans(const std::vector<Token>& toks, const Utf8Text& u, std::vector
             if (t.interpolated && depth < 4) {
                 for (auto& part : t.parts) {
                     if (!part.isExpr) continue;
-                    LONG ea = cpAt(part.loc.offset), eb = cpAt(part.loc.offset + (int)part.text.size());
+                    int end = part.loc.offset + (int)part.text.size(); // fin de la expresión (en bytes)
+                    LONG ea = cpAt(part.loc.offset), eb = cpAt(end);
                     out.push_back({cpAt(part.loc.offset - 2), ea, C_KEYWORD, false}); // ${
                     out.push_back({ea, eb, C_TEXT, false});
-                    out.push_back({eb, cpAt(part.loc.offset + (int)part.text.size() + 1), C_KEYWORD, false}); // }
+                    if (!part.spec.empty()) { // "${precio:.2f}": el formato, como los números
+                        int specEnd = end + 1 + (int)part.spec.size();
+                        out.push_back({eb, cpAt(specEnd), C_NUMBER, false});
+                        end = specEnd;
+                    }
+                    out.push_back({cpAt(end), cpAt(end + 1), C_KEYWORD, false}); // }
                     DiagnosticBag bag;
                     Lexer sub(part.text, bag, part.loc);
                     collectSpans(sub.tokenize(), u, out, depth + 1);

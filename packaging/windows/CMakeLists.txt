@@ -40,6 +40,13 @@ add_executable(setup WIN32 setup.cpp ${CMAKE_SOURCE_DIR}/src/tools/platform/wins
 add_dependencies(setup payload)
 target_include_directories(setup PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_compile_definitions(setup PRIVATE UNICODE _UNICODE)
+# Identificador de la extensión de VS Code (<publisher>.<name> de package.json), para instalarla y desinstalarla
+set(HZ_VSCODE_PACKAGE ${CMAKE_SOURCE_DIR}/editors/vscode/package.json)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${HZ_VSCODE_PACKAGE})
+file(READ ${HZ_VSCODE_PACKAGE} HZ_VSCODE_JSON)
+string(JSON HZ_VSCODE_PUBLISHER GET "${HZ_VSCODE_JSON}" publisher)
+string(JSON HZ_VSCODE_NAME GET "${HZ_VSCODE_JSON}" name)
+target_compile_definitions(setup PRIVATE "HZ_VSCODE_EXTENSION_ID=\"${HZ_VSCODE_PUBLISHER}.${HZ_VSCODE_NAME}\"")
 set_target_properties(setup PROPERTIES OUTPUT_NAME "HyperEZ-Setup-${PROJECT_VERSION}")
 target_link_libraries(setup PRIVATE comctl32 ole32 shell32 uuid)
 if(MINGW)

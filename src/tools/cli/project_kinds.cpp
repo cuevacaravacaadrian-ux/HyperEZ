@@ -1,6 +1,6 @@
 // Tipos de proyecto de 'hyper new': cada uno con la misma estructura de carpetas
-//   main.hz      punto de entrada
-//   src/         módulos del proyecto (se importan con from "./src/modulo.hz" import ...)
+//   main.hez      punto de entrada
+//   src/         módulos del proyecto (se importan con from "./src/modulo.hez" import ...)
 //   tests/       pruebas (hyper test)
 //   datos/       archivos que usa el programa (solo si hacen falta)
 #include "tools/tools.h"
@@ -8,18 +8,25 @@
 namespace hz {
 
 static std::string readme(const std::string& title, const std::string& what, const std::string& extra) {
-    return "# " + title + "\n\n" + what + "\n\nProyecto creado con [HyperEZ](" HYPEREZ_REPO_URL ") " HYPEREZ_VERSION ".\n\n"
+    return "# " + title + "\n\n"
+           "[![Hecho con HyperEZ](https://img.shields.io/badge/hecho%20con-HyperEZ-62d962)](" HYPEREZ_REPO_URL ")\n"
+           "[![Pruebas](../../actions/workflows/pruebas.yml/badge.svg)](../../actions/workflows/pruebas.yml)\n\n" +
+           what + "\n\nProyecto creado con [HyperEZ](" HYPEREZ_REPO_URL ") " HYPEREZ_VERSION ".\n\n"
            "## Carpetas\n\n| Carpeta | Contenido |\n|---|---|\n"
-           "| `main.hz` | Punto de entrada del programa |\n"
+           "| `main.hez` | Punto de entrada del programa |\n"
            "| `src/` | Módulos del proyecto |\n"
            "| `tests/` | Pruebas (`hyper test`) |\n" + extra +
            "\n## Comandos\n\n| Comando | Qué hace |\n|---|---|\n"
-           "| `hyper run` | Ejecuta `main.hz` |\n"
-           "| `hyper watch` | Ejecuta `main.hz` y lo repite cada vez que guardas |\n"
+           "| `hyper run` | Ejecuta `main.hez` |\n"
+           "| `hyper watch` | Ejecuta `main.hez` y lo repite cada vez que guardas |\n"
            "| `hyper test` | Ejecuta las pruebas de `tests/` |\n"
            "| `hyper check` | Busca errores sin ejecutar |\n"
            "| `hyper` | Consola interactiva para probar código |\n\n"
-           "En VS Code: **F5** ejecuta y **Ctrl+Alt+F5** ejecuta cada vez que guardas.\n";
+           "En VS Code: **F5** ejecuta y **Ctrl+Alt+F5** ejecuta cada vez que guardas.\n\n"
+           "## En GitHub\n\n"
+           "Al subir el proyecto a GitHub, `.github/workflows/pruebas.yml` instala HyperEZ y ejecuta las pruebas con cada "
+           "cambio (la insignia *Pruebas* de arriba se pone en verde). Los archivos `.hez` ayudan a que GitHub reconozca "
+           "HyperEZ como lenguaje.\n";
 }
 
 // ---- juego -----------------------------------------------------------------
@@ -31,12 +38,12 @@ static std::vector<ProjectFile> gameProject(const std::string& title) {
         size_t p = s.find(from);
         if (p != std::string::npos) s.replace(p, from.size(), to);
     };
-    fix(main, "from \"./jugador.hz\"", "from \"./src/jugador.hz\"");
-    fix(test, "from \"../jugador.hz\"", "from \"../src/jugador.hz\"");
+    fix(main, "from \"./jugador.hez\"", "from \"./src/jugador.hez\"");
+    fix(test, "from \"../jugador.hez\"", "from \"../src/jugador.hez\"");
     return {
-        {"main.hz", main},
-        {"src/jugador.hz", projectTemplateModule()},
-        {"tests/test_jugador.hz", test},
+        {"main.hez", main},
+        {"src/jugador.hez", projectTemplateModule()},
+        {"tests/test_jugador.hez", test},
         {"README.md", readme(title, "Un juego de consola: lleva al héroe hasta el tesoro esquivando las trampas.", "")},
     };
 }
@@ -45,9 +52,9 @@ static std::vector<ProjectFile> gameProject(const std::string& title) {
 
 static std::vector<ProjectFile> appProject(const std::string& title) {
     return {
-        {"main.hz", "// " + title + R"HZ( — aplicación de consola: lista de tareas que se guarda en datos/tareas.json
+        {"main.hez", "// " + title + R"HZ( — aplicación de consola: lista de tareas que se guarda en datos/tareas.json
 import cli
-from "./src/tareas.hz" import ListaTareas
+from "./src/tareas.hez" import ListaTareas
 
 var lista = ListaTareas(Path.join(System.scriptDir, "datos/tareas.json"))
 
@@ -70,7 +77,7 @@ while seguir {
     }
 }
 )HZ"},
-        {"src/tareas.hz", R"HZ(// Lógica de la lista de tareas (separada de main.hz para poder probarla).
+        {"src/tareas.hez", R"HZ(// Lógica de la lista de tareas (separada de main.hez para poder probarla).
 
 struct Tarea { var texto: text = ""; var hecha: bool = false }
 
@@ -120,7 +127,7 @@ class ListaTareas {
     }
 }
 )HZ"},
-        {"tests/test_tareas.hz", R"HZ(from "../src/tareas.hz" import ListaTareas
+        {"tests/test_tareas.hez", R"HZ(from "../src/tareas.hez" import ListaTareas
 
 test("añadir, completar y limpiar", () => {
     var ruta = Path.join(Path.temp, "tareas_prueba.json")
@@ -146,9 +153,9 @@ test("añadir, completar y limpiar", () => {
 
 static std::vector<ProjectFile> aiProject(const std::string& title) {
     return {
-        {"main.hz", "// " + title + R"HZ( — inteligencia artificial: una red neuronal aprende a clasificar flores.
+        {"main.hez", "// " + title + R"HZ( — inteligencia artificial: una red neuronal aprende a clasificar flores.
 import ai
-from "./src/datos.hz" import cargar
+from "./src/datos.hez" import cargar
 
 randomSeed(1)
 var datos = cargar(Path.join(System.scriptDir, "datos/flores.csv"))
@@ -163,7 +170,7 @@ foreach nueva in [[1.4, 0.2], [4.5, 1.5], [6.0, 2.2]] {
     print("Una flor con pétalo ${nueva[0]} x ${nueva[1]} cm es: ${datos.nombres[red.classify([datos.escalar(nueva)])[0]]}")
 }
 )HZ"},
-        {"src/datos.hz", R"HZ(// Carga y prepara los datos: entradas escaladas a [0, 1] y clases como números.
+        {"src/datos.hez", R"HZ(// Carga y prepara los datos: entradas escaladas a [0, 1] y clases como números.
 import csv
 
 class Datos {
@@ -194,7 +201,7 @@ function cargar(ruta: text): Datos {
         {"datos/flores.csv", "largo,ancho,especie\n1.4,0.2,setosa\n1.3,0.2,setosa\n1.5,0.3,setosa\n1.7,0.4,setosa\n1.6,0.2,setosa\n"
                              "4.7,1.4,versicolor\n4.5,1.5,versicolor\n4.0,1.3,versicolor\n4.9,1.5,versicolor\n4.2,1.2,versicolor\n"
                              "6.0,2.5,virginica\n5.6,2.2,virginica\n5.8,1.8,virginica\n6.1,2.3,virginica\n5.1,1.9,virginica\n"},
-        {"tests/test_datos.hz", R"HZ(from "../src/datos.hz" import cargar
+        {"tests/test_datos.hez", R"HZ(from "../src/datos.hez" import cargar
 
 test("los datos se cargan y se escalan", () => {
     var d = cargar(Path.join(System.scriptDir, "../datos/flores.csv"))
@@ -212,11 +219,11 @@ test("los datos se cargan y se escalan", () => {
 
 static std::vector<ProjectFile> scriptProject(const std::string& title) {
     return {
-        {"main.hz", "// " + title + R"HZ( — herramienta de línea de órdenes.
-// Uso:  hyper main.hz <carpeta> [--ext .hz] [--top 5]
+        {"main.hez", "// " + title + R"HZ( — herramienta de línea de órdenes.
+// Uso:  hyper main.hez <carpeta> [--ext .hez] [--top 5]
 // Muestra cuántas líneas tiene cada archivo de una carpeta, de más a menos.
 import cli
-from "./src/contar.hz" import contarLineas
+from "./src/contar.hez" import contarLineas
 
 var a = cli.parseArgs(System.args)
 var carpeta = a.positional.length > 0 ? a.positional[0] : System.scriptDir
@@ -227,14 +234,14 @@ var filas = [["archivo", "líneas"]] + resultado.take(top).map(r => [r.archivo, 
 print(cli.table(filas))
 print("Total: ${resultado.map(r => r.lineas).sum()} líneas en ${resultado.length} archivos")
 )HZ"},
-        {"src/contar.hz", R"HZ(/// Lista de {archivo, lineas} de una carpeta (y subcarpetas), ordenada de más a menos líneas.
+        {"src/contar.hez", R"HZ(/// Lista de {archivo, lineas} de una carpeta (y subcarpetas), ordenada de más a menos líneas.
 function contarLineas(carpeta: text, extension: text = ""): list {
     var archivos = File.listAll(carpeta, extension)
     var cuentas = archivos.map(f => ({ archivo: f, lineas: File.readLines(Path.join(carpeta, f)).length }))
     return cuentas.sortBy(r => -r.lineas)
 }
 )HZ"},
-        {"tests/test_contar.hz", R"HZ(from "../src/contar.hz" import contarLineas
+        {"tests/test_contar.hez", R"HZ(from "../src/contar.hez" import contarLineas
 
 test("cuenta las líneas de cada archivo", () => {
     var dir = Path.join(Path.temp, "prueba_contar")
@@ -255,13 +262,13 @@ test("cuenta las líneas de cada archivo", () => {
 
 static std::vector<ProjectFile> webProject(const std::string& title) {
     return {
-        {"main.hz", "// " + title + R"HZ( — aplicación web: páginas con plantillas, un formulario, una API JSON y archivos estáticos.
-// Ejecuta:  hyper main.hz   y abre http://localhost:8080   (Ctrl+C para pararla)
-from "./src/app.hz" import crearApp
+        {"main.hez", "// " + title + R"HZ( — aplicación web: páginas con plantillas, un formulario, una API JSON y archivos estáticos.
+// Ejecuta:  hyper main.hez   y abre http://localhost:8080   (Ctrl+C para pararla)
+from "./src/app.hez" import crearApp
 
 crearApp(System.scriptDir).listen(8080, { open: System.args.contains("--abrir") })
 )HZ"},
-        {"src/app.hz", R"HZ(import web
+        {"src/app.hez", R"HZ(import web
 
 var mensajes: list = []
 
@@ -334,8 +341,8 @@ input { flex: 1; padding: .55rem .7rem; border: 1px solid #d0d7de; border-radius
 button { padding: .55rem 1.2rem; border: 0; border-radius: 8px; background: #2f81f7; color: white; font: inherit; cursor: pointer; }
 li { margin: .4rem 0; }
 )CSS"},
-        {"tests/test_app.hz", R"HZ(import web
-from "../src/app.hz" import crearApp
+        {"tests/test_app.hez", R"HZ(import web
+from "../src/app.hez" import crearApp
 
 var proyecto = Path.join(System.scriptDir, "..")
 
@@ -356,7 +363,7 @@ test("el formulario guarda el mensaje y la API lo devuelve", () => {
 )HZ"},
         {"README.md", readme(title, "Una aplicación web con plantillas HTML, un formulario, una API JSON y archivos estáticos.",
                              "| `plantillas/` | Páginas HTML con `{{variables}}` (import template) |\n| `publico/` | CSS, imágenes y JavaScript |\n") +
-                          "\nAbre http://localhost:8080 después de `hyper main.hz` (o `hyper main.hz --abrir`).\n"},
+                          "\nAbre http://localhost:8080 después de `hyper main.hez` (o `hyper main.hez --abrir`).\n"},
     };
 }
 
@@ -364,9 +371,9 @@ test("el formulario guarda el mensaje y la API lo devuelve", () => {
 
 static std::vector<ProjectFile> siteProject(const std::string& title) {
     return {
-        {"main.hz", "// " + title + R"HZ( — sitio web hecho con Markdown: cada archivo de contenido/ es una página.
-// Genera la web en la carpeta web/:     hyper main.hz
-// Para verla mientras escribes:         hyper watch main.hz   (regenera al guardar)
+        {"main.hez", "// " + title + R"HZ( — sitio web hecho con Markdown: cada archivo de contenido/ es una página.
+// Genera la web en la carpeta web/:     hyper main.hez
+// Para verla mientras escribes:         hyper watch main.hez   (regenera al guardar)
 //                                 y en otra terminal:  hyper serve web   (el navegador se recarga solo)
 import site
 
@@ -382,7 +389,7 @@ print("✓ ${hechos.length} archivos en web/")
 ¡Bienvenido! Esta web se genera con **HyperEZ** a partir de archivos Markdown.
 
 - Edita los archivos de la carpeta `contenido/`.
-- Ejecuta `hyper main.hz` para generar la web en `web/`.
+- Ejecuta `hyper main.hez` para generar la web en `web/`.
 - Mírala con `hyper serve web`.
 
 Sigue leyendo en [Sobre mí](sobre-mi.md).
@@ -403,7 +410,7 @@ print("¡Hola desde HyperEZ!")
 |---|---|
 | HyperEZ | mucho |
 )MD"},
-        {"tests/test_web.hz", R"HZ(import site
+        {"tests/test_web.hez", R"HZ(import site
 
 test("se generan las páginas con su menú", () => {
     var destino = Path.join(Path.temp, "prueba-sitio-" + Hash.uuid())
@@ -416,7 +423,7 @@ test("se generan las páginas con su menú", () => {
 )HZ"},
         {"README.md", readme(title, "Un sitio web estático escrito en Markdown (blog, documentación, portfolio...).",
                              "| `contenido/` | Las páginas en Markdown (`index.md` es la de inicio) |\n| `web/` | La web generada (súbela a cualquier hosting) |\n") +
-                          "\nGenera la web con `hyper main.hz` y mírala con `hyper serve web`.\n"},
+                          "\nGenera la web con `hyper main.hez` y mírala con `hyper serve web`.\n"},
         {".gitignore", "web/\n"},
     };
 }
@@ -434,6 +441,25 @@ std::vector<ProjectFile> projectFiles(const std::string& kind, const std::string
     bool hasIgnore = false;
     for (auto& f : files) if (f.path == ".gitignore") { f.content = "*.tmp\n" + f.content; hasIgnore = true; }
     if (!hasIgnore) files.push_back({".gitignore", "*.tmp\n"});
+    // Pruebas en GitHub Actions con la acción setup-hyperez del repositorio de HyperEZ
+    files.push_back({".github/workflows/pruebas.yml", R"YML(# Pruebas en GitHub: con cada cambio que subes, GitHub instala HyperEZ y ejecuta las pruebas.
+name: Pruebas
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cuevacaravacaadrian-ux/HyperEZ/actions/setup-hyperez@main
+        with:
+          version: latest
+      - run: hyper check main.hez
+      - run: hyper test
+)YML"});
     return files;
 }
 

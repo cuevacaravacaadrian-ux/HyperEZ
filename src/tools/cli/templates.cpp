@@ -20,7 +20,7 @@ std::string projectTemplateMain(const std::string& title) {
 // Mueve al héroe (@) con las flechas o WASD hasta el tesoro ($).
 // Cuidado: hay trampas escondidas. Pulsa Esc para salir.
 
-from "./jugador.hz" import Jugador, Direccion
+from "./jugador.hez" import Jugador, Direccion
 
 if not Console.interactive {
     print("Este juego se maneja con el teclado: ejecútalo en una terminal (hyper run) o con F5 en VS Code.")
@@ -103,7 +103,7 @@ if not jugador.vivo {
 }
 
 std::string projectTemplateModule() {
-    return R"HZ(// Lógica del jugador: separada de main.hz para poder probarla en tests/.
+    return R"HZ(// Lógica del jugador: separada de main.hez para poder probarla en tests/.
 
 /// Direcciones en las que se puede mover el jugador.
 enum Direccion { Quieto, Arriba, Abajo, Izquierda, Derecha }
@@ -148,7 +148,7 @@ class Jugador {
 
 std::string projectTemplateTest() {
     return R"HZ(// Pruebas de la lógica del jugador. Ejecútalas con:  hyper test
-from "../jugador.hz" import Jugador, Direccion
+from "../jugador.hez" import Jugador, Direccion
 
 test("el jugador se mueve y cuenta los pasos", () => {
     var j = Jugador("Ana", 1, 1)
@@ -178,12 +178,12 @@ test("pierde vida y deja de estar vivo", () => {
 std::string projectTemplateReadme(const std::string& title) {
     return "# " + title + "\n\nProyecto creado con [HyperEZ](" HYPEREZ_REPO_URL ") " HYPEREZ_VERSION ".\n\n"
            "| Comando | Qué hace |\n|---|---|\n"
-           "| `hyper run` | Ejecuta `main.hz` |\n"
-           "| `hyper watch` | Ejecuta `main.hz` y lo repite cada vez que guardas |\n"
+           "| `hyper run` | Ejecuta `main.hez` |\n"
+           "| `hyper watch` | Ejecuta `main.hez` y lo repite cada vez que guardas |\n"
            "| `hyper check` | Busca errores sin ejecutar |\n"
            "| `hyper test` | Ejecuta las pruebas de `tests/` |\n"
            "| `hyper` | Consola interactiva para probar código |\n\n"
-           "En VS Code, abre `main.hz` y pulsa **F5** (o el botón ▶) para ejecutarlo, o **Ctrl+Alt+F5** para que\n"
+           "En VS Code, abre `main.hez` y pulsa **F5** (o el botón ▶) para ejecutarlo, o **Ctrl+Alt+F5** para que\n"
            "se repita cada vez que guardas.\n";
 }
 

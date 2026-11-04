@@ -7,7 +7,7 @@ Todo HyperEZ está en un solo ejecutable: `hyper` (`hyper.exe` en Windows).
 | `hyper` | Consola interactiva (si se ejecuta en una terminal; si no, muestra la ayuda) |
 | `hyper repl` | Consola interactiva |
 | `hyper archivo.hz [args...]` | Ejecuta un programa; `System.args` recibe los argumentos |
-| `hyper run [archivo.hz] [args...]` | Igual; sin archivo ejecuta `main.hz` de la carpeta actual |
+| `hyper run [archivo.hez] [args...]` | Igual; sin archivo ejecuta `main.hez` (o `main.hz`) de la carpeta actual |
 | `hyper watch [archivo.hz] [args...]` | Ejecuta y vuelve a ejecutar cada vez que se guarda un `.hz` de la carpeta (o subcarpetas) |
 | `hyper check [archivos o carpetas]` | Busca errores sin ejecutar |
 | `hyper test [carpeta o archivos] [--update]` | Ejecuta las pruebas (por defecto `tests/`); `--update` regraba los `.out` |
@@ -25,7 +25,7 @@ Todo HyperEZ está en un solo ejecutable: `hyper` (`hyper.exe` en Windows).
 
 | Opción | |
 |---|---|
-| `--pause` | espera una tecla al terminar (lo usa el doble clic en Windows) |
+| `--pause` | espera una tecla al terminar (lo usan el doble clic en Windows y F5 en VS Code); también vale para `hyper check` y `hyper test` |
 | `--` | todo lo que sigue se pasa al programa aunque empiece por `-` |
 
 ## Códigos de salida
@@ -94,4 +94,4 @@ Cada línea: posición, línea del código fuente, instrucción, operandos (`#` 
 | `web` | aplicación web: plantillas HTML, un formulario, una API JSON y CSS |
 | `sitio` | sitio web estático escrito en Markdown (blog, documentación, portfolio) |
 
-Todos tienen `main.hz`, `src/` (o las carpetas de la web), `tests/` con pruebas que pasan desde el primer momento y un `README.md`.
+Todos tienen `main.hez`, `src/` (o las carpetas de la web), `tests/` con pruebas que pasan desde el primer momento y un `README.md`, y `.github/workflows/pruebas.yml`, que ejecuta las pruebas en GitHub con cada cambio (con la [acción `setup-hyperez`](../../actions/setup-hyperez/README.md)).

@@ -49,6 +49,8 @@ private:
     std::unique_ptr<BlockStmt> block();
     StmtP ifStmt();
     StmtP whileStmt();
+    StmtP doWhileStmt();
+    bool inIsType = false; // leyendo el tipo de "x is Tipo"
     StmtP forStmt();
     StmtP repeatStmt();
     StmtP returnStmt();

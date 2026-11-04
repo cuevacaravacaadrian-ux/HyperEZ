@@ -4,7 +4,7 @@
     editors/notepad++/HyperEZ.xml              Notepad++ (Lenguaje → Definir tu idioma → Importar)
     editors/vim/syntax/hyperez.vim + ftdetect  Vim y Neovim
     editors/highlightjs/hyperez.js             highlight.js (colorear código HyperEZ en páginas web)
-    editors/linguist/                          lo necesario para pedir a GitHub que reconozca el lenguaje
+    (el kit para GitHub Linguist, en editors/linguist/, lo genera tools/linguist_kit.py)
 
     python tools/gen_editors.py           (después de cambiar la gramática con editors/vscode/tools/gen_grammar.py)
 """
@@ -221,26 +221,8 @@ def highlightjs():
     return write("editors/highlightjs/hyperez.js", js)
 
 
-def linguist():
-    yml = """# Entrada para github-linguist/linguist: lib/linguist/languages.yml (en orden alfabético).
-# El language_id lo asigna Linguist con: script/update-ids
-HyperEZ:
-  type: programming
-  color: "#2f81f7"
-  extensions:
-  - ".hez"
-  - ".hz"
-  interpreters:
-  - hyper
-  tm_scope: source.hyperez
-  ace_mode: text
-  language_id: 0
-"""
-    return write("editors/linguist/languages.yml", yml)
-
-
 def main():
-    hechos = [sublime(), notepadpp(), *vim(), highlightjs(), linguist()]
+    hechos = [sublime(), notepadpp(), *vim(), highlightjs()]
     for h in hechos:
         print("  " + h)
 

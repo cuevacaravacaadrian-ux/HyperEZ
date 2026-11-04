@@ -25,6 +25,20 @@ while n < 100 {
 print(n) // 128
 ```
 
+## `do` ... `while`
+
+Como `while`, pero la condición se comprueba **al final**: el bloque se ejecuta al menos una vez. Es lo natural para menús y para pedir un dato hasta que sea válido.
+
+```hz
+var intentos = 0
+do {
+    intentos += 1
+    print("Intento", intentos)
+} while intentos < 3
+```
+
+`continue` salta a comprobar la condición y `break` sale del bucle. Las variables declaradas dentro del bloque no se ven en la condición (decláralas antes, como `intentos`).
+
 ## `for` con números
 
 `for i in a..b` cuenta desde `a` hasta `b` sin incluirlo; `..=` lo incluye; `step` elige el salto (también negativo).

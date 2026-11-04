@@ -38,7 +38,7 @@ En las [incidencias de GitHub](https://github.com/cuevacaravacaadrian-ux/HyperEZ
 
 ## ¿Por qué GitHub no muestra HyperEZ en la barra de lenguajes?
 
-GitHub reconoce los lenguajes con [Linguist](https://github.com/github-linguist/linguist), y solo añade un lenguaje nuevo cuando se usa en al menos 200 repositorios públicos. Mientras tanto, el `.gitattributes` del repositorio hace que GitHub coloree los `.hez` y `.hz` con un lenguaje parecido. Todo lo necesario para proponerlo está en [editors/linguist](../editors/linguist/README.md).
+GitHub reconoce los lenguajes con [Linguist](https://github.com/github-linguist/linguist), y solo añade uno nuevo cuando ya se usa de verdad en GitHub: al menos **2000 archivos** con su extensión indexados en el último año, sin contar forks y repartidos entre muchas personas (no cuentan los repositorios del autor). Todo lo técnico para proponerlo ya está preparado en [editors/linguist](../editors/linguist/README.md), con un [plan por fases](../editors/linguist/OBJETIVOS.md) para llegar a esa cifra. **Tú puedes ayudar**: sube tus programas a GitHub con archivos `.hez`. Mientras tanto, el `.gitattributes` del repositorio hace que GitHub coloree los `.hez` y `.hz` con un lenguaje parecido.
 
 ## ¿Puedo usar HyperEZ en otro editor?
 

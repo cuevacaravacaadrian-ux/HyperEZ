@@ -36,7 +36,8 @@ async function run() {
     '',
   ].join('\n'));
 
-  const ext = vscode.extensions.getExtension('hyperez.hyperez');
+  const pkg = require('../../package.json');
+  const ext = vscode.extensions.getExtension(`${pkg.publisher}.${pkg.name}`);
   check('la extensión está instalada', ext);
   const doc = await vscode.workspace.openTextDocument(file);
   await vscode.window.showTextDocument(doc);
@@ -98,7 +99,7 @@ async function run() {
   await vscode.workspace.applyEdit(we);
   check('dar formato (sangría y espacios)', mdoc.getText() === 'if true {\n    print(1)\n}\n', JSON.stringify(mdoc.getText()));
 
-  const lang = vscode.extensions.getExtension('hyperez.hyperez').packageJSON.contributes.languages[0];
+  const lang = ext.packageJSON.contributes.languages[0];
   check('.hez es la extensión por defecto', lang.extensions[0] === '.hez', lang.extensions.join(' '));
 
   const cmds = await vscode.commands.getCommands(true);

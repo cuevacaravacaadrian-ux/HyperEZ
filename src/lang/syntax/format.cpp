@@ -48,7 +48,8 @@ bool sameTokens(const std::vector<Token>& a, const std::vector<Token>& b) {
         if (a[i].kind != b[i].kind || a[i].text != b[i].text || a[i].parts.size() != b[i].parts.size()) return false;
         if (a[i].kind == Tok::Number && a[i].number != b[i].number) return false;
         for (size_t k = 0; k < a[i].parts.size(); k++)
-            if (a[i].parts[k].text != b[i].parts[k].text || a[i].parts[k].isExpr != b[i].parts[k].isExpr) return false;
+            if (a[i].parts[k].text != b[i].parts[k].text || a[i].parts[k].isExpr != b[i].parts[k].isExpr ||
+                a[i].parts[k].spec != b[i].parts[k].spec) return false;
     }
     return true;
 }

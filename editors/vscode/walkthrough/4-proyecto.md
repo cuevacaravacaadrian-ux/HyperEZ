@@ -1,6 +1,6 @@
 # Un proyecto completo
 
-**HyperEZ: Nuevo proyecto** crea una carpeta ordenada (`main.hz`, `src/`, `tests/`, `datos/`) con un ejemplo que funciona desde el primer momento:
+**HyperEZ: Nuevo proyecto** crea una carpeta ordenada (`main.hez`, `src/`, `tests/`, `datos/`) con un ejemplo que funciona desde el primer momento:
 
 | Tipo | Qué crea |
 |---|---|

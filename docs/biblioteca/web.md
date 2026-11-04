@@ -7,17 +7,17 @@ HyperEZ trae todo lo necesario para hacer webs sin instalar nada más: un servid
 ```text
 hyper new mi-web --tipo web        aplicación: plantillas HTML, un formulario, una API JSON y CSS
 cd mi-web
-hyper main.hz --abrir              abre http://localhost:8080 en el navegador
+hyper main.hez --abrir             abre http://localhost:8080 en el navegador
 ```
 
 ```text
 hyper new mi-blog --tipo sitio     sitio estático: cada archivo .md de contenido/ es una página
 cd mi-blog
-hyper main.hz                      genera la web en web/
+hyper main.hez                     genera la web en web/
 hyper serve web --abrir            la sirve y recarga el navegador al guardar
 ```
 
-Mientras escribes un sitio, deja en una terminal `hyper watch main.hz` (regenera las páginas al guardar) y en otra `hyper serve web`: cada cambio se ve en el navegador al momento. La carpeta `web/` generada se puede subir tal cual a cualquier alojamiento de páginas estáticas.
+Mientras escribes un sitio, deja en una terminal `hyper watch main.hez` (regenera las páginas al guardar) y en otra `hyper serve web`: cada cambio se ve en el navegador al momento. La carpeta `web/` generada se puede subir tal cual a cualquier alojamiento de páginas estáticas.
 
 ## `hyper serve`: servidor para desarrollar
 

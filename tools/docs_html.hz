@@ -47,6 +47,7 @@ var menu = [
     { titulo: "Gráficos y sonido", url: "biblioteca/graficos-sonido.html" },
     { titulo: "Binario, hash y zip", url: "biblioteca/binario.html" },
     { titulo: "Expresiones regulares", url: "biblioteca/regex.html" },
+    { titulo: "Validar datos", url: "biblioteca/validar.html" },
     { titulo: "Consola y juegos", url: "biblioteca/consola.html" },
     { titulo: "Sistemas operativos", url: "biblioteca/sistemas-operativos.html" },
     { titulo: "Todas las funciones (API)", url: "biblioteca/API.html" },

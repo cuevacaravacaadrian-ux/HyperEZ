@@ -78,7 +78,7 @@ Todos los proyectos tienen la misma estructura:
 
 ```text
 mi-juego/
-  main.hz        punto de entrada (hyper run lo ejecuta)
+  main.hez       punto de entrada (hyper run lo ejecuta)
   src/           módulos del proyecto
   tests/         pruebas (hyper test)
   datos/         archivos que usa el programa (si hacen falta)

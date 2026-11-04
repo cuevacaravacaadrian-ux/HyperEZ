@@ -1,0 +1,225 @@
+// validate — comprobar datos: correos, webs, teléfonos, DNI/NIE, IBAN, tarjetas, ISBN, códigos postales...
+// y formularios o JSON completos con un esquema de reglas.
+//
+//   import validate
+//   print(validate.email("ana@ejemplo.es"))                  // true
+//   print(validate.dni("12345678Z"))                         // true: comprueba la letra
+//   print(validate.iban("ES91 2100 0418 4502 0005 1332"))    // true: comprueba los dígitos de control
+//   var errores = validate.check({ nombre: "", edad: 15 }, {
+//       nombre: { required: true, min: 2 },
+//       edad: { type: "number", min: 18 },
+//   })
+//   print(errores)   // {nombre: "es obligatorio", edad: "debe ser como mínimo 18"}
+
+const LETRAS_DNI = "TRWAGMYFPDXBNJZSQVHLCKE"
+
+/// Quita espacios y guiones (como en "1234 5678-Z" o "ES91 2100 ...").
+function compact(t: text): text { return t.replace(" ", "").replace("-", "").replace(".", "").trim() }
+
+/// ¿Es un correo electrónico con forma válida? (nombre@dominio.ext)
+function email(t: text): bool {
+    return Regex(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}").matches(t.trim())
+}
+
+/// ¿Es una dirección web http(s)? (https://ejemplo.es/ruta)
+function url(t: text): bool {
+    return Regex(r"https?://[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)*(:\d+)?(/[^\s]*)?").matches(t.trim())
+}
+
+/// ¿Es un teléfono? En España ("ES"): 9 cifras que empiezan por 6, 7, 8 o 9, con +34 opcional.
+/// Con otro país: entre 7 y 15 cifras, con + opcional (formato internacional E.164).
+function phone(t: text, pais: text = "ES"): bool {
+    var n = compact(t).replace("(", "").replace(")", "")
+    if pais.upper() == "ES" {
+        if n.startsWith("+34") { n = n.substring(3) } else if n.startsWith("0034") { n = n.substring(4) }
+        return Regex(r"[6789]\d{8}").matches(n)
+    }
+    return Regex(r"\+?\d{7,15}").matches(n)
+}
+
+/// Letra que corresponde a un número de DNI (12345678 → "Z").
+function dniLetter(numero: number): text { return LETRAS_DNI[numero % 23] }
+
+/// ¿Es un DNI español válido? 8 cifras y la letra correcta ("12345678Z").
+function dni(t: text): bool {
+    var d = compact(t).upper()
+    if not Regex(r"\d{8}[A-Z]").matches(d) { return false }
+    return dniLetter(toNumber(d.substring(0, 8))) == d[8]
+}
+
+/// ¿Es un NIE válido? X, Y o Z, 7 cifras y la letra correcta ("X1234567L").
+function nie(t: text): bool {
+    var d = compact(t).upper()
+    if not Regex(r"[XYZ]\d{7}[A-Z]").matches(d) { return false }
+    var numero = toNumber(str("XYZ".indexOf(d[0])) + d.substring(1, 8))
+    return dniLetter(numero) == d[8]
+}
+
+/// DNI o NIE.
+function nif(t: text): bool { return dni(t) or nie(t) }
+
+// Longitud del IBAN en algunos países (el resto: entre 15 y 34 caracteres)
+const LARGO_IBAN = { ES: 24, DE: 22, FR: 27, IT: 27, PT: 25, GB: 22, NL: 18, BE: 16, AD: 24, AT: 20, CH: 21, IE: 22, LU: 20 }
+
+/// ¿Es un IBAN válido? Comprueba el país, la longitud y los dígitos de control (módulo 97).
+function iban(t: text): bool {
+    var s = compact(t).upper()
+    if not Regex(r"[A-Z]{2}\d{2}[A-Z0-9]{11,30}").matches(s) { return false }
+    var largo = LARGO_IBAN.get(s.substring(0, 2), 0)
+    if largo > 0 and s.length != largo { return false }
+    var reordenado = s.substring(4) + s.substring(0, 4)
+    var resto = 0
+    foreach c in reordenado.chars() {
+        var trozo = c.isNumeric() ? c : str(c.codes()[0] - 55) // A = 10 ... Z = 35
+        foreach d in trozo.chars() { resto = (resto * 10 + toNumber(d)) % 97 }
+    }
+    return resto == 1
+}
+
+/// ¿Es un número de tarjeta válido? Entre 12 y 19 cifras y el algoritmo de Luhn.
+function card(t: text): bool {
+    var s = compact(t)
+    if not Regex(r"\d{12,19}").matches(s) { return false }
+    var suma = 0
+    var doble = false
+    for i in (s.length - 1)..=0 step -1 {
+        var d = toNumber(s[i])
+        if doble {
+            d *= 2
+            if d > 9 { d -= 9 }
+        }
+        suma += d
+        doble = not doble
+    }
+    return suma % 10 == 0
+}
+
+/// ¿Es un ISBN-10 o ISBN-13 válido? (con o sin guiones)
+function isbn(t: text): bool {
+    var s = compact(t).upper()
+    if Regex(r"\d{9}[\dX]").matches(s) {
+        var suma = 0
+        for i in 0..10 { suma += (s[i] == "X" ? 10 : toNumber(s[i])) * (10 - i) }
+        return suma % 11 == 0
+    }
+    if Regex(r"\d{13}").matches(s) {
+        var suma = 0
+        for i in 0..13 { suma += toNumber(s[i]) * (i % 2 == 0 ? 1 : 3) }
+        return suma % 10 == 0
+    }
+    return false
+}
+
+/// ¿Es un código postal? España ("ES"): 5 cifras de 01000 a 52999. Otro país: de 3 a 10 letras y cifras.
+function postalCode(t: text, pais: text = "ES"): bool {
+    var s = t.trim()
+    if pais.upper() == "ES" { return Regex(r"(0[1-9]|[1-4]\d|5[0-2])\d{3}").matches(s) }
+    return Regex(r"[A-Za-z0-9 \-]{3,10}").matches(s)
+}
+
+/// ¿Es un color hexadecimal? ("#ff8800", "#f80")
+function hexColor(t: text): bool { return Regex(r"#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})").matches(t.trim()) }
+
+/// ¿Es una fecha real con formato AAAA-MM-DD? (comprueba también los días de cada mes y los bisiestos)
+function date(t: text): bool {
+    var s = t.trim()
+    if not Regex(r"\d{4}-\d{2}-\d{2}").matches(s) { return false }
+    var anio = toNumber(s.substring(0, 4))
+    var mes = toNumber(s.substring(5, 7))
+    var dia = toNumber(s.substring(8, 10))
+    return mes >= 1 and mes <= 12 and dia >= 1 and dia <= Time.daysInMonth(anio, mes)
+}
+
+/// ¿Es una contraseña segura? Al menos `minimo` caracteres, con minúsculas, mayúsculas y números.
+function strongPassword(t: text, minimo: number = 8): bool {
+    return t.length >= minimo and Regex(r"[a-z]").test(t) and Regex(r"[A-Z]").test(t) and Regex(r"\d").test(t)
+}
+
+// ---------------------------------------------------------------------------
+// Esquemas: comprobar un formulario o un JSON entero
+// ---------------------------------------------------------------------------
+
+// Comprobadores que se pueden usar como "type" en una regla
+const TIPOS = {
+    email: email, url: url, phone: phone, dni: dni, nie: nie, nif: nif, iban: iban, card: card, isbn: isbn,
+    postalCode: postalCode, hexColor: hexColor, date: date,
+}
+
+function vacio(v: any): bool { return v == null or (v is text and v.trim() == "") or ((v is list or v is map) and v.isEmpty()) }
+
+function medida(v: any): number? {
+    if v is number { return v }
+    if v is map { return v.keys().length }
+    if v is text or v is list { return v.length }
+    return null
+}
+
+function unidad(v: any): text { return v is text ? " caracteres" : v is number ? "" : " elementos" }
+
+/// Comprueba un valor con una regla y devuelve el error (texto) o null si está bien.
+/// Regla: {required, type, min, max, pattern, oneOf, custom, message}.
+function rule(valor: any, regla: map): text? {
+    var mensaje = regla.get("message", null)
+    var falla = (por: text) => mensaje ?? por
+    if vacio(valor) {
+        return regla.get("required", false) ? falla("es obligatorio") : null
+    }
+    var tipo = regla.get("type", null)
+    if tipo != null {
+        var t = str(tipo)
+        if TIPOS.has(t) {
+            if not (valor is text) or not TIPOS[t](valor) { return falla("no es un ${t} válido") }
+        } else if t == "number" {
+            if not (valor is number) {
+                if valor is text and valor.trim().isNumeric() { valor = toNumber(valor.trim()) }
+                else { return falla("debe ser un número") }
+            }
+        } else if t == "integer" {
+            var n = valor is text and valor.trim().isNumeric() ? toNumber(valor.trim()) : valor
+            if not (n is number) or n != floor(n) { return falla("debe ser un número entero") }
+            valor = n
+        } else if typeof(valor) != t {
+            return falla("debe ser de tipo ${t}, no ${typeof(valor)}")
+        }
+    }
+    var m = medida(valor)
+    if regla.has("min") and m != null and m < regla.min {
+        return falla(valor is number ? "debe ser como mínimo ${regla.min}" : "debe tener al menos ${regla.min}${unidad(valor)}")
+    }
+    if regla.has("max") and m != null and m > regla.max {
+        return falla(valor is number ? "debe ser como máximo ${regla.max}" : "debe tener como mucho ${regla.max}${unidad(valor)}")
+    }
+    if regla.has("pattern") and valor is text and not Regex(regla.pattern).matches(valor) { return falla("no tiene el formato correcto") }
+    if regla.has("oneOf") and not regla.oneOf.contains(valor) { return falla("debe ser uno de: ${regla.oneOf.join(", ")}") }
+    if regla.has("custom") {
+        var r = regla.custom(valor)
+        if r is text { return mensaje ?? r }
+        if r == false { return falla("no es válido") }
+    }
+    return null
+}
+
+/// Comprueba un mapa (un formulario, un JSON...) con un mapa de reglas {campo: regla}.
+/// Devuelve {campo: "error"} solo con los campos que fallan: vacío si todo está bien.
+/// Una regla puede ser también un texto con el tipo: {correo: "email"} equivale a {correo: {type: "email", required: true}}.
+function check(datos: map, reglas: map): map {
+    var errores = {}
+    foreach campo, regla in reglas {
+        var r = regla is text ? { type: regla, required: true } : regla
+        var error = rule(datos.get(campo, null), r)
+        if error != null { errores[campo] = error }
+    }
+    return errores
+}
+
+/// true si los datos cumplen todas las reglas.
+function valid(datos: map, reglas: map): bool { return check(datos, reglas).isEmpty() }
+
+/// Como check, pero lanza un Error con todos los fallos ("nombre: es obligatorio; edad: ...").
+function ensure(datos: map, reglas: map): map {
+    var errores = check(datos, reglas)
+    if not errores.isEmpty() {
+        throw Error([k + ": " + v for k, v in errores].join("; "))
+    }
+    return datos
+}

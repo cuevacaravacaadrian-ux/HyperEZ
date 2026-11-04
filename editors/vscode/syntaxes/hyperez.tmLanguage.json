@@ -267,12 +267,26 @@
       },
       "patterns": [
         {
+          "include": "#format-spec"
+        },
+        {
           "include": "#nested-braces"
         },
         {
           "include": "#statements"
         }
       ]
+    },
+    "format-spec": {
+      "match": "(:)((?:[^\\s{}]?[<>^])?\\+?0?\\d*[,_]?(?:\\.\\d+)?[feE%dxXbos]?)(?=\\})",
+      "captures": {
+        "1": {
+          "name": "punctuation.separator.format.hyperez"
+        },
+        "2": {
+          "name": "constant.other.format-spec.hyperez"
+        }
+      }
     },
     "nested-braces": {
       "begin": "\\{",
@@ -625,6 +639,10 @@
         {
           "name": "keyword.control.loop.hyperez",
           "match": "\\bstep\\b(?=\\s*-?[\\d(\\p{L}_])"
+        },
+        {
+          "name": "keyword.control.loop.hyperez",
+          "match": "\\bdo\\b(?=\\s*\\{)"
         },
         {
           "name": "keyword.control.flow.hyperez",

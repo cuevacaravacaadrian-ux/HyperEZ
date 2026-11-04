@@ -1,5 +1,13 @@
 # Cambios
 
+## 0.8.1
+
+- **Nuevo identificador para el Marketplace: `hyperez.hyperezprogramminglanguage`.** Si tenías la versión anterior (`hyperez.hyperez`, la del instalador), desinstálala para no tener dos; el instalador de HyperEZ 0.8.1 ya lo hace solo.
+- **F5 deja ver el resultado**: VS Code cerraba la terminal en cuanto el programa terminaba bien. Ahora *Ejecutar*, *Comprobar*, *Ejecutar pruebas* y **▶ Probar** esperan una tecla al terminar.
+- Página de la extensión renovada: capturas, primeros pasos, ejemplos e insignias.
+- Colores para el formato de las interpolaciones (`"${precio:.2f}"`) y para `do { } while`; fragmentos `hacer` y `formato` (54 en total).
+- Los proyectos nuevos se reconocen también por `main.hez`.
+
 ## 0.8.0
 
 - Colores para la sintaxis nueva del lenguaje: tubería `|>`, `**=`, comprensiones `[x for x in lista if ...]` y propagación `{...mapa}`.

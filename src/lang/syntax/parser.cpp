@@ -213,6 +213,7 @@ StmtP Parser::statement(bool topLevel) {
             if (t.text == "event" && n.kind == Tok::Ident && sameLine) return eventDecl();
             if (t.text == "emit" && n.kind == Tok::Ident && sameLine) return emitStmt();
             if (t.text == "from" && (n.kind == Tok::Ident || n.kind == Tok::String) && sameLine) return importStmt(true);
+            if (t.text == "do" && n.kind == Tok::LBrace) return doWhileStmt(); // do { ... } while condición
             break;
         }
         default: break;
@@ -415,6 +416,35 @@ StmtP Parser::whileStmt() {
     s->cond = expression();
     s->body = block();
     return s;
+}
+
+// do { cuerpo } while c   ==>   { var __dwN = true; while __dwN or c { __dwN = false; cuerpo } }
+// El cuerpo se ejecuta al menos una vez y 'continue' vuelve a comprobar la condición.
+StmtP Parser::doWhileStmt() {
+    SrcLoc loc = advance().loc; // 'do'
+    auto body = block();
+    expect(Tok::KwWhile, "'while' después del bloque:  do { ... } while condición");
+    ExprP cond = expression();
+    endStatement();
+    std::string flag = "__dw" + std::to_string(++comprehensionCount);
+    auto outer = std::make_unique<BlockStmt>(loc);
+    auto decl = std::make_unique<VarStmt>(loc);
+    decl->name = flag;
+    decl->nameLoc = loc;
+    decl->init = std::make_unique<BoolExpr>(loc, true);
+    outer->body.push_back(std::move(decl));
+    auto w = std::make_unique<WhileStmt>(loc);
+    SrcLoc cl = cond->loc;
+    w->cond = std::make_unique<LogicalExpr>(cl, Tok::KwOr, std::make_unique<IdentExpr>(loc, flag), std::move(cond));
+    auto reset = std::make_unique<AssignExpr>(loc, Tok::Eq);
+    reset->target = std::make_unique<IdentExpr>(loc, flag);
+    reset->value = std::make_unique<BoolExpr>(loc, false);
+    auto loopBody = std::make_unique<BlockStmt>(loc);
+    loopBody->body.push_back(std::make_unique<ExprStmt>(loc, std::move(reset)));
+    loopBody->body.push_back(std::move(body));
+    w->body = std::move(loopBody);
+    outer->body.push_back(std::move(w));
+    return outer;
 }
 
 StmtP Parser::forStmt() {
@@ -729,7 +759,8 @@ TypeRefP Parser::type() {
         bool startsExpr = !ahead(1).newlineBefore &&
                           (n == Tok::Ident || n == Tok::Number || n == Tok::String || n == Tok::LParen || n == Tok::LBracket ||
                            n == Tok::KwTrue || n == Tok::KwFalse || n == Tok::KwNull || n == Tok::KwThis ||
-                           n == Tok::Minus || n == Tok::Bang || n == Tok::KwNot || n == Tok::KwAwait || n == Tok::KwMatch);
+                           n == Tok::Minus || n == Tok::Bang || n == Tok::KwNot || n == Tok::KwAwait || n == Tok::KwMatch ||
+                           (inIsType && n == Tok::LBrace));
         if (!startsExpr) { advance(); t->nullable = true; }
     }
     t->loc.length = prev().loc.offset + prev().loc.length - t->loc.offset;
@@ -994,7 +1025,10 @@ ExprP Parser::comparison() {
             auto is = std::make_unique<IsExpr>(op.loc);
             is->negate = match(Tok::KwNot);
             is->operand = std::move(left);
+            bool savedIs = inIsType;
+            inIsType = true; // tras "is", "text ? {...} : x" es una condición con un mapa, no "text?"
             is->target = type();
+            inIsType = savedIs;
             left = std::move(is);
         } else if (k == Tok::KwIn) {
             Token op = advance();
@@ -1271,6 +1305,23 @@ ExprP Parser::stringLiteral(const Token& t) {
             ps.nlStack.assign(1, false);
             sp.expr = ps.parseStandaloneExpression();
             if (!sp.expr) sp.expr = std::make_unique<NullExpr>(part.loc);
+            if (!part.spec.empty()) {
+                // "${precio:.2f}"  ==>  __format(precio, ".2f")  (la misma función que format)
+                auto c = std::make_unique<CallExpr>(part.loc);
+                c->callee = std::make_unique<IdentExpr>(part.loc, "__format");
+                Arg value;
+                value.value = std::move(sp.expr);
+                c->args.push_back(std::move(value));
+                auto lit = std::make_unique<StringExpr>(part.loc);
+                StringExpr::Part lp;
+                lp.isExpr = false;
+                lp.text = part.spec;
+                lit->parts.push_back(std::move(lp));
+                Arg spec;
+                spec.value = std::move(lit);
+                c->args.push_back(std::move(spec));
+                sp.expr = std::move(c);
+            }
         }
         s->parts.push_back(std::move(sp));
     }

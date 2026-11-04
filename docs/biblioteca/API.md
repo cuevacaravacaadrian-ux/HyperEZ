@@ -1,4 +1,4 @@
-# Referencia de la API de HyperEZ 0.8.0
+# Referencia de la API de HyperEZ 0.8.1
 
 > Generada automáticamente con `hyper docs` a partir del catálogo de la máquina virtual.
 
@@ -103,6 +103,14 @@ n! = 1 × 2 × ... × n: factorial(5) es 120.
 #### `floor(x: number): number`
 
 Redondea hacia abajo.
+
+#### `format(valor: any, formato: text): text`
+
+Da formato a un valor como "${valor:formato}": ".2f" (2 decimales), ">8" (a la derecha en 8), "^8" (centrado), "," (miles), "08.3f", "+", "%" (porcentaje), "x" (hexadecimal), "b" (binario), "e" (científica).
+
+```hz
+format(3.14159, ".2f")  // "3.14"
+```
 
 #### `fract(x: number): number`
 

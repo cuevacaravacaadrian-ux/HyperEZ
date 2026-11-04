@@ -1,6 +1,7 @@
 #include "lang/syntax/lexer.h"
 
 #include <cmath>
+#include <cstring>
 
 namespace hz {
 
@@ -240,6 +241,54 @@ bool Lexer::readEscape(std::string& out) {
     return true;
 }
 
+// "${precio:.2f}": el formato va al final, detrás de ':' (como en Python). Ese ':' cuenta si está fuera de
+// paréntesis, corchetes, llaves y textos, no hay antes un '?' de condición (a ? b : c) y lo que sigue es
+// un formato válido: [[relleno]alineación][+][0][ancho][, o _][.precisión][tipo]
+static bool isFormatSpec(const std::string& s) {
+    auto isAlign = [](char c) { return c == '<' || c == '>' || c == '^'; };
+    size_t n = s.size(), i = 0;
+    if (n == 0) return false;
+    unsigned char c0 = (unsigned char)s[0];
+    size_t cl = c0 >= 0xF0 ? 4 : c0 >= 0xE0 ? 3 : c0 >= 0xC0 ? 2 : 1;
+    if (n > cl && isAlign(s[cl])) i = cl + 1;
+    else if (isAlign(s[0])) i = 1;
+    if (i < n && s[i] == '+') i++;
+    if (i < n && s[i] == '0') i++;
+    while (i < n && std::isdigit((unsigned char)s[i])) i++;
+    if (i < n && (s[i] == ',' || s[i] == '_')) i++;
+    if (i < n && s[i] == '.') {
+        i++;
+        if (i >= n || !std::isdigit((unsigned char)s[i])) return false;
+        while (i < n && std::isdigit((unsigned char)s[i])) i++;
+    }
+    if (i < n && std::strchr("feE%dxXbos", s[i])) i++;
+    return i == n;
+}
+
+static bool splitFormatSpec(std::string& code, std::string& spec) {
+    int depth = 0;
+    bool ternary = false;
+    size_t colon = std::string::npos;
+    for (size_t i = 0; i < code.size(); i++) {
+        char c = code[i];
+        if (c == '"' || c == '\'') {
+            char q = c;
+            for (i++; i < code.size() && code[i] != q; i++) if (code[i] == '\\') i++;
+            continue;
+        }
+        if (c == '(' || c == '[' || c == '{') depth++;
+        else if (c == ')' || c == ']' || c == '}') depth--;
+        else if (depth == 0 && c == '?') {
+            if (i + 1 < code.size() && (code[i + 1] == '?' || code[i + 1] == '.')) { i++; continue; } // ?? y ?.
+            ternary = true;
+        } else if (depth == 0 && c == ':' && !ternary) colon = i;
+    }
+    if (colon == std::string::npos || !isFormatSpec(code.substr(colon + 1))) return false;
+    spec = code.substr(colon + 1);
+    code.erase(colon);
+    return true;
+}
+
 Token Lexer::string(SrcLoc start, char quote, bool raw) {
     bool triple = peek() == quote && peek(1) == quote && peek(2) == quote;
     if (triple) { advance(); advance(); advance(); }
@@ -261,7 +310,7 @@ Token Lexer::string(SrcLoc start, char quote, bool raw) {
         if (c == '\\') { if (!readEscape(cur)) break; continue; }
         if (c == '$' && peek(1) == '{') {
             interpolated = true;
-            if (!cur.empty() || parts.empty()) parts.push_back({false, cur, curLoc});
+            if (!cur.empty() || parts.empty()) parts.push_back({false, cur, "", curLoc});
             cur.clear();
             advance(); advance();
             SrcLoc exprLoc = here();
@@ -283,15 +332,17 @@ Token Lexer::string(SrcLoc start, char quote, bool raw) {
             if (depth != 0) { diags.error(exprLoc, "Interpolación ${...} sin cerrar", "añade '}'", "E0004"); break; }
             std::string code(src.substr(s, pos - s));
             advance(); // '}'
+            std::string spec;
+            splitFormatSpec(code, spec);
             if (trim(code).empty()) diags.error(exprLoc, "Interpolación vacía ${}", "", "E0004");
-            parts.push_back({true, code, exprLoc});
+            parts.push_back({true, code, spec, exprLoc});
             curLoc = here();
             continue;
         }
         cur += advance();
     }
     if (!closed) diags.error(start, "Texto sin cerrar", std::string("falta la comilla de cierre ") + quote, "E0005");
-    if (!cur.empty() || parts.empty()) parts.push_back({false, cur, curLoc});
+    if (!cur.empty() || parts.empty()) parts.push_back({false, cur, "", curLoc});
     Token t = make(Tok::String, start);
     t.parts = std::move(parts);
     t.interpolated = interpolated;

@@ -34,6 +34,7 @@ bool isKeyword(Tok t);
 struct StrPart {
     bool isExpr = false;
     std::string text;  // literal ya decodificado o código fuente de la expresión
+    std::string spec;  // "${precio:.2f}": formato que va detrás de ':' (vacío si no hay)
     SrcLoc loc;        // ubicación del inicio del fragmento
 };
 

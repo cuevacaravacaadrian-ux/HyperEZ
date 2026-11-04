@@ -163,6 +163,6 @@ Console.print(monedas.isEmpty() ? "¡Has ganado!" : "Se acabaron los movimientos
 ## Para seguir
 
 - Añade enemigos que se muevan solos (otra lista de `Vec2` que cambia en cada turno).
-- Separa la lógica en `src/tablero.hz` y escribe pruebas en `tests/` ([pruebas](../lenguaje/11-pruebas.md)).
+- Separa la lógica en `src/tablero.hez` y escribe pruebas en `tests/` ([pruebas](../lenguaje/11-pruebas.md)).
 - Para un juego en tiempo real, cambia `readKey()` por `pollKey()` y añade `System.sleep(0.1)` al bucle.
 - Mira los juegos completos de [examples/juegos](../../examples/juegos).

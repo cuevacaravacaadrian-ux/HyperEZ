@@ -262,10 +262,31 @@ static std::wstring vsixPath(const std::wstring& dir) {
     return r;
 }
 
+// <publisher>.<name> de editors/vscode/package.json (lo pone CMake)
+#ifndef HZ_VSCODE_EXTENSION_ID
+#define HZ_VSCODE_EXTENSION_ID "hyperez.hyperezprogramminglanguage"
+#endif
+static const wchar_t* const kVSCodeExtension = L"" HZ_VSCODE_EXTENSION_ID;
+// Identificadores que tuvo antes la extensión (hasta la 0.8.0): se quitan para que no haya dos
+static const wchar_t* const kOldVSCodeExtensions[] = {L"hyperez.hyperez"};
+
+static void uninstallVSCodeExtensionId(const std::wstring& cli, const std::wstring& id) {
+    std::wstring cmd = cmdExe() + L" /d /c \"\"" + cli + L"\" --uninstall-extension " + id;
+    if (!g_opt.vscodeExtDir.empty()) cmd += L" --extensions-dir \"" + g_opt.vscodeExtDir + L"\"";
+    cmd += L"\"";
+    runHidden(cmd, 120000);
+}
+
+static void uninstallOldVSCodeExtensions(const std::wstring& cli) {
+    for (const wchar_t* id : kOldVSCodeExtensions)
+        if (_wcsicmp(id, kVSCodeExtension) != 0) uninstallVSCodeExtensionId(cli, id);
+}
+
 static bool installVSCodeExtension(const std::wstring& dir) {
     std::wstring cli = findVSCodeCli();
     std::wstring vsix = vsixPath(dir);
     if (cli.empty() || vsix.empty()) return false;
+    uninstallOldVSCodeExtensions(cli);
     std::wstring cmd = cmdExe() + L" /d /c \"\"" + cli + L"\" --install-extension \"" + vsix + L"\" --force";
     if (!g_opt.vscodeExtDir.empty()) cmd += L" --extensions-dir \"" + g_opt.vscodeExtDir + L"\"";
     cmd += L"\"";
@@ -275,10 +296,8 @@ static bool installVSCodeExtension(const std::wstring& dir) {
 static void uninstallVSCodeExtension() {
     std::wstring cli = findVSCodeCli();
     if (cli.empty()) return;
-    std::wstring cmd = cmdExe() + L" /d /c \"\"" + cli + L"\" --uninstall-extension hyperez.hyperez";
-    if (!g_opt.vscodeExtDir.empty()) cmd += L" --extensions-dir \"" + g_opt.vscodeExtDir + L"\"";
-    cmd += L"\"";
-    runHidden(cmd, 120000);
+    uninstallVSCodeExtensionId(cli, kVSCodeExtension);
+    uninstallOldVSCodeExtensions(cli);
 }
 
 static void createShortcuts(const std::wstring& dir) {

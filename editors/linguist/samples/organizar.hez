@@ -1,0 +1,51 @@
+#!/usr/bin/env hyper
+// Script de sistema: ordena los archivos de una carpeta en subcarpetas según su tipo.
+// Uso:  hyper organizar.hz <carpeta>
+// Sin carpeta, crea una de prueba en la carpeta temporal para enseñar cómo funciona.
+
+const TIPOS = {
+    imagenes: [".png", ".jpg", ".jpeg", ".gif"],
+    documentos: [".pdf", ".txt", ".md", ".docx"],
+    codigo: [".hz", ".hez", ".py", ".js"],
+    musica: [".mp3", ".ogg", ".wav"],
+}
+
+function tipoDe(archivo: text): text {
+    var ext = Path.ext(archivo).lower()
+    foreach tipo in TIPOS.keys() {
+        if TIPOS[tipo].contains(ext) { return tipo }
+    }
+    return "otros"
+}
+
+/// Mueve cada archivo a <carpeta>/<tipo>/ y devuelve cuántos movió de cada tipo.
+function organizar(carpeta: text): map {
+    var cuenta = {}
+    foreach nombre in File.list(carpeta) {
+        var ruta = Path.join(carpeta, nombre)
+        if not File.isFile(ruta) { continue }
+        var tipo = tipoDe(nombre)
+        File.move(ruta, Path.join(carpeta, tipo, nombre))
+        cuenta[tipo] = cuenta.get(tipo, 0) + 1
+    }
+    return cuenta
+}
+
+var carpeta = System.args.length > 0 ? System.args[0] : ""
+var prueba = carpeta == ""
+if prueba {
+    carpeta = Path.join(Path.temp, "hyperez_organizar_demo")
+    File.deleteDir(carpeta)
+    foreach f in ["foto.png", "viaje.JPG", "notas.txt", "juego.hz", "cancion.mp3", "informe.pdf", "datos.bin"] {
+        File.write(Path.join(carpeta, f), "contenido de ${f}")
+    }
+    print("Carpeta de prueba creada con ${File.list(carpeta).length} archivos")
+}
+
+var cuenta = organizar(carpeta)
+foreach tipo in cuenta.keys().sort() { print("  ${tipo}: ${cuenta[tipo]}") }
+print()
+print("Resultado:")
+foreach f in File.listAll(carpeta) { print("  " + f) }
+
+if prueba { File.deleteDir(carpeta) }

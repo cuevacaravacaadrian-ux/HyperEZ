@@ -26,7 +26,7 @@
 
 ## 🚀 Empieza en un minuto
 
-1. Descarga **[HyperEZ-Setup-0.8.0.exe](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest)** y pulsa **Instalar** (no necesita administrador).
+1. Descarga **[HyperEZ-Setup-0.8.1.exe](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest)** y pulsa **Instalar** (no necesita administrador).
 2. Al terminar se abre **HyperEZ Editor** con tu primer programa.
 3. Pulsa **F5**. Ya está.
 
@@ -64,9 +64,9 @@ error[E0205]: No existe nada llamado 'pirnt'
 
 | Sistema | Cómo |
 |---|---|
-| **Windows** | **`HyperEZ-Setup-0.8.0.exe`** de la [última versión](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest): HyperEZ, HyperEZ Editor, ejemplos, documentación y la extensión de VS Code. |
-| **Linux / macOS** | `HyperEZ-0.8.0-linux-x64.tar.gz` (o `macos-arm64`): descomprímelo y ejecuta `sh install.sh`. |
-| **VS Code** | Lo instala el instalador de Windows; también `code --install-extension hyperez-0.8.0.vsix`. |
+| **Windows** | **`HyperEZ-Setup-0.8.1.exe`** de la [última versión](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest): HyperEZ, HyperEZ Editor, ejemplos, documentación y la extensión de VS Code. |
+| **Linux / macOS** | `HyperEZ-0.8.1-linux-x64.tar.gz` (o `macos-arm64`): descomprímelo y ejecuta `sh install.sh`. |
+| **VS Code** | Lo instala el instalador de Windows; también `code --install-extension hyperez-0.8.1.vsix`. |
 
 En Windows, los `.hez` y `.hz` se abren **siempre** con HyperEZ (doble clic = ejecutar) y el clic derecho ofrece *Editar con HyperEZ Editor*, *Editar con VS Code*, *Comprobar errores* y *Ejecutar y repetir al guardar*; en cualquier carpeta, *Nuevo → Programa HyperEZ* y *Abrir HyperEZ aquí*. Detalles en la [guía de instalación](docs/empezar/instalacion.md).
 
@@ -229,9 +229,10 @@ Y también: archivos y rutas, fechas en español, JSON, base de datos de documen
 - **Funciones** con valores por defecto, argumentos con nombre, `...resto`, lambdas y clausuras.
 - **Desestructuración**: `var [a, b] = lista`, `var {nombre, vida} = jugador`; **propagación**: `[...a, ...b]`, `{...base, color: "rojo"}`.
 - **Comprensiones**: `[x * x for x in 1..=10 if x % 2 == 0]`, `{n: n * n for n in 1..=3}`; **tubería**: `datos |> limpiar |> ordenar`; **trozos**: `lista[2..]`, `texto[..3]`.
+- **Textos con formato**: `"${precio:.2f} €"`, `"${nombre:<10}"`, `"${0.25:%}"`; y **bucles** `while`, `do { } while`, `for`, `foreach` y `repeat`.
 - **Errores** con `try`/`catch`/`finally` y tipos de error propios.
 - **Eventos** (`event`, `on`, `emit`) y **tareas asíncronas** (`async`, `await`, `spawn`).
-- **Módulos** con `import` y 18 bibliotecas incluidas.
+- **Módulos** con `import` y 19 bibliotecas incluidas (la última, `validate`: correos, DNI, IBAN y formularios).
 
 Toda la sintaxis está en la [referencia del lenguaje](docs/lenguaje/README.md), con su [gramática](docs/lenguaje/gramatica.md).
 
@@ -251,7 +252,7 @@ Toda la sintaxis está en la [referencia del lenguaje](docs/lenguaje/README.md),
 | `hyper docs` | genera la referencia de la API |
 | `hyper lsp` | servidor de lenguaje para cualquier editor |
 
-La **extensión de VS Code** trae errores en vivo, autocompletado según el tipo, documentación al pasar el ratón, ir a la definición, renombrar, arreglos rápidos, formato, botones de ejecutar encima del código, 52 fragmentos, el tema *HyperEZ Noche* y un tutorial de bienvenida. Ver [VS Code](docs/herramientas/vscode.md).
+La **extensión de VS Code** trae errores en vivo, autocompletado según el tipo, documentación al pasar el ratón, ir a la definición, renombrar, arreglos rápidos, formato, botones de ejecutar encima del código, 54 fragmentos, el tema *HyperEZ Noche* y un tutorial de bienvenida. Ver [VS Code](docs/herramientas/vscode.md).
 
 También hay colores para **Notepad++, Sublime Text, Vim y highlight.js**, y cualquier editor con LSP (Neovim, Helix, Zed...) puede usar `hyper lsp`: [otros editores](editors/README.md). La documentación completa se instala también **en HTML**, para leerla sin conexión.
 
@@ -282,6 +283,7 @@ Requisitos y detalles en [CONTRIBUTING.md](CONTRIBUTING.md). Cómo está hecho p
 | [`src/tools`](src/tools) | la orden `hyper`: CLI, consola interactiva, watch, servidor de lenguaje, integración con el sistema |
 | [`src/editor`](src/editor) | HyperEZ Editor (Windows) |
 | [`editors`](editors) | extensión de VS Code, colores para Notepad++, Sublime y Vim, highlight.js y el kit para GitHub Linguist |
+| [`actions`](actions/setup-hyperez) | la acción `setup-hyperez` para usar HyperEZ en GitHub Actions |
 | [`packaging`](packaging) | instalador de Windows, paquetes de Linux y macOS, iconos |
 | [`examples`](examples) | ejemplos por áreas: juegos, algoritmos, IA, datos, web, gráficos, audio, sistema... |
 | [`tests`](tests) | pruebas del lenguaje, las bibliotecas, la consola, el formato y los errores |

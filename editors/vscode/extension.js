@@ -75,6 +75,19 @@ function hyperVersion(exe) {
   }
 }
 
+// ¿El hyper instalado es al menos de esta versión? (el instalado puede ser más antiguo que la extensión)
+const versionCache = new Map();
+function hyperAtLeast(exe, wanted) {
+  if (!versionCache.has(exe)) {
+    const m = /(\d+)\.(\d+)\.(\d+)/.exec(hyperVersion(exe) || '');
+    versionCache.set(exe, m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null);
+  }
+  const v = versionCache.get(exe);
+  if (!v) return false;
+  for (let i = 0; i < 3; i++) if (v[i] !== wanted[i]) return v[i] > wanted[i];
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 // Servidor de lenguaje
 // ---------------------------------------------------------------------------
@@ -189,10 +202,10 @@ async function cmdRun(context, uri) {
   if (!file) { vscode.window.showWarningMessage('Abre un archivo .hez o .hz para ejecutarlo.'); return; }
   if (!(file = await ensureSaved(file))) return;
   if (!vscode.workspace.isTrusted) { vscode.window.showWarningMessage('Este espacio de trabajo no es de confianza: no se ejecutan programas.'); return; }
-  runInTerminal(context, ['run', file], path.dirname(file), 'HyperEZ: ' + path.basename(file));
+  runInTerminal(context, ['run', '--pause', file], path.dirname(file), 'HyperEZ: ' + path.basename(file));
 }
 
-// Modo watch: ejecuta y vuelve a ejecutar cada vez que se guarda un .hz de la carpeta.
+// Modo watch: ejecuta y vuelve a ejecutar cada vez que se guarda un .hez o .hz de la carpeta.
 async function cmdWatch(context, uri) {
   let file = targetFile(uri);
   if (!file) { vscode.window.showWarningMessage('Abre un archivo .hez o .hz para ejecutarlo en modo watch.'); return; }
@@ -224,13 +237,13 @@ async function cmdCheck(context, uri) {
   let file = targetFile(uri);
   if (!file) { vscode.window.showWarningMessage('Abre un archivo .hez o .hz para comprobarlo.'); return; }
   if (!(file = await ensureSaved(file))) return;
-  runInTerminal(context, ['check', file], path.dirname(file), 'HyperEZ: comprobar');
+  runInTerminal(context, ['check', '--pause', file], path.dirname(file), 'HyperEZ: comprobar');
 }
 
 function projectRootFor(file) {
   let dir = file ? path.dirname(file) : null;
   for (let i = 0; dir && i < 8; i++) {
-    if (fs.existsSync(path.join(dir, 'tests')) || fs.existsSync(path.join(dir, 'main.hz'))) return dir;
+    if (['tests', 'main.hez', 'main.hz'].some((n) => fs.existsSync(path.join(dir, n)))) return dir;
     const up = path.dirname(dir);
     if (up === dir) break;
     dir = up;
@@ -243,7 +256,9 @@ async function cmdTest(context, uri) {
   const file = targetFile(uri);
   const root = projectRootFor(file);
   await vscode.workspace.saveAll(false);
-  runInTerminal(context, ['test'], root, 'HyperEZ: pruebas');
+  const exe = hyperPath(context);
+  // "hyper test --pause" existe desde la 0.8.1; con uno anterior, sin pausa
+  runInTerminal(context, exe && hyperAtLeast(exe, [0, 8, 1]) ? ['test', '--pause'] : ['test'], root, 'HyperEZ: pruebas');
 }
 
 async function cmdNewProject(context) {
@@ -295,7 +310,7 @@ async function cmdShowDocs(context) {
   await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(out));
 }
 
-// Nuevo archivo .hz sin guardar, con un programa de ejemplo
+// Nuevo archivo .hez sin guardar, con un programa de ejemplo
 async function cmdNewFile() {
   const doc = await vscode.workspace.openTextDocument({
     language: 'hyperez',
@@ -395,7 +410,7 @@ async function cmdRunTests(context, uri) {
   if (!file) return;
   if (!(file = await ensureSaved(file))) return;
   if (!vscode.workspace.isTrusted) { vscode.window.showWarningMessage('Este espacio de trabajo no es de confianza: no se ejecutan programas.'); return; }
-  runInTerminal(context, ['run', file], path.dirname(file), 'HyperEZ: pruebas de ' + path.basename(file));
+  runInTerminal(context, ['run', '--pause', file], path.dirname(file), 'HyperEZ: pruebas de ' + path.basename(file));
 }
 
 // ---------------------------------------------------------------------------
@@ -585,6 +600,7 @@ async function activate(context) {
   }));
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(async (e) => {
     if (e.affectsConfiguration('hyperez.codeLens')) lenses.refresh();
+    if (e.affectsConfiguration('hyperez.path')) versionCache.clear();
     if (e.affectsConfiguration('hyperez.path') || e.affectsConfiguration('hyperez.languageServer')) {
       await stopClient();
       await startClient(context);

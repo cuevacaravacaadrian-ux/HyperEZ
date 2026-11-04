@@ -89,3 +89,28 @@ jobs:
           name: HyperEZ-${{ matrix.name }}
           path: dist/*.tar.gz
           if-no-files-found: error
+
+  setup-hyperez:
+    name: Acción setup-hyperez (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar una versión publicada con la acción del repositorio
+        id: hz
+        uses: ./actions/setup-hyperez
+        with:
+          version: "0.8.0"
+
+      - name: hyper está en el PATH
+        shell: bash
+        run: |
+          test "${{ steps.hz.outputs.version }}" = "0.8.0"
+          hyper version
+          printf 'print("hola desde la acción: ${1 + 1}")\n' > hola.hez
+          hyper run hola.hez
