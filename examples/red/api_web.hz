@@ -1,0 +1,27 @@
+// Consultar un servicio web (API) y procesar su respuesta JSON.
+// Si no hay conexión a internet, el programa lo dice y termina sin error.
+
+function consultar(url: text): any {
+    try {
+        return Http.getJson(url, { timeout: 10 })
+    } catch e {
+        print("No se pudo consultar ${url}:")
+        print("  " + e.message)
+        return null
+    }
+}
+
+// Hora oficial de una zona horaria (servicio público sin clave)
+var hora = consultar("https://worldtimeapi.org/api/timezone/Europe/Madrid")
+if hora != null {
+    print("Hora en Madrid según worldtimeapi.org: ${hora.datetime.substring(11, 19)}")
+}
+
+// Datos de un repositorio de GitHub
+var repo = consultar("https://api.github.com/repos/microsoft/vscode")
+if repo != null {
+    print("${repo.full_name}: ${repo.stargazers_count} estrellas, lenguaje principal ${repo.language}")
+}
+
+// Construir direcciones con parámetros
+print("Búsqueda:", "https://www.google.com/search?" + Http.query({ q: "lenguaje HyperEZ", hl: "es" }))

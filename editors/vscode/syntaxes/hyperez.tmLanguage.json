@@ -123,6 +123,36 @@
     "strings": {
       "patterns": [
         {
+          "name": "string.quoted.raw.hyperez",
+          "begin": "\\br\"",
+          "end": "\"|$",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.hyperez"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.hyperez"
+            }
+          }
+        },
+        {
+          "name": "string.quoted.raw.hyperez",
+          "begin": "\\br'",
+          "end": "'|$",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.hyperez"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.hyperez"
+            }
+          }
+        },
+        {
           "name": "string.quoted.triple.double.hyperez",
           "begin": "\"\"\"",
           "end": "\"\"\"",
@@ -654,11 +684,11 @@
       "patterns": [
         {
           "name": "support.class.builtin.hyperez",
-          "match": "\\b(?:Console|File|System|JSON|Vec2|Vec3|Color|Error|EventData|HyperCore|HyperMath)\\b"
+          "match": "\\b(?:Console|File|System|JSON|Vec2|Vec3|Color|Error|EventData|HyperCore|HyperMath|Process|Path|Time|Bytes|Hash|Base64|Regex|Http|Matrix|Image|ProcessHandle)\\b"
         },
         {
           "name": "support.function.builtin.hyperez",
-          "match": "\\b(?:print|println|write|input|len|typeof|str|toNumber|toInt|assert|assertEqual|assertThrows|test|exit|range|time|now|wait|nextFrame|spawn|off|abs|sqrt|pow|floor|ceil|round|sign|min|max|clamp|lerp|sin|cos|tan|asin|acos|atan|atan2|hypot|exp|log|log10|radians|degrees|random|randomInt|randomChoice|randomSeed|remap|wrap|approach|smoothstep|chance|distance|isNaN|awaitAll|awaitAny)\\b(?=\\s*\\()"
+          "match": "\\b(?:print|println|write|input|len|typeof|str|toNumber|toInt|assert|assertEqual|assertThrows|test|exit|range|time|now|wait|nextFrame|spawn|off|abs|sqrt|pow|floor|ceil|round|sign|min|max|clamp|lerp|sin|cos|tan|asin|acos|atan|atan2|hypot|exp|log|log10|radians|degrees|random|randomInt|randomChoice|randomSeed|remap|wrap|approach|smoothstep|chance|distance|isNaN|awaitAll|awaitAny|parseInt)\\b(?=\\s*\\()"
         }
       ]
     },

@@ -1,0 +1,21 @@
+// Sonido: compone una melodía con acompañamiento y la guarda como archivo WAV.
+// Uso:  hyper melodia.hz [archivo.wav]   y ábrelo con cualquier reproductor.
+import audio
+
+var tempo = 0.22 // segundos por nota
+
+// "Himno de la alegría" (Beethoven), en notación inglesa: C = do, D = re, E = mi...
+var melodia = audio.Sound()
+melodia.melody("E4 E4 F4 G4 G4 F4 E4 D4 C4 C4 D4 E4 E4 - D4 D4", tempo, 0.35, "triangle")
+
+// Bajo: una nota larga por compás, más suave y con onda cuadrada
+var bajo = audio.Sound()
+foreach n in ["C3", "G2", "A2", "G2"] { bajo.note(n, tempo * 4, 0.12, "square") }
+
+melodia.mix(bajo)
+print("Duración: ${round(melodia.duration, 2)} s, ${melodia.samples.length} muestras")
+
+var destino = System.args.length > 0 ? System.args[0] : Path.join(Path.temp, "melodia.wav")
+melodia.save(destino)
+print("Archivo WAV de ${round(File.size(destino) / 1024)} KB guardado")
+if System.args.length == 0 { File.delete(destino) }

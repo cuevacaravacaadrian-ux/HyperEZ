@@ -1,0 +1,62 @@
+// html — generar páginas HTML sin errores de escape.
+//
+//   import html
+//   var cuerpo = html.tag("h1", {}, "Puntuaciones") + html.table([["Jugador", "Puntos"], ["Ana", 120]])
+//   File.write("puntos.html", html.page("Puntuaciones", cuerpo))
+
+/// Escapa un texto para meterlo en HTML (&, <, >, comillas).
+function escape(valor: any): text {
+    return str(valor ?? "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;")
+}
+
+const VACIAS = ["br", "hr", "img", "input", "meta", "link", "source"]
+
+/// Una etiqueta con atributos e hijos. Los hijos de texto se escapan; usa raw(...) para HTML ya hecho.
+function tag(nombre: text, atributos: map = {}, ...hijos: any): text {
+    var attrs = ""
+    foreach k, v in atributos {
+        if v == true { attrs += " " + k }
+        else if v != false and v != null { attrs += " ${k}=\"${escape(v)}\"" }
+    }
+    if VACIAS.contains(nombre) { return "<${nombre}${attrs}>" }
+    var dentro = hijos.flat().map(h => (h is Raw) ? h.html : escape(h)).join("")
+    return Raw("<${nombre}${attrs}>${dentro}</${nombre}>").html
+}
+
+/// HTML que no se debe escapar.
+class Raw {
+    var html: text
+    constructor(html: text) { this.html = html }
+    function toString(): text { return html }
+}
+function raw(codigo: text): Raw { return Raw(codigo) }
+
+/// Lista <ul> con un elemento por valor.
+function list(elementos: list): Raw {
+    return raw(tag("ul", {}, ...elementos.map(e => raw(tag("li", {}, e)))))
+}
+
+/// Tabla: la primera fila es la cabecera.
+function table(filas: list): Raw {
+    if filas.isEmpty() { return raw("") }
+    var cab = raw(tag("tr", {}, ...filas[0].map(c => raw(tag("th", {}, c)))))
+    var cuerpo = filas.skip(1).map(f => raw(tag("tr", {}, ...f.map(c => raw(tag("td", {}, c))))))
+    return raw(tag("table", {}, cab, ...cuerpo))
+}
+
+/// Enlace.
+function link(texto: text, url: text): Raw { return raw(tag("a", { href: url }, texto)) }
+
+const ESTILO = """
+body { font-family: system-ui, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; color: #1f2328; }
+h1, h2 { line-height: 1.2 } a { color: #0969da }
+table { border-collapse: collapse; width: 100% } th, td { border: 1px solid #d0d7de; padding: .4rem .6rem; text-align: left }
+th { background: #f6f8fa } code, pre { background: #f6f8fa; padding: .1rem .3rem; border-radius: 4px }
+"""
+
+/// Documento HTML5 completo con un estilo limpio por defecto.
+function page(titulo: text, cuerpo: any, estilo: text = ESTILO): text {
+    var c = (cuerpo is Raw) ? cuerpo.html : str(cuerpo)
+    return "<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n" +
+           "<title>${escape(titulo)}</title>\n<style>${estilo}</style>\n</head>\n<body>\n${c}\n</body>\n</html>\n"
+}

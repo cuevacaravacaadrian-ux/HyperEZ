@@ -1,0 +1,111 @@
+// stats — estadística descriptiva para analizar datos.
+//
+//   import stats
+//   var notas = [6.5, 8, 9.2, 5, 7.5]
+//   print(stats.mean(notas), stats.median(notas), stats.stdev(notas))
+//   print(stats.describe(notas))
+
+/// Media aritmética.
+function mean(datos: list): number {
+    if datos.isEmpty() { return 0 }
+    return datos.sum() / datos.length
+}
+
+/// Valor central de los datos ordenados.
+function median(datos: list): number {
+    if datos.isEmpty() { return 0 }
+    var o = datos.copy().sort()
+    var n = o.length
+    if n % 2 == 1 { return o[floor(n / 2)] }
+    return (o[n / 2 - 1] + o[n / 2]) / 2
+}
+
+/// Valor que más se repite (el primero si hay empate).
+function mode(datos: list): any {
+    var cuenta = {}
+    foreach d in datos { cuenta[d] = cuenta.get(d, 0) + 1 }
+    var mejor: any = null
+    var veces = 0
+    foreach d in datos {
+        if cuenta[d] > veces {
+            veces = cuenta[d]
+            mejor = d
+        }
+    }
+    return mejor
+}
+
+/// Varianza. muestral = true divide entre n - 1 (estimación a partir de una muestra).
+function variance(datos: list, muestral: bool = false): number {
+    var n = datos.length
+    if n < 2 { return 0 }
+    var m = mean(datos)
+    var s = 0
+    foreach d in datos { s += (d - m) ** 2 }
+    return s / (muestral ? n - 1 : n)
+}
+
+/// Desviación típica.
+function stdev(datos: list, muestral: bool = false): number { return sqrt(variance(datos, muestral)) }
+
+/// Percentil p (0 a 100) con interpolación lineal.
+function percentile(datos: list, p: number): number {
+    if datos.isEmpty() { return 0 }
+    var o = datos.copy().sort()
+    var pos = clamp(p, 0, 100) / 100 * (o.length - 1)
+    var i = floor(pos)
+    if i >= o.length - 1 { return o[-1] }
+    return o[i] + (o[i + 1] - o[i]) * (pos - i)
+}
+
+/// Coeficiente de correlación de Pearson entre -1 y 1.
+function correlation(xs: list, ys: list): number {
+    var mx = mean(xs)
+    var my = mean(ys)
+    var sxy = 0
+    var sxx = 0
+    var syy = 0
+    foreach i, x in xs {
+        sxy += (x - mx) * (ys[i] - my)
+        sxx += (x - mx) ** 2
+        syy += (ys[i] - my) ** 2
+    }
+    if sxx == 0 or syy == 0 { return 0 }
+    return sxy / sqrt(sxx * syy)
+}
+
+/// Cuenta cuántos datos caen en cada uno de 'grupos' intervalos iguales.
+/// Devuelve una lista de {from, to, count}.
+function histogram(datos: list, grupos: number = 10): list {
+    if datos.isEmpty() { return [] }
+    var lo = datos.min()
+    var hi = datos.max()
+    var ancho = hi == lo ? 1 : (hi - lo) / grupos
+    var cuentas = range(grupos).toList().map(i => 0)
+    foreach d in datos {
+        var i = min(grupos - 1, floor((d - lo) / ancho))
+        cuentas[i] += 1
+    }
+    return range(grupos).toList().map(i => ({ from: lo + i * ancho, to: lo + (i + 1) * ancho, count: cuentas[i] }))
+}
+
+/// Resumen: {count, mean, median, stdev, min, max, q1, q3}.
+function describe(datos: list): map {
+    return {
+        count: datos.length,
+        mean: mean(datos),
+        median: median(datos),
+        stdev: stdev(datos),
+        min: datos.isEmpty() ? 0 : datos.min(),
+        max: datos.isEmpty() ? 0 : datos.max(),
+        q1: percentile(datos, 25),
+        q3: percentile(datos, 75),
+    }
+}
+
+/// Valores tipificados: cuántas desviaciones típicas se aleja cada dato de la media.
+function zscores(datos: list): list {
+    var m = mean(datos)
+    var s = stdev(datos)
+    return datos.map(d => s == 0 ? 0 : (d - m) / s)
+}

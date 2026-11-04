@@ -1,0 +1,122 @@
+// db — base de datos de documentos (mapas) guardada en un archivo JSON.
+//
+//   import db
+//   var base = db.Database("datos/partida.json")    // sin ruta: solo en memoria
+//   var jugadores = base.collection("jugadores")
+//   jugadores.insert({ nombre: "Ana", puntos: 120 })
+//   print(jugadores.find({ nombre: "Ana" }))
+//   print(jugadores.find(j => j.puntos > 100))
+//   jugadores.update({ nombre: "Ana" }, { puntos: 150 })
+//
+// Cada documento recibe un _id numérico. Los cambios se guardan en el archivo al momento.
+
+/// ¿Cumple el documento el filtro? El filtro puede ser null (todos), un mapa (campos iguales) o una función.
+function matches(doc: map, filtro: any): bool {
+    if filtro == null { return true }
+    if typeof(filtro) == "function" { return filtro(doc) }
+    foreach k, v in filtro {
+        if doc.get(k) != v { return false }
+    }
+    return true
+}
+
+/// Grupo de documentos con nombre (como una tabla).
+class Collection {
+    var name: text
+    var database: Database
+
+    constructor(nombre: text, base: Database) {
+        name = nombre
+        database = base
+    }
+
+    private get docs(): list { return database.data.collections[name] }
+
+    /// Añade un documento y devuelve su _id.
+    function insert(doc: map): number {
+        var copia = doc.copy()
+        database.data.lastId += 1
+        copia._id = database.data.lastId
+        docs.add(copia)
+        database.save()
+        return copia._id
+    }
+
+    function insertMany(lista: list): list {
+        var ids = []
+        foreach d in lista {
+            var copia = d.copy()
+            database.data.lastId += 1
+            copia._id = database.data.lastId
+            docs.add(copia)
+            ids.add(copia._id)
+        }
+        database.save()
+        return ids
+    }
+
+    /// Documentos que cumplen el filtro (copias: cambiarlos no cambia la base).
+    function find(filtro: any = null): list { return docs.filter(d => matches(d, filtro)).map(d => d.copy()) }
+
+    function findOne(filtro: any = null): map? {
+        var d = docs.find(x => matches(x, filtro))
+        return d == null ? null : d.copy()
+    }
+
+    function get(id: number): map? { return findOne({ _id: id }) }
+
+    /// Cambia los campos indicados en los documentos que cumplen el filtro. Devuelve cuántos cambió.
+    function update(filtro: any, cambios: map): number {
+        var n = 0
+        foreach d in docs {
+            if matches(d, filtro) {
+                foreach k, v in cambios { if k != "_id" { d[k] = v } }
+                n += 1
+            }
+        }
+        if n > 0 { database.save() }
+        return n
+    }
+
+    /// Borra los documentos que cumplen el filtro. Devuelve cuántos borró.
+    function delete(filtro: any): number {
+        var antes = docs.length
+        database.data.collections[name] = docs.filter(d => not matches(d, filtro))
+        var n = antes - docs.length
+        if n > 0 { database.save() }
+        return n
+    }
+
+    function count(filtro: any = null): number { return docs.count(d => matches(d, filtro)) }
+    function all(): list { return find() }
+}
+
+/// Base de datos: varias colecciones en un archivo JSON (o en memoria si no hay ruta).
+class Database {
+    var path: text
+    var data: map = { lastId: 0, collections: {} }
+
+    constructor(ruta: text = "") {
+        path = ruta
+        if ruta != "" and File.exists(ruta) { data = JSON.parse(File.read(ruta)) }
+    }
+
+    /// La colección con ese nombre (se crea si no existe).
+    function collection(nombre: text): Collection {
+        if not data.collections.has(nombre) { data.collections[nombre] = [] }
+        return Collection(nombre, this)
+    }
+
+    get collections(): list { return data.collections.keys() }
+
+    /// Borra una colección entera.
+    function drop(nombre: text) {
+        data.collections.remove(nombre)
+        save()
+    }
+
+    /// Escribe el archivo (se llama sola después de cada cambio).
+    function save() {
+        if path != "" { File.write(path, JSON.stringify(data, 2)) }
+    }
+}

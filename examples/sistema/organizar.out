@@ -1,0 +1,15 @@
+Carpeta de prueba creada con 7 archivos
+  codigo: 1
+  documentos: 2
+  imagenes: 2
+  musica: 1
+  otros: 1
+
+Resultado:
+  codigo/juego.hz
+  documentos/informe.pdf
+  documentos/notas.txt
+  imagenes/foto.png
+  imagenes/viaje.JPG
+  musica/cancion.mp3
+  otros/datos.bin

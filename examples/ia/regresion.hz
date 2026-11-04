@@ -1,0 +1,28 @@
+// Aprendizaje automático clásico: regresión lineal, vecinos más cercanos y agrupamiento (k-medias).
+import ai
+import stats
+
+// ---- Regresión lineal: horas de estudio -> nota ----
+var horas = [1, 2, 3, 4, 5, 6, 7, 8]
+var notas = [3.1, 4.0, 4.8, 6.1, 6.9, 7.8, 8.9, 9.6]
+var modelo = ai.LinearRegression().fit(horas, notas)
+print("Recta aprendida:", modelo)
+print("Con 9 horas de estudio la nota sería", round(modelo.predict(9), 1))
+print("Correlación:", round(stats.correlation(horas, notas), 3))
+
+// ---- k vecinos más cercanos: ¿qué fruta es? [peso en g, rugosidad 0-10] ----
+var frutas = [[150, 2], [170, 1], [140, 3], [120, 8], [110, 9], [130, 7]]
+var nombres = ["manzana", "manzana", "manzana", "naranja", "naranja", "naranja"]
+foreach f in [[160, 2], [115, 8]] {
+    print("Una fruta de ${f[0]} g y rugosidad ${f[1]} es una", ai.knn(frutas, nombres, f, 3))
+}
+
+// ---- k-medias: agrupar clientes por edad y gasto ----
+randomSeed(4)
+var clientes = [[18, 20], [21, 25], [19, 22], [45, 80], [50, 90], [48, 85], [30, 50], [32, 55]]
+var grupos = ai.kmeans(clientes, 3)
+for g in 0..3 {
+    var miembros = range(clientes.length).toList().filter(i => grupos.labels[i] == g).map(i => clientes[i])
+    var centro = grupos.centers[g].map(v => round(v))
+    print("Grupo ${g + 1}: centro ${centro}, ${miembros.length} clientes")
+}

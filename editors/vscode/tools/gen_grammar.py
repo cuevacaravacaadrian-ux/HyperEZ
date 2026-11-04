@@ -16,8 +16,9 @@ PRIM = ("number|int|float|double|text|string|char|bool|boolean|list|array|map|di
 BUILTIN_FN = ("print|println|write|input|len|typeof|str|toNumber|toInt|assert|assertEqual|assertThrows|test|exit|range|time|now|"
               "wait|nextFrame|spawn|off|abs|sqrt|pow|floor|ceil|round|sign|min|max|clamp|lerp|sin|cos|tan|asin|acos|atan|atan2|"
               "hypot|exp|log|log10|radians|degrees|random|randomInt|randomChoice|randomSeed|remap|wrap|approach|smoothstep|"
-              "chance|distance|isNaN|awaitAll|awaitAny")
-BUILTIN_CLS = "Console|File|System|JSON|Vec2|Vec3|Color|Error|EventData|HyperCore|HyperMath"
+              "chance|distance|isNaN|awaitAll|awaitAny|parseInt")
+BUILTIN_CLS = ("Console|File|System|JSON|Vec2|Vec3|Color|Error|EventData|HyperCore|HyperMath|Process|Path|Time|Bytes|Hash|"
+               "Base64|Regex|Http|Matrix|Image|ProcessHandle")
 
 
 def name(n):
@@ -59,6 +60,13 @@ grammar = {
              "beginCaptures": {"0": name("punctuation.definition.comment.hyperez")}},
         ]},
         "strings": {"patterns": [
+            # r"..." y r'...': sin escapes ni interpolación (expresiones regulares, rutas de Windows)
+            {"name": "string.quoted.raw.hyperez", "begin": r'\br"', "end": '"|$',
+             "beginCaptures": {"0": name("punctuation.definition.string.begin.hyperez")},
+             "endCaptures": {"0": name("punctuation.definition.string.end.hyperez")}},
+            {"name": "string.quoted.raw.hyperez", "begin": r"\br'", "end": "'|$",
+             "beginCaptures": {"0": name("punctuation.definition.string.begin.hyperez")},
+             "endCaptures": {"0": name("punctuation.definition.string.end.hyperez")}},
             string_rule("string.quoted.triple.double.hyperez", '"""', '"""'),
             string_rule("string.quoted.triple.single.hyperez", "'''", "'''"),
             string_rule("string.quoted.double.hyperez", '"', '"|$'),

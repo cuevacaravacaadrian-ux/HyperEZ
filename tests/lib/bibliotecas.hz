@@ -1,0 +1,121 @@
+// Bibliotecas escritas en HyperEZ: ai, stats, csv, cli y x86.
+import ai
+import stats
+import csv
+import cli
+import x86
+
+test("ai: la red aprende XOR", () => {
+    randomSeed(7)
+    var red = ai.NeuralNetwork([2, 8, 1], "tanh", "sigmoid")
+    var X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+    var Y = [[0], [1], [1], [0]]
+    var error = red.train(X, Y, 3000, 0.5)
+    assert(error < 0.01, "error final ${error}")
+    assertEqual(red.classify(X), [0, 1, 1, 0])
+    assertEqual(red.parameters, 2 * 8 + 8 + 8 * 1 + 1)
+    assertEqual(str(red), "NeuralNetwork(2 → 8 → 1, 33 parámetros)")
+    assert(red.history[0] > red.history[-1], "el error baja")
+})
+
+test("ai: clasificación con softmax por lotes", () => {
+    randomSeed(3)
+    // dos nubes de puntos: clase 0 abajo a la izquierda, clase 1 arriba a la derecha
+    var puntos = []
+    var clases = []
+    repeat 40 {
+        puntos.add([random(0, 0.4), random(0, 0.4)])
+        clases.add(0)
+        puntos.add([random(0.6, 1), random(0.6, 1)])
+        clases.add(1)
+    }
+    var red = ai.NeuralNetwork([2, 6, 2], "relu", "softmax")
+    red.train(puntos, ai.oneHot(clases, 2), 300, 0.5, 16)
+    assertEqual(ai.accuracy(red.classify(puntos), clases), 1)
+    assertEqual(red.classify([[0.1, 0.1], [0.9, 0.95]]), [0, 1])
+})
+
+test("ai: regresión lineal, knn, k-medias y normalización", () => {
+    var rl = ai.LinearRegression().fit([1, 2, 3, 4], [3, 5, 7, 9])
+    assertEqual([rl.slope, rl.intercept, rl.r2], [2, 1, 1])
+    assertEqual(rl.predict(10), 21)
+    assertEqual(str(rl), "y = 2x + 1 (R² = 1)")
+    var ejemplos = [[1, 1], [1, 2], [8, 8], [9, 8]]
+    assertEqual(ai.knn(ejemplos, ["a", "a", "b", "b"], [8.5, 9], 3), "b")
+    randomSeed(1)
+    var g = ai.kmeans([[0, 0], [0, 1], [10, 10], [10, 11]], 2)
+    assertEqual(g.labels[0] == g.labels[1], true)
+    assertEqual(g.labels[2] == g.labels[3], true)
+    assertEqual(g.labels[0] != g.labels[2], true)
+    var n = ai.normalize([[0, 10], [5, 20], [10, 30]])
+    assertEqual(n.data.toList(), [[0, 0], [0.5, 0.5], [1, 1]])
+    assertEqual(ai.oneHot([2, 0], 3).toList(), [[0, 0, 1], [1, 0, 0]])
+    var partes = ai.split(range(10).toList(), 0.7)
+    assertEqual([partes[0].length, partes[1].length], [7, 3])
+})
+
+test("stats", () => {
+    var d = [2, 4, 4, 4, 5, 5, 7, 9]
+    assertEqual(stats.mean(d), 5)
+    assertEqual(stats.median(d), 4.5)
+    assertEqual(stats.mode(d), 4)
+    assertEqual(stats.variance(d), 4)
+    assertEqual(stats.stdev(d), 2)
+    assertEqual(round(stats.stdev(d, true), 4), 2.1381)
+    assertEqual(stats.percentile([1, 2, 3, 4, 5], 50), 3)
+    assertEqual(stats.percentile([1, 2, 3, 4], 25), 1.75)
+    assertEqual(stats.correlation([1, 2, 3], [2, 4, 6]), 1)
+    assertEqual(stats.correlation([1, 2, 3], [6, 4, 2]), -1)
+    assertEqual(stats.histogram([1, 2, 2, 3, 10], 3).map(h => h.count), [4, 0, 1])
+    var r = stats.describe([1, 2, 3, 4, 5])
+    assertEqual([r.count, r.mean, r.median, r.min, r.max, r.q1, r.q3], [5, 3, 3, 1, 5, 2, 4])
+    assertEqual(stats.zscores([1, 3]), [-1, 1])
+})
+
+test("csv", () => {
+    var texto = "nombre,edad,ciudad\nAna,30,\"Madrid, España\"\nLuis,25,\"Dice \"\"hola\"\"\"\n"
+    var filas = csv.parse(texto)
+    assertEqual(filas.length, 2)
+    assertEqual(filas[0].nombre, "Ana")
+    assertEqual(filas[0].edad, 30)
+    assertEqual(filas[0].ciudad, "Madrid, España")
+    assertEqual(filas[1].ciudad, "Dice \"hola\"")
+    assertEqual(csv.parse("1;2\n3;4", false, ";"), [[1, 2], [3, 4]])
+    var vuelta = csv.parse(csv.stringify(filas))
+    assertEqual(vuelta, filas)
+    var ruta = Path.join(Path.temp, "hz_csv_" + str(Process.pid) + ".csv")
+    csv.write(ruta, [{ a: 1, b: "x,y" }])
+    assertEqual(File.read(ruta), "a,b\n1,\"x,y\"\n")
+    assertEqual(csv.read(ruta)[0].b, "x,y")
+    File.delete(ruta)
+})
+
+test("cli", () => {
+    var a = cli.parseArgs(["entrada.txt", "--salida", "fin.txt", "--modo=rapido", "-vf", "--ayuda", "-3"])
+    assertEqual(a.positional, ["entrada.txt", "-3"])
+    assertEqual(a.options, { salida: "fin.txt", modo: "rapido" })
+    assertEqual(a.flags, ["v", "f", "ayuda"])
+    assertEqual(cli.progressBar(0.5, 10), "[█████░░░░░]  50%")
+    assertEqual(cli.ask("¿Nombre?", "Ana"), "Ana") // sin teclado devuelve el valor por defecto
+    assertEqual(cli.table([["nombre", "puntos"], ["Ana", 120], ["Luis", 95]]),
+                "nombre  puntos\n------  ------\nAna     120\nLuis    95")
+})
+
+test("x86: sector de arranque que imprime un mensaje", () => {
+    var a = x86.Assembler(0x7C00)
+    a.xorReg16("ax", "ax").movSeg("ds", "ax")
+    a.movReg16("si", "mensaje")
+    a.label("bucle").lodsb().orReg8("al", "al").jz("fin")
+    a.movReg8("ah", 0x0E).interrupt(0x10).jmp("bucle")
+    a.label("fin").cli().hlt().jmp("fin")
+    a.label("mensaje").db("Hola", 0)
+    var codigo = a.build()
+    // ensamblado a mano: xor ax,ax / mov ds,ax / mov si,0x7C16 / lodsb / or al,al / jz +6 /
+    // mov ah,0Eh / int 10h / jmp -11 / cli / hlt / jmp -4 / "Hola" 0
+    assertEqual(codigo.toHex(" "), "31 c0 8e d8 be 16 7c ac 08 c0 74 06 b4 0e cd 10 eb f5 fa f4 eb fc 48 6f 6c 61 00")
+    var sector = x86.bootSector(a)
+    assertEqual(sector.length, 512)
+    assertEqual([sector[510], sector[511]], [0x55, 0xAA])
+    assertThrows(() => x86.Assembler().jmp("no_existe").build())
+    assertThrows(() => x86.Assembler().movReg8("zz", 1))
+})

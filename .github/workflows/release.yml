@@ -1,5 +1,5 @@
-# Al subir una etiqueta vX.Y.Z: compila con PGO, pasa las pruebas y publica la versión en GitHub
-# con el instalador, la extensión de VS Code y hyper.exe.
+# Al subir una etiqueta vX.Y.Z: compila, pasa las pruebas y publica la versión en GitHub con
+# el instalador de Windows, la extensión de VS Code, hyper.exe y los paquetes de Linux y macOS.
 name: Release
 
 on:
@@ -10,18 +10,23 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  windows:
+    name: Windows (instalador, extensión y hyper.exe)
     runs-on: windows-latest
     timeout-minutes: 60
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
       - name: La etiqueta coincide con la versión del código
+        id: version
         shell: pwsh
         run: |
           $v = (Select-String -Path src/core/version.h -Pattern 'HYPEREZ_VERSION "([^"]+)"').Matches[0].Groups[1].Value
           if ("v$v" -ne "${{ github.ref_name }}") { throw "La etiqueta ${{ github.ref_name }} no coincide con la versión $v (usa tools/set_version.py)" }
           "VERSION=$v" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "version=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: MSYS2 (GCC, CMake y Ninja)
         id: msys2
@@ -56,7 +61,11 @@ jobs:
           $text = Get-Content CHANGELOG.md -Raw -Encoding utf8
           $m = [regex]::Match($text, "(?ms)^## \[$([regex]::Escape($env:VERSION))\][^\n]*\n(.*?)(?=^## \[|\z)")
           $notes = if ($m.Success) { $m.Groups[1].Value.Trim() } else { "HyperEZ $env:VERSION" }
-          $notes += "`n`n**Instalar:** descarga ``HyperEZ-Setup-$env:VERSION.exe`` y ejecútalo (no necesita administrador)."
+          $notes += "`n`n## Descargas`n`n| Sistema | Archivo |`n|---|---|"
+          $notes += "`n| Windows | ``HyperEZ-Setup-$env:VERSION.exe`` (instalador, no necesita administrador) |"
+          $notes += "`n| Linux | ``HyperEZ-$env:VERSION-linux-x64.tar.gz`` → ``sh install.sh`` |"
+          $notes += "`n| macOS | ``HyperEZ-$env:VERSION-macos-arm64.tar.gz`` → ``sh install.sh`` |"
+          $notes += "`n| VS Code | ``hyperez-$env:VERSION.vsix`` |"
           Set-Content -Path release-notes.md -Value $notes -Encoding utf8
 
       - name: Publicar la versión
@@ -65,3 +74,49 @@ jobs:
           name: HyperEZ ${{ env.VERSION }}
           body_path: release-notes.md
           files: dist/*
+
+      - name: Guardar la extensión para los paquetes de Linux y macOS
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: dist/*.vsix
+
+  unix:
+    name: ${{ matrix.name }}
+    needs: windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-22.04 # glibc antigua: el ejecutable funciona en más distribuciones
+          - name: macOS
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Herramientas
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then sudo apt-get update -q && sudo apt-get install -y -q ninja-build g++-12 && echo "CXX=g++-12" >> $GITHUB_ENV; else brew install ninja; fi
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: vsix
+          path: vsix
+
+      - name: Compilar y probar
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+          ctest --test-dir build --output-on-failure
+
+      - name: Paquete
+        run: sh packaging/unix/package.sh build/hyper vsix/hyperez-${{ needs.windows.outputs.version }}.vsix
+
+      - name: Añadir a la versión
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.tar.gz

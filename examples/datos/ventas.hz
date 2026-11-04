@@ -1,0 +1,39 @@
+// Análisis de datos: lee un CSV, calcula estadísticas, agrupa y guarda un informe.
+import csv
+import stats
+import cli
+
+var ventas = csv.read("ventas.csv") // las rutas parten de la carpeta del programa
+print("Leídas ${ventas.length} ventas de ${ventas.map(v => v.fecha).unique().length} días")
+print()
+
+// Importe de cada venta
+foreach v in ventas { v.importe = round(v.unidades * v.precio, 2) }
+
+// Agrupar por producto
+var porProducto = ventas.groupBy(v => v.producto)
+var filas = [["producto", "unidades", "importe", "media/día"]]
+var resumen = []
+foreach producto in porProducto.keys().sort() {
+    var lista = porProducto[producto]
+    var unidades = lista.map(v => v.unidades).sum()
+    var importe = round(lista.map(v => v.importe).sum(), 2)
+    filas.add([producto, unidades, importe, round(stats.mean(lista.map(v => v.unidades)), 1)])
+    resumen.add({ producto: producto, unidades: unidades, importe: importe })
+}
+print(cli.table(filas))
+print()
+
+var importes = ventas.map(v => v.importe)
+var d = stats.describe(importes)
+print("Importe por venta: media ${round(d.mean, 2)} €, mediana ${round(d.median, 2)} €, máximo ${d.max} €")
+var mejor = resumen.maxBy(r => r.importe)
+print("Producto que más factura: ${mejor.producto} (${mejor.importe} €)")
+print("Total facturado: ${round(importes.sum(), 2)} €")
+
+// Guardar el informe (en la carpeta temporal para no ensuciar el ejemplo)
+var salida = Path.join(Path.temp, "resumen_ventas.csv")
+csv.write(salida, resumen)
+print()
+print("Informe guardado con ${csv.read(salida).length} filas")
+File.delete(salida)

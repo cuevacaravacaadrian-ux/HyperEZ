@@ -1,0 +1,271 @@
+// ai — inteligencia artificial con HyperEZ.
+//
+//   import ai
+//   var red = ai.NeuralNetwork([2, 8, 1])          // 2 entradas, 8 neuronas ocultas, 1 salida
+//   red.train([[0, 0], [0, 1], [1, 0], [1, 1]], [[0], [1], [1], [0]], 3000, 1)
+//   print(red.predict([1, 0]))
+//
+// Incluye redes neuronales de capas densas (perceptrón multicapa) entrenadas con descenso del
+// gradiente, regresión lineal, k vecinos más cercanos, k-medias, normalización, one-hot y métricas.
+// Los cálculos pesados los hace Matrix, en C++.
+
+/// Convierte una lista de filas (o una sola fila) en Matrix. Si ya es Matrix, la devuelve tal cual.
+function toMatrix(datos: any): Matrix {
+    if datos is Matrix { return datos }
+    return Matrix.fromList(datos)
+}
+
+/// Capa densa: salida = activación(entrada · pesos + sesgo).
+/// Activaciones: "sigmoid", "relu", "tanh", "softmax" o "linear".
+class Dense {
+    var weights: Matrix
+    var bias: Matrix
+    var activation: text
+    var lastInput: Matrix?
+    var lastOutput: Matrix?
+
+    constructor(entradas: number, salidas: number, activation: text = "sigmoid") {
+        // inicialización de Glorot: pesos pequeños y equilibrados según el tamaño de la capa
+        var limite = sqrt(6 / (entradas + salidas))
+        weights = Matrix.random(entradas, salidas, -limite, limite)
+        bias = Matrix.zeros(1, salidas)
+        this.activation = activation
+    }
+
+    /// Calcula la salida de la capa para un lote de filas.
+    function forward(x: Matrix): Matrix {
+        lastInput = x
+        var z = x.dot(weights) + bias
+        var y = match activation {
+            "sigmoid" => z.sigmoid()
+            "relu" => z.relu()
+            "tanh" => z.tanh()
+            "softmax" => z.softmax()
+            else => z
+        }
+        lastOutput = y
+        return y
+    }
+
+    /// Recibe el gradiente del error respecto a la salida, ajusta pesos y sesgo y devuelve
+    /// el gradiente respecto a la entrada (para la capa anterior).
+    function backward(grad: Matrix, tasa: number): Matrix {
+        var y = lastOutput ?? grad
+        var x = lastInput ?? grad
+        var dz = match activation {
+            "sigmoid" => grad * y * (y * -1 + 1)
+            "relu" => grad * y.reluDeriv()
+            "tanh" => grad * (y * y * -1 + 1)
+            else => grad // linear, y softmax con entropía cruzada (el gradiente ya viene calculado)
+        }
+        var n = x.rows
+        var gradPesos = x.transpose().dot(dz) / n
+        var gradSesgo = dz.sum(0) / n
+        var gradEntrada = dz.dot(weights.transpose())
+        weights = weights - gradPesos * tasa
+        bias = bias - gradSesgo * tasa
+        return gradEntrada
+    }
+
+    get parameters(): number { return weights.size + bias.size }
+}
+
+/// Red neuronal de capas densas. tamanos = [entradas, ocultas..., salidas].
+/// Con salida "softmax" usa entropía cruzada (clasificación); si no, error cuadrático medio.
+class NeuralNetwork {
+    var layers: list = []
+    var loss: text
+    var history: list = []
+
+    constructor(tamanos: list, activacion: text = "sigmoid", salida: text = "sigmoid") {
+        if tamanos.length < 2 { throw Error("NeuralNetwork necesita al menos [entradas, salidas]") }
+        for i in 0..tamanos.length - 1 {
+            var ultima = i == tamanos.length - 2
+            layers.add(Dense(tamanos[i], tamanos[i + 1], ultima ? salida : activacion))
+        }
+        loss = salida == "softmax" ? "crossEntropy" : "mse"
+    }
+
+    /// Salida de la red para una fila [a, b, ...] o un lote de filas.
+    function predict(entrada: any): Matrix {
+        var m = toMatrix(entrada)
+        foreach capa in layers { m = capa.forward(m) }
+        return m
+    }
+
+    /// Error de la red (más bajo es mejor) comparando predicciones con las respuestas correctas.
+    function error(prediccion: Matrix, esperado: Matrix): number {
+        if loss == "crossEntropy" {
+            return (esperado * prediccion.clip(0.000000000001, 1).log()).sum() / prediccion.rows * -1
+        }
+        return (prediccion - esperado).pow(2).mean()
+    }
+
+    /// Entrena con descenso del gradiente. Devuelve el error final.
+    /// lote: tamaño de los grupos de ejemplos (0 = todos a la vez).
+    function train(entradas: any, esperado: any, epocas: number = 1000, tasa: number = 0.1, lote: number = 0, verbose: bool = false): number {
+        var X = toMatrix(entradas)
+        var Y = toMatrix(esperado)
+        if X.rows != Y.rows { throw Error("train: hay ${X.rows} entradas pero ${Y.rows} respuestas") }
+        var err = 0
+        var filas = range(X.rows).toList()
+        for e in 0..epocas {
+            if lote <= 0 or lote >= X.rows {
+                err = paso(X, Y, tasa)
+            } else {
+                filas.shuffle()
+                var suma = 0
+                var grupos = filas.chunk(lote)
+                foreach grupo in grupos {
+                    suma += paso(subconjunto(X, grupo), subconjunto(Y, grupo), tasa)
+                }
+                err = suma / grupos.length
+            }
+            history.add(err)
+            if verbose and (e % max(1, floor(epocas / 10)) == 0 or e == epocas - 1) {
+                print("época ${e + 1}/${epocas}: error ${round(err, 5)}")
+            }
+        }
+        return err
+    }
+
+    private function paso(X: Matrix, Y: Matrix, tasa: number): number {
+        var salida = predict(X)
+        var err = error(salida, Y)
+        var grad = salida - Y
+        foreach capa in layers.reversed() { grad = capa.backward(grad, tasa) }
+        return err
+    }
+
+    /// Clase predicha para cada fila: la columna con el valor más alto (o 0/1 si hay una sola salida).
+    function classify(entrada: any): list {
+        var p = predict(entrada)
+        if p.cols == 1 { return p.col(0).map(v => v >= 0.5 ? 1 : 0) }
+        return p.argmax()
+    }
+
+    get parameters(): number { return layers.map(c => c.parameters).sum() }
+
+    function toString(): text {
+        var forma = [layers[0].weights.rows] + layers.map(c => c.weights.cols)
+        return "NeuralNetwork(${forma.join(" → ")}, ${parameters} parámetros)"
+    }
+}
+
+/// Filas seleccionadas de una matriz (para entrenar por lotes).
+function subconjunto(m: Matrix, filas: list): Matrix {
+    return Matrix.fromList(filas.map(i => m.row(i)))
+}
+
+/// Codificación one-hot: 2 de 4 clases -> [0, 0, 1, 0].
+function oneHot(etiquetas: list, clases: number): Matrix {
+    var m = Matrix.zeros(etiquetas.length, clases)
+    foreach i, e in etiquetas { m.set(i, e, 1) }
+    return m
+}
+
+/// Escala cada columna al intervalo [0, 1]. Devuelve {data, min, max} para escalar datos nuevos igual.
+function normalize(datos: any): map {
+    var m = toMatrix(datos)
+    var minimos = []
+    var maximos = []
+    var filas = m.toList()
+    for j in 0..m.cols {
+        var col = m.col(j)
+        minimos.add(col.min())
+        maximos.add(col.max())
+    }
+    var escaladas = filas.map(f => range(f.length).toList().map(j => maximos[j] == minimos[j] ? 0 : (f[j] - minimos[j]) / (maximos[j] - minimos[j])))
+    return { data: Matrix.fromList(escaladas), min: minimos, max: maximos }
+}
+
+/// Proporción de aciertos entre dos listas de clases.
+function accuracy(predichas: list, reales: list): number {
+    if predichas.length == 0 { return 0 }
+    var bien = 0
+    foreach i, p in predichas { if p == reales[i] { bien += 1 } }
+    return bien / predichas.length
+}
+
+/// Separa los datos en entrenamiento y prueba (mezclados). Devuelve [entrenamiento, prueba].
+function split(datos: list, proporcion: number = 0.8): list {
+    var mezcla = datos.copy()
+    mezcla.shuffle()
+    var n = round(mezcla.length * proporcion)
+    return [mezcla.take(n), mezcla.skip(n)]
+}
+
+/// Regresión lineal y = pendiente * x + corte, ajustada por mínimos cuadrados.
+class LinearRegression {
+    var slope: number = 0
+    var intercept: number = 0
+    var r2: number = 0
+
+    /// Ajusta la recta a los puntos (xs[i], ys[i]).
+    function fit(xs: list, ys: list): LinearRegression {
+        var n = xs.length
+        if n < 2 or n != ys.length { throw Error("fit necesita al menos dos puntos y el mismo número de x que de y") }
+        var mx = xs.average()
+        var my = ys.average()
+        var sxy = 0
+        var sxx = 0
+        var syy = 0
+        foreach i, x in xs {
+            sxy += (x - mx) * (ys[i] - my)
+            sxx += (x - mx) ** 2
+            syy += (ys[i] - my) ** 2
+        }
+        slope = sxx == 0 ? 0 : sxy / sxx
+        intercept = my - slope * mx
+        r2 = syy == 0 ? 1 : (sxy * sxy) / (sxx * syy)
+        return this
+    }
+
+    function predict(x: number): number { return slope * x + intercept }
+
+    function toString(): text { return "y = ${round(slope, 4)}x + ${round(intercept, 4)} (R² = ${round(r2, 4)})" }
+}
+
+/// Distancia euclídea entre dos puntos de cualquier dimensión.
+function euclidean(a: list, b: list): number {
+    var s = 0
+    foreach i, v in a { s += (v - b[i]) ** 2 }
+    return sqrt(s)
+}
+
+/// k vecinos más cercanos: la etiqueta más frecuente entre los k ejemplos más parecidos a 'punto'.
+function knn(ejemplos: list, etiquetas: list, punto: list, k: number = 3): any {
+    var orden = range(ejemplos.length).toList().sortBy(i => euclidean(ejemplos[i], punto))
+    var votos = {}
+    foreach i in orden.take(k) {
+        var e = etiquetas[i]
+        votos[e] = votos.get(e, 0) + 1
+    }
+    return votos.keys().maxBy(e => votos[e])
+}
+
+/// k-medias: agrupa los puntos en k grupos. Devuelve {centers, labels}.
+function kmeans(puntos: list, k: number, iteraciones: number = 50): map {
+    var centros = puntos.copy()
+    centros.shuffle()
+    centros = centros.take(k).map(c => c.copy())
+    var etiquetas = puntos.map(p => 0)
+    repeat iteraciones {
+        var cambio = false
+        foreach i, p in puntos {
+            var mejor = range(k).toList().minBy(c => euclidean(p, centros[c]))
+            if mejor != etiquetas[i] {
+                etiquetas[i] = mejor
+                cambio = true
+            }
+        }
+        for c in 0..k {
+            var grupo = range(puntos.length).toList().filter(i => etiquetas[i] == c).map(i => puntos[i])
+            if grupo.length > 0 {
+                centros[c] = range(grupo[0].length).toList().map(d => grupo.map(p => p[d]).average())
+            }
+        }
+        if not cambio { break }
+    }
+    return { centers: centros, labels: etiquetas }
+}

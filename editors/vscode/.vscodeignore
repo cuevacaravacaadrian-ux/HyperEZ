@@ -7,3 +7,4 @@ extension.js
 .vscode-test/**
 .gitignore
 package-lock.json
+PUBLICAR.md

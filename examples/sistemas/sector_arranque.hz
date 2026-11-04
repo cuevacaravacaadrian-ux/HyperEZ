@@ -1,0 +1,28 @@
+// Sistemas operativos, paso 1: un sector de arranque que la BIOS ejecuta al encender el ordenador.
+//
+// HyperEZ genera el código máquina x86 (modo real de 16 bits) byte a byte con la biblioteca x86 y lo
+// guarda como imagen de disco. Para arrancarla en un emulador:
+//     hyper sector_arranque.hz arranque.img
+//     qemu-system-x86_64 -drive format=raw,file=arranque.img
+// Verás "Hola desde HyperEZ!" en la pantalla del ordenador virtual.
+import x86
+
+var a = x86.Assembler(0x7C00)            // la BIOS carga el sector en la dirección 0x7C00
+a.xorReg16("ax", "ax").movSeg("ds", "ax") // segmento de datos = 0
+a.printString("mensaje")                  // escribe el texto con la BIOS (int 0x10)
+a.label("fin").cli().hlt().jmp("fin")     // detener el procesador
+a.label("mensaje").db("Hola desde HyperEZ!", 13, 10, 0)
+
+var sector = x86.bootSector(a)
+var codigo = a.build()
+print("Código máquina: ${codigo.length} bytes (de 510 posibles)")
+for i in 0..codigo.length step 16 {
+    var linea = codigo.slice(i, min(i + 16, codigo.length))
+    print("  " + (0x7C00 + i).toHex(4) + "  " + linea.toHex(" "))
+}
+print("Firma de arranque: ${sector.slice(510).toHex(" ")} (la BIOS solo arranca discos que terminan así)")
+
+var destino = System.args.length > 0 ? System.args[0] : Path.join(Path.temp, "arranque.img")
+File.writeBytes(destino, sector)
+print("Imagen de ${File.size(destino)} bytes guardada")
+if System.args.length == 0 { File.delete(destino) }

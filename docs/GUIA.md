@@ -300,7 +300,7 @@ while jugando {
 }
 ```
 
-Para juegos en tiempo real usa `Console.pollKey()` (no espera) junto con `System.sleep(segundos)`. Mira `examples/serpiente.hz`, `examples/tres_en_raya.hz` y `examples/mazmorra.hz`.
+Para juegos en tiempo real usa `Console.pollKey()` (no espera) junto con `System.sleep(segundos)`. Mira [la serpiente](../examples/juegos/serpiente.hz), [el tres en raya](../examples/juegos/tres_en_raya.hz) y [la mazmorra](../examples/juegos/mazmorra.hz).
 
 ## 13. Archivos y partidas guardadas
 
@@ -330,7 +330,51 @@ test("lanza un error", () => {
 
 `hyper test` ejecuta cada archivo `.hz` de la carpeta `tests/`. Si junto a una prueba hay un archivo `.out` con la salida esperada, se compara línea a línea (`hyper test --update` lo genera).
 
-## 15. Herramientas
+## 15. Una base para todo
+
+Además de lo anterior, HyperEZ trae de serie bibliotecas para casi cualquier proyecto. Un vistazo rápido (cada área tiene su guía en la [documentación de la biblioteca](biblioteca/README.md)):
+
+```hz
+// Sistema: otros programas, rutas, fechas
+print(Process.run(System.exe, ["version"]).output.lines()[0], Path.ext("foto.png"), Time.date().year > 2000)
+
+// Texto: expresiones regulares (r"..." no procesa las barras)
+print(Regex(r"\d+").findAll("3 gatos y 12 perros").map(m => toNumber(m.text)))
+
+// Binario: bytes, hash y compresión
+print(Bytes("hola").toHex(" "), Hash.sha256("hola").substring(0, 12), Bytes("a" * 100).compress().length)
+
+// Desestructuración y sobrecarga de operadores
+var [primero, ...resto] = [1, 2, 3]
+print(primero, resto, Vec2(1, 2) + Vec2(3, 4))
+
+// Matemáticas en C++ para IA y ciencia
+var m = Matrix([[1, 2], [3, 4]])
+print(m.dot(Matrix.identity(2)) == m, (m * 2).toList())
+```
+
+```hz
+import ai
+import stats
+import db
+import html
+print(stats.median([5, 1, 3]), ai.LinearRegression().fit([1, 2, 3], [2, 4, 6]).slope)
+var base = db.Database()
+base.collection("notas").insert({ alumno: "Ana", nota: 9 })
+print(base.collection("notas").count(), html.escape("<b>"))
+```
+
+| Para | Usa |
+|---|---|
+| Juegos de consola | `Console`, `Vec2`, `Color`, `random` |
+| Inteligencia artificial | `Matrix`, `import ai` |
+| Datos | `JSON`, `import csv`, `import stats`, `import db` |
+| Webs y APIs | `Http.serve`, `import web`, `import html`, `Http.get` |
+| Gráficos y sonido | `Image`, `import audio` |
+| Scripts y herramientas | `Process`, `File`, `Path`, `Time`, `import cli` |
+| Bajo nivel | `Bytes`, `Hash`, operadores de bits, `import x86` |
+
+## 16. Herramientas
 
 | Comando | Qué hace |
 |---|---|
@@ -339,7 +383,7 @@ test("lanza un error", () => {
 | `hyper` | Consola interactiva |
 | `hyper check programa.hz` | Busca errores sin ejecutar |
 | `hyper test` | Ejecuta las pruebas |
-| `hyper new nombre` | Crea un proyecto con un juego de ejemplo |
+| `hyper new nombre --tipo juego\|app\|ia\|script` | Crea un proyecto |
 | `hyper docs API.md` | Genera la referencia de la API |
 
 En **VS Code** tienes errores mientras escribes, autocompletado, documentación al pasar el ratón, F12 para ir a la definición, F2 para renombrar, F5 para ejecutar y Ctrl+Alt+F5 para ejecutar cada vez que guardas.

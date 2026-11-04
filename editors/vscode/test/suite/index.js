@@ -80,7 +80,7 @@ async function run() {
   check('proveedor de colores registrado', Array.isArray(colors));
 
   const cmds = await vscode.commands.getCommands(true);
-  for (const c of ['hyperez.run', 'hyperez.watch', 'hyperez.repl', 'hyperez.check', 'hyperez.test', 'hyperez.newProject', 'hyperez.showDocs', 'hyperez.restartServer'])
+  for (const c of ['hyperez.run', 'hyperez.watch', 'hyperez.repl', 'hyperez.newFile', 'hyperez.openGuide', 'hyperez.openWalkthrough', 'hyperez.check', 'hyperez.test', 'hyperez.newProject', 'hyperez.showDocs', 'hyperez.restartServer'])
     check('comando ' + c, cmds.includes(c));
 
   const tasks = await vscode.tasks.fetchTasks({ type: 'hyperez' });

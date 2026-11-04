@@ -1,36 +1,76 @@
 {
   "Variable": {
-    "prefix": ["var"],
-    "body": ["var ${1:nombre} = ${2:valor}"],
+    "prefix": [
+      "var"
+    ],
+    "body": [
+      "var ${1:nombre} = ${2:valor}"
+    ],
     "description": "Declara una variable"
   },
   "Constante": {
-    "prefix": ["const"],
-    "body": ["const ${1:NOMBRE} = ${2:valor}"],
+    "prefix": [
+      "const"
+    ],
+    "body": [
+      "const ${1:NOMBRE} = ${2:valor}"
+    ],
     "description": "Declara una constante"
   },
   "Función": {
-    "prefix": ["function", "funcion", "fn"],
-    "body": ["/// ${3:Qué hace la función}", "function ${1:nombre}(${2}) {", "\t$0", "}"],
+    "prefix": [
+      "function",
+      "funcion",
+      "fn"
+    ],
+    "body": [
+      "/// ${3:Qué hace la función}",
+      "function ${1:nombre}(${2}) {",
+      "\t$0",
+      "}"
+    ],
     "description": "Declara una función documentada"
   },
   "Función con tipos": {
-    "prefix": ["functipo", "fnt"],
-    "body": ["function ${1:nombre}(${2:x}: ${3:number}): ${4:number} {", "\treturn ${0:x}", "}"],
+    "prefix": [
+      "functipo",
+      "fnt"
+    ],
+    "body": [
+      "function ${1:nombre}(${2:x}: ${3:number}): ${4:number} {",
+      "\treturn ${0:x}",
+      "}"
+    ],
     "description": "Función con parámetros y resultado tipados"
   },
   "Función async": {
-    "prefix": ["async", "asincrona"],
-    "body": ["async function ${1:nombre}(${2}) {", "\tawait wait(${3:1})", "\t$0", "}"],
+    "prefix": [
+      "async",
+      "asincrona"
+    ],
+    "body": [
+      "async function ${1:nombre}(${2}) {",
+      "\tawait wait(${3:1})",
+      "\t$0",
+      "}"
+    ],
     "description": "Función asíncrona (puede usar await)"
   },
   "Lambda": {
-    "prefix": ["lambda", "=>"],
-    "body": ["(${1:x}) => ${0:x * 2}"],
+    "prefix": [
+      "lambda",
+      "=>"
+    ],
+    "body": [
+      "(${1:x}) => ${0:x * 2}"
+    ],
     "description": "Función anónima"
   },
   "Clase": {
-    "prefix": ["class", "clase"],
+    "prefix": [
+      "class",
+      "clase"
+    ],
     "body": [
       "/// ${2:Descripción de la clase}",
       "class ${1:Nombre} {",
@@ -48,7 +88,10 @@
     "description": "Declara una clase con constructor y un método"
   },
   "Clase hija": {
-    "prefix": ["extends", "hereda"],
+    "prefix": [
+      "extends",
+      "hereda"
+    ],
     "body": [
       "class ${1:Hija} extends ${2:Padre} {",
       "\tconstructor(${3}) {",
@@ -60,87 +103,199 @@
     "description": "Clase que hereda de otra"
   },
   "Struct": {
-    "prefix": ["struct"],
-    "body": ["struct ${1:Punto} { var ${2:x}: number = 0; var ${3:y}: number = 0 }"],
+    "prefix": [
+      "struct"
+    ],
+    "body": [
+      "struct ${1:Punto} { var ${2:x}: number = 0; var ${3:y}: number = 0 }"
+    ],
     "description": "Estructura de datos (se compara por valor)"
   },
   "Enum": {
-    "prefix": ["enum"],
-    "body": ["enum ${1:Estado} { ${2:Menu}, ${3:Jugando}, ${4:Pausa} }"],
+    "prefix": [
+      "enum"
+    ],
+    "body": [
+      "enum ${1:Estado} { ${2:Menu}, ${3:Jugando}, ${4:Pausa} }"
+    ],
     "description": "Enumeración"
   },
   "Interfaz": {
-    "prefix": ["interface", "interfaz"],
-    "body": ["interface ${1:Nombre} {", "\tfunction ${2:metodo}(): ${3:void}", "}"],
+    "prefix": [
+      "interface",
+      "interfaz"
+    ],
+    "body": [
+      "interface ${1:Nombre} {",
+      "\tfunction ${2:metodo}(): ${3:void}",
+      "}"
+    ],
     "description": "Interfaz que deben cumplir las clases"
   },
   "if": {
-    "prefix": ["if", "si"],
-    "body": ["if ${1:condicion} {", "\t$0", "}"],
+    "prefix": [
+      "if",
+      "si"
+    ],
+    "body": [
+      "if ${1:condicion} {",
+      "\t$0",
+      "}"
+    ],
     "description": "Condición"
   },
   "if / else": {
-    "prefix": ["ifelse", "sino"],
-    "body": ["if ${1:condicion} {", "\t$2", "} else {", "\t$0", "}"],
+    "prefix": [
+      "ifelse",
+      "sino"
+    ],
+    "body": [
+      "if ${1:condicion} {",
+      "\t$2",
+      "} else {",
+      "\t$0",
+      "}"
+    ],
     "description": "Condición con alternativa"
   },
   "for con rango": {
-    "prefix": ["for", "para"],
-    "body": ["for ${1:i} in ${2:0}..${3:10} {", "\t$0", "}"],
+    "prefix": [
+      "for",
+      "para"
+    ],
+    "body": [
+      "for ${1:i} in ${2:0}..${3:10} {",
+      "\t$0",
+      "}"
+    ],
     "description": "Bucle numérico (fin excluido; usa ..= para incluirlo)"
   },
   "foreach": {
-    "prefix": ["foreach", "paracada"],
-    "body": ["foreach ${1:elemento} in ${2:lista} {", "\t$0", "}"],
+    "prefix": [
+      "foreach",
+      "paracada"
+    ],
+    "body": [
+      "foreach ${1:elemento} in ${2:lista} {",
+      "\t$0",
+      "}"
+    ],
     "description": "Recorre una lista, mapa, conjunto o texto"
   },
   "while": {
-    "prefix": ["while", "mientras"],
-    "body": ["while ${1:condicion} {", "\t$0", "}"],
+    "prefix": [
+      "while",
+      "mientras"
+    ],
+    "body": [
+      "while ${1:condicion} {",
+      "\t$0",
+      "}"
+    ],
     "description": "Bucle mientras se cumpla la condición"
   },
   "repeat": {
-    "prefix": ["repeat", "repetir"],
-    "body": ["repeat ${1:3} {", "\t$0", "}"],
+    "prefix": [
+      "repeat",
+      "repetir"
+    ],
+    "body": [
+      "repeat ${1:3} {",
+      "\t$0",
+      "}"
+    ],
     "description": "Repite un bloque N veces"
   },
   "match": {
-    "prefix": ["match", "segun"],
-    "body": ["match ${1:valor} {", "\t${2:1} => ${3:\"uno\"}", "\t${4:2, 3} => ${5:\"dos o tres\"}", "\telse => ${0:\"otro\"}", "}"],
+    "prefix": [
+      "match",
+      "segun"
+    ],
+    "body": [
+      "match ${1:valor} {",
+      "\t${2:1} => ${3:\"uno\"}",
+      "\t${4:2, 3} => ${5:\"dos o tres\"}",
+      "\telse => ${0:\"otro\"}",
+      "}"
+    ],
     "description": "Elige un resultado según el valor"
   },
   "try / catch": {
-    "prefix": ["try", "intentar"],
-    "body": ["try {", "\t$1", "} catch e {", "\tprint(\"Error:\", e.message)$0", "}"],
+    "prefix": [
+      "try",
+      "intentar"
+    ],
+    "body": [
+      "try {",
+      "\t$1",
+      "} catch e {",
+      "\tprint(\"Error:\", e.message)$0",
+      "}"
+    ],
     "description": "Captura errores"
   },
   "Evento": {
-    "prefix": ["event", "evento"],
-    "body": ["event ${1:Golpe}(${2:objetivo}: ${3:text}, ${4:danio}: ${5:number})", "", "on ${1:Golpe} as e {", "\t$0", "}"],
+    "prefix": [
+      "event",
+      "evento"
+    ],
+    "body": [
+      "event ${1:Golpe}(${2:objetivo}: ${3:text}, ${4:danio}: ${5:number})",
+      "",
+      "on ${1:Golpe} as e {",
+      "\t$0",
+      "}"
+    ],
     "description": "Declara un evento y un manejador"
   },
   "Manejador on": {
-    "prefix": ["on"],
-    "body": ["on ${1:Evento} as e {", "\t$0", "}"],
+    "prefix": [
+      "on"
+    ],
+    "body": [
+      "on ${1:Evento} as e {",
+      "\t$0",
+      "}"
+    ],
     "description": "Escucha un evento"
   },
   "Emitir evento": {
-    "prefix": ["emit", "emitir"],
-    "body": ["emit ${1:Evento}(${0})"],
+    "prefix": [
+      "emit",
+      "emitir"
+    ],
+    "body": [
+      "emit ${1:Evento}(${0})"
+    ],
     "description": "Lanza un evento"
   },
   "Importar": {
-    "prefix": ["from", "importar"],
-    "body": ["from \"./${1:modulo}.hz\" import ${0:Nombre}"],
+    "prefix": [
+      "from",
+      "importar"
+    ],
+    "body": [
+      "from \"./${1:modulo}.hz\" import ${0:Nombre}"
+    ],
     "description": "Importa nombres de otro archivo"
   },
   "Prueba": {
-    "prefix": ["test", "prueba"],
-    "body": ["test(\"${1:descripción}\", () => {", "\tassertEqual(${2:actual}, ${3:esperado})$0", "})"],
+    "prefix": [
+      "test",
+      "prueba"
+    ],
+    "body": [
+      "test(\"${1:descripción}\", () => {",
+      "\tassertEqual(${2:actual}, ${3:esperado})$0",
+      "})"
+    ],
     "description": "Prueba unitaria (se ejecuta con hyper test)"
   },
   "Bucle de juego de consola": {
-    "prefix": ["juego", "gameloop"],
+    "prefix": [
+      "juego",
+      "gameloop"
+    ],
     "body": [
       "var jugando = true",
       "var x = 0",
@@ -161,8 +316,200 @@
     "description": "Esqueleto de un juego de consola controlado con el teclado"
   },
   "Tarea en segundo plano": {
-    "prefix": ["spawn", "temporizador"],
-    "body": ["spawn(async () => {", "\twhile true {", "\t\tawait wait(${1:1})", "\t\t$0", "\t}", "})"],
+    "prefix": [
+      "spawn",
+      "temporizador"
+    ],
+    "body": [
+      "spawn(async () => {",
+      "\twhile true {",
+      "\t\tawait wait(${1:1})",
+      "\t\t$0",
+      "\t}",
+      "})"
+    ],
     "description": "Repite algo cada N segundos sin bloquear"
+  },
+  "Desestructurar lista": {
+    "prefix": [
+      "desestructurar",
+      "var["
+    ],
+    "body": [
+      "var [${1:a}, ${2:b}] = ${3:lista}"
+    ],
+    "description": "Saca varios valores de una lista"
+  },
+  "Desestructurar mapa": {
+    "prefix": [
+      "var{"
+    ],
+    "body": [
+      "var {${1:nombre}, ${2:vida}} = ${3:jugador}"
+    ],
+    "description": "Saca varios campos de un mapa u objeto"
+  },
+  "Servidor web": {
+    "prefix": [
+      "servidor",
+      "web"
+    ],
+    "body": [
+      "import web",
+      "",
+      "var app = web.App()",
+      "app.get(\"/\", req => \"<h1>${1:Hola desde HyperEZ}</h1>\")",
+      "app.get(\"/api/${2:datos}/:id\", req => ({ id: req.params.id }))",
+      "app.post(\"/api/${2:datos}\", req => ({ status: 201, json: req.json }))",
+      "app.listen(${3:8080})"
+    ],
+    "description": "Aplicación web con rutas (import web)"
+  },
+  "Red neuronal": {
+    "prefix": [
+      "red",
+      "ia",
+      "neuronal"
+    ],
+    "body": [
+      "import ai",
+      "",
+      "randomSeed(1)",
+      "var red = ai.NeuralNetwork([${1:2}, ${2:8}, ${3:1}])",
+      "var error = red.train(${4:entradas}, ${5:esperado}, ${6:1000}, ${7:0.5})",
+      "print(\"error:\", error)",
+      "print(red.predict(${8:[1, 0]}))"
+    ],
+    "description": "Red neuronal con la biblioteca ai"
+  },
+  "Imagen": {
+    "prefix": [
+      "imagen",
+      "image"
+    ],
+    "body": [
+      "var im = Image(${1:400}, ${2:300}, \"${3:#ffffff}\")",
+      "im.rect(${4:20}, ${5:20}, ${6:100}, ${7:60}, \"#2f81f7\")",
+      "im.text(20, 100, \"${8:HyperEZ}\", \"#1f2328\", 24)",
+      "im.save(\"${9:imagen.png}\")"
+    ],
+    "description": "Dibujar y guardar una imagen"
+  },
+  "Sonido": {
+    "prefix": [
+      "sonido",
+      "audio"
+    ],
+    "body": [
+      "import audio",
+      "",
+      "var s = audio.Sound()",
+      "s.melody(\"${1:C4 E4 G4 C5}\", ${2:0.25})",
+      "s.save(\"${3:sonido.wav}\")"
+    ],
+    "description": "Crear un sonido WAV"
+  },
+  "Base de datos": {
+    "prefix": [
+      "db",
+      "basedatos"
+    ],
+    "body": [
+      "import db",
+      "",
+      "var base = db.Database(\"${1:datos.json}\")",
+      "var ${2:jugadores} = base.collection(\"${2:jugadores}\")",
+      "${2:jugadores}.insert({ ${3:nombre: \"Ana\"} })",
+      "print(${2:jugadores}.find(${4:x => true}))"
+    ],
+    "description": "Base de datos de documentos"
+  },
+  "Petición HTTP": {
+    "prefix": [
+      "http",
+      "peticion"
+    ],
+    "body": [
+      "var ${1:datos} = Http.getJson(\"${2:https://api.github.com/repos/microsoft/vscode}\")",
+      "print(${1:datos})"
+    ],
+    "description": "Pedir JSON a un servicio web"
+  },
+  "Expresión regular": {
+    "prefix": [
+      "regex",
+      "patron"
+    ],
+    "body": [
+      "var ${1:re} = Regex(r\"${2:\\\\d+}\")",
+      "foreach m in ${1:re}.findAll(${3:texto}) { print(m.text) }"
+    ],
+    "description": "Buscar un patrón en un texto"
+  },
+  "Ejecutar programa": {
+    "prefix": [
+      "proceso",
+      "process"
+    ],
+    "body": [
+      "var r = Process.run(\"${1:git}\", [${2:\"--version\"}])",
+      "print(r.ok, r.output)"
+    ],
+    "description": "Ejecutar otro programa y leer su salida"
+  },
+  "Leer CSV": {
+    "prefix": [
+      "csv"
+    ],
+    "body": [
+      "import csv",
+      "",
+      "var filas = csv.read(\"${1:datos.csv}\")",
+      "foreach f in filas { print(f.${2:nombre}) }"
+    ],
+    "description": "Leer una tabla CSV"
+  },
+  "Argumentos de la herramienta": {
+    "prefix": [
+      "args",
+      "cli"
+    ],
+    "body": [
+      "import cli",
+      "",
+      "var a = cli.parseArgs(System.args)",
+      "var archivo = a.positional.length > 0 ? a.positional[0] : \"${1:entrada.txt}\"",
+      "var detalle = a.flags.contains(\"v\")"
+    ],
+    "description": "Leer argumentos: hyper programa.hz archivo --opcion valor -v"
+  },
+  "Operador en clase": {
+    "prefix": [
+      "operador",
+      "operator"
+    ],
+    "body": [
+      "function ${1|add,sub,mul,div,mod,pow|}(otro: ${2:Tipo}): ${2:Tipo} {",
+      "\treturn ${0}",
+      "}"
+    ],
+    "description": "Sobrecarga de un operador (+ - * / % **) en una clase"
+  },
+  "Sector de arranque": {
+    "prefix": [
+      "arranque",
+      "bootsector"
+    ],
+    "body": [
+      "import x86",
+      "",
+      "var a = x86.Assembler(0x7C00)",
+      "a.xorReg16(\"ax\", \"ax\").movSeg(\"ds\", \"ax\")",
+      "a.printString(\"mensaje\")",
+      "a.label(\"fin\").cli().hlt().jmp(\"fin\")",
+      "a.label(\"mensaje\").db(\"${1:Hola}\", 0)",
+      "File.writeBytes(\"${2:arranque.img}\", x86.bootSector(a))"
+    ],
+    "description": "Sector de arranque x86 (qemu-system-x86_64)"
   }
 }

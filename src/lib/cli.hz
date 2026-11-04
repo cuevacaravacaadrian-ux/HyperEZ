@@ -1,0 +1,70 @@
+// cli — herramientas de línea de órdenes: leer argumentos (--opcion valor), preguntar y mostrar progreso.
+//
+//   import cli
+//   var a = cli.parseArgs(System.args)        // hyper copia.hz origen.txt --destino copia.txt -v
+//   print(a.positional, a.options.destino, a.flags.contains("v"))
+
+/// Separa los argumentos en posicionales, opciones (--nombre valor o --nombre=valor) y banderas (-v, --ayuda).
+/// Devuelve {positional: list, options: map, flags: list}.
+function parseArgs(argumentos: list): map {
+    var posicionales = []
+    var opciones = {}
+    var banderas = []
+    var i = 0
+    while i < argumentos.length {
+        var a = argumentos[i]
+        if a.startsWith("--") and a.length > 2 {
+            var nombre = a.substring(2)
+            if nombre.contains("=") {
+                var partes = nombre.split("=")
+                opciones[partes[0]] = partes.skip(1).join("=")
+            } else if i + 1 < argumentos.length and not argumentos[i + 1].startsWith("-") {
+                opciones[nombre] = argumentos[i + 1]
+                i += 1
+            } else {
+                banderas.add(nombre)
+            }
+        } else if a.startsWith("-") and a.length > 1 and not a.substring(1).isNumeric() {
+            foreach c in a.substring(1).chars() { banderas.add(c) }
+        } else {
+            posicionales.add(a)
+        }
+        i += 1
+    }
+    return { positional: posicionales, options: opciones, flags: banderas }
+}
+
+/// Pregunta algo y devuelve la respuesta (o el valor por defecto si se deja vacía o no hay teclado).
+function ask(pregunta: text, porDefecto: text = ""): text {
+    if not Console.interactive { return porDefecto }
+    var sufijo = porDefecto == "" ? "" : " [${porDefecto}]"
+    var r = input("${pregunta}${sufijo}: ") ?? ""
+    return r.trim() == "" ? porDefecto : r.trim()
+}
+
+/// Pregunta sí/no.
+function confirm(pregunta: text, porDefecto: bool = false): bool {
+    var r = ask(pregunta + (porDefecto ? " (S/n)" : " (s/N)"), "").lower()
+    if r == "" { return porDefecto }
+    return r == "s" or r == "si" or r == "sí" or r == "y" or r == "yes"
+}
+
+/// Barra de progreso como texto: progressBar(0.42) -> "[████████░░░░░░░░░░░░]  42%".
+function progressBar(fraccion: number, ancho: number = 20): text {
+    var f = clamp(fraccion, 0, 1)
+    var llenos = round(f * ancho)
+    return "[" + "█" * llenos + "░" * (ancho - llenos) + "] " + str(round(f * 100)).padStart(3) + "%"
+}
+
+/// Tabla con columnas alineadas a partir de una lista de listas (la primera fila es la cabecera).
+function table(filas: list): text {
+    if filas.isEmpty() { return "" }
+    var columnas = filas.map(f => f.length).max()
+    var anchos = range(columnas).toList().map(c => filas.map(f => c < f.length ? str(f[c]).length : 0).max())
+    var lineas = []
+    foreach i, f in filas {
+        lineas.add(range(columnas).toList().map(c => (c < f.length ? str(f[c]) : "").padEnd(anchos[c])).join("  ").trimEnd())
+        if i == 0 { lineas.add(anchos.map(w => "-" * w).join("  ")) }
+    }
+    return lineas.join("\n")
+}

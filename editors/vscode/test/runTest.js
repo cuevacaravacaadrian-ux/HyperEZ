@@ -28,7 +28,7 @@ function findCode() {
       extensionDevelopmentPath: path.join(__dirname, '..'),
       extensionTestsPath: path.join(__dirname, 'suite', 'index.js'),
       launchArgs: ['--user-data-dir', path.join(tmp, 'datos'), '--extensions-dir', path.join(tmp, 'ext'), '--disable-workspace-trust', '--skip-welcome', '--skip-release-notes'],
-      extensionTestsEnv: { HZ_TEST_RESULTS: results },
+      extensionTestsEnv: { HZ_TEST_RESULTS: results, HYPEREZ_NO_WELCOME: '1' },
     });
   } catch (e) {
     console.error('Las pruebas de integración fallaron:', e.message || e);

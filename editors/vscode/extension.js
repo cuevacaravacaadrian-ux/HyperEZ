@@ -224,10 +224,17 @@ async function cmdTest(context, uri) {
 async function cmdNewProject(context) {
   const exe = requireHyper(context);
   if (!exe) return;
+  const kind = await vscode.window.showQuickPick([
+    { label: '$(game) Juego', description: 'juego de consola con teclado', id: 'juego', name: 'mi-juego' },
+    { label: '$(window) Aplicación', description: 'menú y datos guardados en JSON', id: 'app', name: 'mi-app' },
+    { label: '$(sparkle) Inteligencia artificial', description: 'red neuronal que aprende de un CSV', id: 'ia', name: 'mi-ia' },
+    { label: '$(terminal) Herramienta', description: 'script de línea de órdenes con argumentos', id: 'script', name: 'mi-herramienta' },
+  ], { title: 'Nuevo proyecto de HyperEZ', placeHolder: '¿Qué quieres crear?' });
+  if (!kind) return;
   const name = await vscode.window.showInputBox({
     title: 'Nuevo proyecto de HyperEZ',
     prompt: 'Nombre del proyecto (será el nombre de la carpeta)',
-    value: 'mi-juego',
+    value: kind.name,
     validateInput: (v) => (/^[^\\/:*?"<>|]+$/.test(v.trim()) ? null : 'Nombre no válido para una carpeta'),
   });
   if (!name) return;
@@ -238,7 +245,7 @@ async function cmdNewProject(context) {
   if (!parent || !parent.length) return;
   const dest = path.join(parent[0].fsPath, name.trim());
   try {
-    cp.execFileSync(exe, ['new', dest], { encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' } });
+    cp.execFileSync(exe, ['new', dest, '--tipo', kind.id], { encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' } });
   } catch (e) {
     vscode.window.showErrorMessage('No se pudo crear el proyecto: ' + ((e.stderr || e.stdout || e.message) + '').trim());
     return;
@@ -261,6 +268,45 @@ async function cmdShowDocs(context) {
     return;
   }
   await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(out));
+}
+
+// Nuevo archivo .hz sin guardar, con un programa de ejemplo
+async function cmdNewFile() {
+  const doc = await vscode.workspace.openTextDocument({
+    language: 'hyperez',
+    content: '// Mi programa en HyperEZ: pulsa F5 para ejecutarlo (guárdalo antes con extensión .hz)\n' +
+      'var nombre = "mundo"\nprint("¡Hola, ${nombre}!")\n',
+  });
+  await vscode.window.showTextDocument(doc);
+}
+
+// Carpeta de la instalación de HyperEZ (docs/ y examples/), si existe
+function installDir(context) {
+  const exe = hyperPath(context);
+  if (!exe) return null;
+  const dir = path.dirname(path.dirname(exe));
+  return fs.existsSync(path.join(dir, 'docs')) ? dir : null;
+}
+
+const REPO = 'https://github.com/cuevacaravacaadrian-ux/HyperEZ';
+
+async function cmdOpenGuide(context) {
+  const dir = installDir(context);
+  const local = dir && path.join(dir, 'docs', 'GUIA.md');
+  if (local && fs.existsSync(local)) {
+    await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(local));
+  } else {
+    await vscode.env.openExternal(vscode.Uri.parse(REPO + '/blob/main/docs/README.md'));
+  }
+}
+
+async function cmdOpenExamples(context) {
+  const dir = installDir(context);
+  if (dir && fs.existsSync(path.join(dir, 'examples'))) {
+    await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(path.join(dir, 'examples')), true);
+  } else {
+    await vscode.env.openExternal(vscode.Uri.parse(REPO + '/tree/main/examples'));
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -368,6 +414,11 @@ async function activate(context) {
 
   const reg = (id, fn) => context.subscriptions.push(vscode.commands.registerCommand(id, (...a) => fn(context, ...a)));
   reg('hyperez.run', cmdRun);
+  reg('hyperez.newFile', cmdNewFile);
+  reg('hyperez.openGuide', cmdOpenGuide);
+  reg('hyperez.openExamples', cmdOpenExamples);
+  reg('hyperez.openWalkthrough', () =>
+    vscode.commands.executeCommand('workbench.action.openWalkthrough', context.extension.id + '#empezar', false));
   reg('hyperez.watch', cmdWatch);
   reg('hyperez.repl', cmdRepl);
   reg('hyperez.check', cmdCheck);
@@ -407,6 +458,14 @@ async function activate(context) {
   }));
 
   await startClient(context);
+
+  // La primera vez, la bienvenida con el tutorial
+  if (!context.globalState.get('hyperez.welcomed')) {
+    await context.globalState.update('hyperez.welcomed', true);
+    if (!process.env.HYPEREZ_NO_WELCOME) {
+      vscode.commands.executeCommand('workbench.action.openWalkthrough', context.extension.id + '#empezar', false);
+    }
+  }
 }
 
 async function deactivate() {

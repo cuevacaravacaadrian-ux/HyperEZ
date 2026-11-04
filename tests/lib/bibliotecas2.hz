@@ -1,0 +1,75 @@
+// Bibliotecas web, html, db y audio.
+import web
+import html
+import db
+import audio
+
+test("web: rutas con parámetros y middleware", () => {
+    var app = web.App()
+    app.get("/", req => "inicio")
+    app.get("/jugadores/:id", req => ({ id: req.params.id, orden: req.query.get("orden", "") }))
+    app.post("/jugadores", req => ({ status: 201, json: req.json }))
+    app.get("/archivos/*", req => req.params["*"])
+    assertEqual(app.handle(web.request("GET", "/")), "inicio")
+    assertEqual(app.handle(web.request("GET", "/jugadores/7?orden=nombre")), { id: "7", orden: "nombre" })
+    assertEqual(app.handle(web.request("POST", "/jugadores", { nombre: "Ana" })), { status: 201, json: { nombre: "Ana" } })
+    assertEqual(app.handle(web.request("GET", "/archivos/a/b.txt")), "a/b.txt")
+    assertEqual(app.handle(web.request("DELETE", "/")).status, 404)
+    app.use(req => req.path.startsWith("/privado") ? { status: 401, body: "no" } : null)
+    assertEqual(app.handle(web.request("GET", "/privado/x")).status, 401)
+    assertEqual(web.matchRoute("/a/:b", "/a/1/2"), null)
+    assertEqual(web.redirect("/otra").status, 302)
+})
+
+test("html: etiquetas, escape, tablas y páginas", () => {
+    assertEqual(html.escape("<b>\"Tom & Jerry\"</b>"), "&lt;b&gt;&quot;Tom &amp; Jerry&quot;&lt;/b&gt;")
+    assertEqual(html.tag("a", { href: "/x?a=1&b=2", class: "boton" }, "Ir <ya>"),
+                "<a href=\"/x?a=1&amp;b=2\" class=\"boton\">Ir &lt;ya&gt;</a>")
+    assertEqual(html.tag("input", { type: "checkbox", checked: true, disabled: false }), "<input type=\"checkbox\" checked>")
+    assertEqual(str(html.list(["uno", "dos"])), "<ul><li>uno</li><li>dos</li></ul>")
+    assertEqual(str(html.table([["a", "b"], [1, 2]])), "<table><tr><th>a</th><th>b</th></tr><tr><td>1</td><td>2</td></tr></table>")
+    var p = html.page("Título & cosas", html.raw("<p>hola</p>"))
+    assert(p.startsWith("<!DOCTYPE html>") and p.contains("<title>Título &amp; cosas</title>") and p.contains("<p>hola</p>"))
+})
+
+test("db: insertar, buscar, cambiar, borrar y guardar", () => {
+    var ruta = Path.join(Path.temp, "hz_db_" + str(Process.pid) + ".json")
+    File.delete(ruta)
+    var base = db.Database(ruta)
+    var j = base.collection("jugadores")
+    var id = j.insert({ nombre: "Ana", puntos: 120 })
+    j.insertMany([{ nombre: "Luis", puntos: 95 }, { nombre: "Eva", puntos: 130 }])
+    assertEqual(j.count(), 3)
+    assertEqual(j.get(id).nombre, "Ana")
+    assertEqual(j.find(x => x.puntos > 100).map(x => x.nombre), ["Ana", "Eva"])
+    assertEqual(j.findOne({ nombre: "Luis" }).puntos, 95)
+    assertEqual(j.update({ nombre: "Luis" }, { puntos: 200 }), 1)
+    assertEqual(j.delete(x => x.puntos < 125), 1)
+    // otra instancia lee lo guardado
+    var otra = db.Database(ruta).collection("jugadores")
+    assertEqual(otra.all().map(x => x.nombre).sort(), ["Eva", "Luis"])
+    assertEqual(db.Database(ruta).collections, ["jugadores"])
+    var copia = otra.findOne({ nombre: "Eva" })
+    copia.puntos = 0
+    assertEqual(otra.findOne({ nombre: "Eva" }).puntos, 130) // find devuelve copias
+    File.delete(ruta)
+})
+
+test("audio: notas, tonos y WAV", () => {
+    assertEqual(audio.frequency("A4"), 440)
+    assertEqual(round(audio.frequency("C4"), 2), 261.63)
+    assertEqual(round(audio.frequency("A#4"), 2), round(audio.frequency("Bb4"), 2))
+    assertEqual(audio.frequency("A5"), 880)
+    assertThrows(() => audio.frequency("H2"))
+    var s = audio.Sound(8000)
+    s.tone(440, 0.5).silence(0.25).melody("C4 E4", 0.125, 0.3, "square")
+    assertEqual(s.samples.length, 4000 + 2000 + 2000)
+    assertEqual(round(s.duration, 3), 1)
+    assert(s.samples.max() <= 0.4 and s.samples.min() >= -0.4)
+    var w = s.toBytes()
+    assertEqual(w.length, 44 + 8000 * 2)
+    assertEqual([w.slice(0, 4).toText(), w.slice(8, 12).toText(), w.readU32(24), w.readU16(34)], ["RIFF", "WAVE", 8000, 16])
+    var a = audio.Sound(8000).tone(220, 0.1)
+    a.mix(audio.Sound(8000).tone(330, 0.1), 0.05)
+    assertEqual(a.samples.length, 1200)
+})

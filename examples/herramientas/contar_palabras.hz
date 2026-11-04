@@ -1,0 +1,29 @@
+// Herramienta de línea de órdenes: cuenta palabras de un texto y muestra las más frecuentes.
+// Uso:  hyper contar_palabras.hz archivo.txt [--top 5] [--min 4] [--exacto]
+//   --top N    cuántas palabras mostrar (10 por defecto)
+//   --min N    longitud mínima de las palabras
+//   --exacto   distinguir mayúsculas de minúsculas
+import cli
+
+var a = cli.parseArgs(System.args)
+var texto = a.positional.length > 0 ? File.read(a.positional[0]) : """
+En un lugar de la Mancha, de cuyo nombre no quiero acordarme, no ha mucho tiempo que vivía
+un hidalgo de los de lanza en astillero, adarga antigua, rocín flaco y galgo corredor.
+Una olla de algo más vaca que carnero, salpicón las más noches, duelos y quebrantos los sábados,
+lentejas los viernes, algún palomino de añadidura los domingos, consumían las tres partes de su hacienda.
+"""
+var top = toNumber(a.options.get("top", "10"))
+var minimo = toNumber(a.options.get("min", "1"))
+var ignorar = not a.flags.contains("exacto")
+
+// palabra = todo lo que no es espacio ni signo de puntuación (así incluye las letras con acento)
+var palabras = Regex(r'[^\s.,;:!?()"\-]+').findAll(texto).map(m => ignorar ? m.text.lower() : m.text)
+var cuenta = {}
+foreach p in palabras.filter(p => p.length >= minimo) { cuenta[p] = cuenta.get(p, 0) + 1 }
+
+print("${palabras.length} palabras, ${cuenta.keys().length} distintas")
+var orden = cuenta.keys().sortBy(p => -cuenta[p] * 1000 + p.length).take(top)
+var mayor = orden.isEmpty() ? 1 : cuenta[orden[0]]
+foreach p in orden {
+    print("  " + p.padEnd(12) + str(cuenta[p]).padStart(3) + "  " + "■" * round(cuenta[p] / mayor * 20))
+}

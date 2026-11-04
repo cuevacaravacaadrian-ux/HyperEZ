@@ -1,0 +1,77 @@
+// Aplicación de consola: una agenda de contactos con menú, búsqueda y guardado en JSON.
+// Con teclado se usa con el menú; sin teclado (en las pruebas) hace una demostración sola.
+import cli
+
+struct Contacto { var nombre: text = ""; var telefono: text = ""; var email: text = "" }
+
+class Agenda {
+    var contactos: list = []
+    var archivo: text
+
+    constructor(archivo: text) {
+        this.archivo = archivo
+        if File.exists(archivo) {
+            contactos = JSON.parse(File.read(archivo)).map(c => Contacto(c.nombre, c.telefono, c.email))
+        }
+    }
+
+    function agregar(c: Contacto) {
+        contactos.add(c)
+        contactos = contactos.sortBy(x => x.nombre.lower())
+        guardar()
+    }
+
+    function buscar(texto: text): list {
+        var t = texto.lower()
+        return contactos.filter(c => c.nombre.lower().contains(t) or c.email.lower().contains(t))
+    }
+
+    function borrar(nombre: text): bool {
+        var i = contactos.findIndex(c => c.nombre == nombre)
+        if i < 0 { return false }
+        contactos.removeAt(i)
+        guardar()
+        return true
+    }
+
+    function guardar() {
+        File.write(archivo, JSON.stringify(contactos.map(c => ({ nombre: c.nombre, telefono: c.telefono, email: c.email })), 2))
+    }
+
+    function tabla(lista: list): text {
+        if lista.isEmpty() { return "(ninguno)" }
+        return cli.table([["nombre", "teléfono", "email"]] + lista.map(c => [c.nombre, c.telefono, c.email]))
+    }
+}
+
+var ruta = Console.interactive ? Path.join(Path.home, ".agenda_hyperez.json") : Path.join(Path.temp, "agenda_demo.json")
+if not Console.interactive { File.delete(ruta) }
+var agenda = Agenda(ruta)
+
+if not Console.interactive {
+    // Demostración automática
+    agenda.agregar(Contacto("Lucía Pérez", "600 111 222", "lucia@correo.es"))
+    agenda.agregar(Contacto("Andrés Gil", "611 333 444", "andres@correo.es"))
+    agenda.agregar(Contacto("Marta Ruiz", "622 555 666", "marta@empresa.com"))
+    print(agenda.tabla(agenda.contactos))
+    print()
+    print("Buscar 'correo':")
+    print(agenda.tabla(agenda.buscar("correo")))
+    print()
+    print("Borrar a Andrés:", agenda.borrar("Andrés Gil"))
+    print("Al volver a abrir la agenda hay ${Agenda(ruta).contactos.length} contactos guardados")
+    File.delete(ruta)
+} else {
+    var seguir = true
+    while seguir {
+        print()
+        print("1) Ver todos  2) Añadir  3) Buscar  4) Borrar  5) Salir")
+        match cli.ask("Elige", "5") {
+            "1" => print(agenda.tabla(agenda.contactos))
+            "2" => agenda.agregar(Contacto(cli.ask("Nombre"), cli.ask("Teléfono"), cli.ask("Email")))
+            "3" => print(agenda.tabla(agenda.buscar(cli.ask("Buscar"))))
+            "4" => print(agenda.borrar(cli.ask("Nombre exacto")) ? "Borrado" : "No existe")
+            else => seguir = false
+        }
+    }
+}

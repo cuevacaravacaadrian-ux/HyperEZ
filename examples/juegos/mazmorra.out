@@ -1,0 +1,61 @@
+
+=== Sala 1: La entrada húmeda ===
+
+¡Aparece Rata gigante!
+
+-- Turno 1 --   Aria [##########] 42/42   |   Rata gigante [##########] 14/14
+  > Aria (bola de fuego) golpea a Rata gigante: -14
+  x Rata gigante ha caído
+  Aria consigue 5 monedas de oro
+
+¡Aparece Murciélago!
+
+-- Turno 1 --   Aria [##########] 42/42   |   Murciélago [##########] 10/10
+  > Aria (bola de fuego) golpea a Murciélago: -14
+  x Murciélago ha caído
+  Aria consigue 3 monedas de oro
+
+=== Sala 2: El salón de los huesos ===
+
+¡Aparece Esqueleto!
+
+-- Turno 1 --   Aria [##########] 42/42   |   Esqueleto [##########] 22/22
+  > Aria (bola de fuego) golpea a Esqueleto: -11
+  > Esqueleto golpea a Aria: -5
+
+-- Turno 2 --   Aria [#########-] 37/42   |   Esqueleto [#####-----] 11/22
+  > Aria golpea a Esqueleto: -12 ¡CRÍTICO!
+  x Esqueleto ha caído
+  Aria consigue 12 monedas de oro
+
+=== Sala 3: La cámara del tesoro ===
+
+¡Aparece Golem de piedra!
+
+-- Turno 1 --   Aria [#########-] 37/42   |   Golem de piedra [##########] 34/34
+  > Aria golpea a Golem de piedra: -7
+  > Golem de piedra golpea a Aria: -5
+
+-- Turno 2 --   Aria [########--] 32/42   |   Golem de piedra [########--] 27/34
+  > Aria golpea a Golem de piedra: -9
+  > Golem de piedra golpea a Aria: -5
+
+-- Turno 3 --   Aria [######----] 27/42   |   Golem de piedra [#####-----] 18/34
+  > Aria golpea a Golem de piedra: -9
+  > Golem de piedra golpea a Aria: -7
+
+-- Turno 4 --   Aria [#####-----] 20/42   |   Golem de piedra [###-------] 9/34
+  > Aria golpea a Golem de piedra: -8
+  > Golem de piedra golpea a Aria: -5
+
+-- Turno 5 --   Aria [####------] 15/42   |   Golem de piedra [----------] 1/34
+  + Aria bebe una poción y recupera 16 de vida
+  > Golem de piedra golpea a Aria: -8
+
+-- Turno 6 --   Aria [#####-----] 23/42   |   Golem de piedra [----------] 1/34
+  > Aria golpea a Golem de piedra: -5
+  x Golem de piedra ha caído
+  Aria consigue 40 monedas de oro
+
+¡Aria ha superado la mazmorra con 23 de vida y 60 monedas de oro!
+VICTORIA

@@ -19,3 +19,4 @@
 
 # Estadísticas de lenguajes de GitHub: sin contar las bibliotecas de terceros
 third_party/** linguist-vendored
+*.sh text eol=lf

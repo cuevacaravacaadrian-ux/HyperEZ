@@ -1,0 +1,164 @@
+// x86 — ensamblador mínimo de x86 en modo real (16 bits): el primer paso para crear sistemas operativos.
+//
+//   import x86
+//   var a = x86.Assembler(0x7C00)        // la BIOS carga el sector de arranque en 0x7C00
+//   a.label("fin").cli().hlt().jmp("fin")
+//   File.writeBytes("arranque.img", x86.bootSector(a))
+//   // pruébalo con:  qemu-system-x86_64 -drive format=raw,file=arranque.img
+//
+// Genera el código máquina byte a byte, con etiquetas y saltos que se resuelven al final.
+// Instrucciones: mov, xor, or, cmp, inc, dec, add, sub, push, pop, saltos (jmp, jz, jnz, je, jne,
+// jc, jnc, call, ret), int, lodsb, stosb, cli, sti, hlt, nop, y datos (db, dw).
+
+const REG8 = { al: 0, cl: 1, dl: 2, bl: 3, ah: 4, ch: 5, dh: 6, bh: 7 }
+const REG16 = { ax: 0, cx: 1, dx: 2, bx: 3, sp: 4, bp: 5, si: 6, di: 7 }
+const SEG = { es: 0, cs: 1, ss: 2, ds: 3 }
+
+function reg8(nombre: text): number {
+    var r = REG8.get(nombre.lower())
+    if r == null { throw Error("'${nombre}' no es un registro de 8 bits (al, cl, dl, bl, ah, ch, dh, bh)") }
+    return r
+}
+function reg16(nombre: text): number {
+    var r = REG16.get(nombre.lower())
+    if r == null { throw Error("'${nombre}' no es un registro de 16 bits (ax, cx, dx, bx, sp, bp, si, di)") }
+    return r
+}
+
+/// Ensamblador de 16 bits. Cada método añade una instrucción y devuelve el ensamblador (se pueden encadenar).
+class Assembler {
+    var origin: number
+    var code: Bytes = Bytes()
+    var labels: map = {}
+    var fixups: list = []
+
+    constructor(origin: number = 0) { this.origin = origin }
+
+    /// Dirección de la siguiente instrucción.
+    get here(): number { return origin + code.length }
+
+    /// Marca la posición actual con un nombre (destino de saltos o dirección de datos).
+    function label(nombre: text): Assembler {
+        if labels.has(nombre) { throw Error("la etiqueta '${nombre}' ya existe") }
+        labels[nombre] = here
+        return this
+    }
+
+    // ---- datos ----
+    /// Bytes tal cual: números, textos (ASCII), listas o Bytes.
+    function db(...datos: any): Assembler {
+        foreach d in datos { code.push(d) }
+        return this
+    }
+    /// Palabra de 16 bits (little endian) o la dirección de una etiqueta.
+    function dw(valor: any): Assembler { return imm16(valor) }
+
+    private function imm16(valor: any): Assembler {
+        if typeof(valor) == "text" {
+            fixups.add({ at: code.length, label: valor, kind: "abs16" })
+            code.pushU16(0)
+        } else {
+            code.pushU16(valor & 0xFFFF)
+        }
+        return this
+    }
+    private function rel(opcode: any, destino: text, kind: text): Assembler {
+        code.push(opcode)
+        fixups.add({ at: code.length, label: destino, kind: kind })
+        if kind == "rel8" { code.push(0) } else { code.pushU16(0) }
+        return this
+    }
+
+    // ---- movimientos ----
+    function movReg8(registro: text, valor: number): Assembler { return db(0xB0 + reg8(registro), valor & 0xFF) }
+    function movReg16(registro: text, valor: any): Assembler {
+        code.push(0xB8 + reg16(registro))
+        return imm16(valor)
+    }
+    function movRegReg16(destino: text, origen: text): Assembler { return db(0x89, 0xC0 | (reg16(origen) << 3) | reg16(destino)) }
+    /// mov ds, ax  (segmento <- registro de 16 bits)
+    function movSeg(segmento: text, registro: text): Assembler {
+        var s = SEG.get(segmento.lower())
+        if s == null { throw Error("'${segmento}' no es un registro de segmento (es, cs, ss, ds)") }
+        return db(0x8E, 0xC0 | (s << 3) | reg16(registro))
+    }
+
+    // ---- aritmética y lógica ----
+    function xorReg16(a: text, b: text): Assembler { return db(0x31, 0xC0 | (reg16(b) << 3) | reg16(a)) }
+    function orReg8(a: text, b: text): Assembler { return db(0x08, 0xC0 | (reg8(b) << 3) | reg8(a)) }
+    function cmpAl(valor: number): Assembler { return db(0x3C, valor & 0xFF) }
+    function addReg16(registro: text, valor: number): Assembler {
+        db(0x81, 0xC0 | reg16(registro))
+        return imm16(valor)
+    }
+    function subReg16(registro: text, valor: number): Assembler {
+        db(0x81, 0xE8 | reg16(registro))
+        return imm16(valor)
+    }
+    function inc16(registro: text): Assembler { return db(0x40 + reg16(registro)) }
+    function dec16(registro: text): Assembler { return db(0x48 + reg16(registro)) }
+    function push16(registro: text): Assembler { return db(0x50 + reg16(registro)) }
+    function pop16(registro: text): Assembler { return db(0x58 + reg16(registro)) }
+
+    // ---- saltos y llamadas (a etiquetas) ----
+    function jmp(destino: text): Assembler { return rel(0xEB, destino, "rel8") }
+    function jmpNear(destino: text): Assembler { return rel(0xE9, destino, "rel16") }
+    function jz(destino: text): Assembler { return rel(0x74, destino, "rel8") }
+    function jnz(destino: text): Assembler { return rel(0x75, destino, "rel8") }
+    function je(destino: text): Assembler { return jz(destino) }
+    function jne(destino: text): Assembler { return jnz(destino) }
+    function jc(destino: text): Assembler { return rel(0x72, destino, "rel8") }
+    function jnc(destino: text): Assembler { return rel(0x73, destino, "rel8") }
+    function call(destino: text): Assembler { return rel(0xE8, destino, "rel16") }
+    function ret(): Assembler { return db(0xC3) }
+
+    // ---- varias ----
+    /// int n: llamada a la BIOS o al sistema (int 0x10 = vídeo, int 0x13 = disco, int 0x16 = teclado).
+    function interrupt(n: number): Assembler { return db(0xCD, n & 0xFF) }
+    function lodsb(): Assembler { return db(0xAC) }
+    function stosb(): Assembler { return db(0xAA) }
+    function cli(): Assembler { return db(0xFA) }
+    function sti(): Assembler { return db(0xFB) }
+    function hlt(): Assembler { return db(0xF4) }
+    function nop(): Assembler { return db(0x90) }
+
+    /// Atajo: imprime un texto terminado en 0 con la BIOS (usa si, al y ah).
+    function printString(etiqueta: text): Assembler {
+        var id = "__print" + str(code.length)
+        movReg16("si", etiqueta)
+        label(id)
+        lodsb()
+        orReg8("al", "al")
+        jz(id + "_fin")
+        movReg8("ah", 0x0E)
+        interrupt(0x10)
+        jmp(id)
+        return label(id + "_fin")
+    }
+
+    /// Código máquina final con todas las etiquetas resueltas.
+    function build(): Bytes {
+        var out = code.copy()
+        foreach f in fixups {
+            var destino = labels.get(f.label)
+            if destino == null { throw Error("la etiqueta '${f.label}' no existe") }
+            if f.kind == "abs16" {
+                out.writeU16(f.at, destino & 0xFFFF)
+            } else if f.kind == "rel8" {
+                var d = destino - (origin + f.at + 1)
+                if d < -128 or d > 127 { throw Error("el salto a '${f.label}' es demasiado largo para un salto corto (${d} bytes); usa jmpNear") }
+                out[f.at] = d & 0xFF
+            } else {
+                out.writeU16(f.at, (destino - (origin + f.at + 2)) & 0xFFFF)
+            }
+        }
+        return out
+    }
+}
+
+/// Sector de arranque de 512 bytes: el código, relleno con ceros y la firma 0x55 0xAA que busca la BIOS.
+function bootSector(asm: Assembler): Bytes {
+    var b = asm.build()
+    if b.length > 510 { throw Error("el código no cabe en un sector de arranque (máximo 510 bytes, tiene ${b.length})") }
+    return b.resize(510).push(0x55, 0xAA)
+}

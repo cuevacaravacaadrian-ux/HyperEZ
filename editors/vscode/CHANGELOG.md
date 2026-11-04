@@ -1,5 +1,14 @@
 # Cambios
 
+## 0.6.0
+
+- Página de bienvenida **Empezar con HyperEZ**, con un tutorial en cinco pasos (se abre la primera vez).
+- Tema de color **HyperEZ Noche**.
+- *Nuevo proyecto* pregunta el tipo: juego, aplicación, inteligencia artificial o herramienta.
+- Comandos nuevos: *Nuevo archivo HyperEZ*, *Abrir la guía del lenguaje*, *Abrir los ejemplos*, *Empezar con HyperEZ*.
+- 14 fragmentos nuevos: servidor web, red neuronal, imagen, sonido, base de datos, HTTP, expresiones regulares, procesos, CSV, argumentos, operadores y sector de arranque.
+- Resaltado de los textos `r"..."` y de los módulos nuevos (`Http`, `Image`, `Matrix`, `Regex`, `Bytes`, `Process`...).
+
 ## 0.5.0
 
 - Comando *Ejecutar y repetir al guardar* (Ctrl+Alt+F5): usa `hyper watch`.

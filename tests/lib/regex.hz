@@ -1,0 +1,41 @@
+// Regex y textos r"..." (sin escapes).
+
+test("textos r\"...\"", () => {
+    assertEqual(r"\d+\n", "\\d+\\n")
+    assertEqual(r"C:\Users\ana".length, 12)
+    assertEqual(r"${no se interpola}", "$" + "{no se interpola}")
+    assertEqual(r'comillas "dobles" dentro', "comillas \"dobles\" dentro")
+})
+
+test("buscar y validar", () => {
+    var email = Regex(r"^[\w.]+@[\w]+\.[a-z]{2,}$")
+    assertEqual(email.matches("ana.garcia@correo.es"), true)
+    assertEqual(email.matches("no es un correo"), false)
+    var num = Regex(r"\d+")
+    assertEqual(num.test("tengo 3 gatos"), true)
+    assertEqual(num.test("ninguno"), false)
+    var m = num.find("año 2026, día 3")
+    assertEqual([m.text, m.start, m.end], ["2026", 4, 8])
+    assertEqual(num.find("año 2026, día 3", 8).text, "3")
+    assertEqual(num.find("nada"), null)
+    assertEqual(num.findAll("1 22 333").map(x => x.text), ["1", "22", "333"])
+})
+
+test("grupos", () => {
+    var fecha = Regex(r"(\d{2})/(\d{2})/(\d{4})")
+    var m = fecha.find("Nací el 03/11/2026.")
+    assertEqual(m.groups, ["03", "11", "2026"])
+    assertEqual(fecha.replace("03/11/2026", "$3-$2-$1"), "2026-11-03")
+})
+
+test("reemplazar y dividir", () => {
+    assertEqual(Regex(r"\s+").replace("a   b \t c", " "), "a b c")
+    assertEqual(Regex(r"o").replace("foo", "0", false), "f0o")
+    assertEqual(Regex(r"\d+").replace("x1 y22", m => "[" + str(toNumber(m.text) * 2) + "]"), "x[2] y[44]")
+    assertEqual(Regex(r"\s*[,;]\s*").split("a , b;c ;d"), ["a", "b", "c", "d"])
+    assertEqual(Regex("HOLA", "i").test("hola mundo"), true)
+    assertEqual(Regex.escape("1+1=2?"), "1\\+1=2\\?")
+    assertEqual("abc123".matches(r"\d"), true)
+    assertEqual("v1.2.3".replaceRegex(r"\d", "#"), "v#.#.#")
+    assertThrows(() => Regex("(sin cerrar"))
+})

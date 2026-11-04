@@ -10,7 +10,7 @@
 // Qué hace: copia bin\hyper.exe, ejemplos, documentación e iconos en %LOCALAPPDATA%\Programs\HyperEZ,
 // asocia .hz/.hez (icono, doble clic = ejecutar, Editar, Comprobar), añade bin al PATH del usuario,
 // crea accesos directos, instala la extensión de VS Code y se registra en "Aplicaciones instaladas".
-#include "../../src/tools/winshell.h"
+#include "../../src/tools/platform/winshell.h"
 #include "../../src/core/version.h"
 
 #include <commctrl.h>
@@ -338,7 +338,10 @@ static bool doInstall() {
     setValue(HKEY_CURRENT_USER, uk, L"InstallLocation", dir);
     setValue(HKEY_CURRENT_USER, uk, L"UninstallString", L"\"" + uninst + L"\" /uninstall");
     setValue(HKEY_CURRENT_USER, uk, L"QuietUninstallString", L"\"" + uninst + L"\" /uninstall /S");
-    setValue(HKEY_CURRENT_USER, uk, L"Comments", L"Lenguaje de programación sencillo para aprender y crear juegos");
+    setValue(HKEY_CURRENT_USER, uk, L"Comments", L"Lenguaje de programación en español para hacer de todo");
+    setValue(HKEY_CURRENT_USER, uk, L"URLInfoAbout", widen(HYPEREZ_REPO_URL));
+    setValue(HKEY_CURRENT_USER, uk, L"HelpLink", widen(HYPEREZ_REPO_URL) + L"/blob/main/docs/README.md");
+    setValue(HKEY_CURRENT_USER, uk, L"URLUpdateInfo", widen(HYPEREZ_REPO_URL) + L"/releases");
     setDword(HKEY_CURRENT_USER, uk, L"EstimatedSize", (DWORD)dirSizeKB(files));
     setDword(HKEY_CURRENT_USER, uk, L"NoModify", 1);
     setDword(HKEY_CURRENT_USER, uk, L"NoRepair", 1);
@@ -454,9 +457,9 @@ static void scheduleSelfDelete() {
 // Interfaz gráfica
 // ---------------------------------------------------------------------------
 
-enum { ID_DIR = 100, ID_BROWSE, ID_ASSOC, ID_PATH, ID_SHORTCUTS, ID_VSCODE, ID_PROGRESS, ID_STATUS, ID_INSTALL, ID_CANCEL };
+enum { ID_DIR = 100, ID_BROWSE, ID_ASSOC, ID_PATH, ID_SHORTCUTS, ID_VSCODE, ID_PROGRESS, ID_STATUS, ID_INSTALL, ID_CANCEL, ID_REPL };
 
-static HWND g_wnd, g_dirEdit, g_progressBar, g_statusText, g_installBtn, g_cancelBtn;
+static HWND g_wnd, g_dirEdit, g_progressBar, g_statusText, g_installBtn, g_cancelBtn, g_replBtn;
 static HWND g_checks[4];
 static HFONT g_font, g_titleFont;
 static HICON g_logo;
@@ -550,6 +553,8 @@ static LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             SendMessageW(g_progressBar, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
             ShowWindow(g_progressBar, SW_HIDE);
             g_statusText = control(L"STATIC", L"", SS_ENDELLIPSIS, 24, 306, 514, 20, ID_STATUS);
+            g_replBtn = control(L"BUTTON", L"Abrir la consola", WS_TABSTOP | BS_PUSHBUTTON, 216, 340, 124, 30, ID_REPL);
+            ShowWindow(g_replBtn, SW_HIDE);
             g_installBtn = control(L"BUTTON", L"Instalar", WS_TABSTOP | BS_DEFPUSHBUTTON, 346, 340, 96, 30, ID_INSTALL);
             g_cancelBtn = control(L"BUTTON", L"Cancelar", WS_TABSTOP | BS_PUSHBUTTON, 448, 340, 90, 30, ID_CANCEL);
             SetFocus(g_installBtn);
@@ -560,20 +565,28 @@ static LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             HDC dc = BeginPaint(h, &ps);
             RECT rc;
             GetClientRect(h, &rc);
-            RECT head = {0, 0, rc.right, S(88)};
-            FillRect(dc, &head, (HBRUSH)GetStockObject(WHITE_BRUSH));
-            RECT line = {0, S(88), rc.right, S(89)};
-            HBRUSH gray = CreateSolidBrush(RGB(220, 222, 226));
-            FillRect(dc, &line, gray);
-            DeleteObject(gray);
+            // Cabecera con los colores de la marca: degradado de azul noche
+            int headH = S(88);
+            for (int y = 0; y < headH; y++) {
+                double f = (double)y / headH;
+                HBRUSH b = CreateSolidBrush(RGB((int)(13 + 12 * f), (int)(17 + 14 * f), (int)(36 + 34 * f)));
+                RECT band = {0, y, rc.right, y + 1};
+                FillRect(dc, &band, b);
+                DeleteObject(b);
+            }
+            RECT line = {0, headH, rc.right, headH + S(3)};
+            HBRUSH accent = CreateSolidBrush(RGB(47, 129, 247));
+            FillRect(dc, &line, accent);
+            DeleteObject(accent);
             if (g_logo) DrawIconEx(dc, S(24), S(16), g_logo, S(56), S(56), 0, nullptr, DI_NORMAL);
             SetBkMode(dc, TRANSPARENT);
             HGDIOBJ old = SelectObject(dc, g_titleFont);
+            SetTextColor(dc, RGB(255, 255, 255));
             std::wstring title = L"HyperEZ " + widen(HYPEREZ_VERSION);
-            TextOutW(dc, S(96), S(18), title.c_str(), (int)title.size());
+            TextOutW(dc, S(96), S(16), title.c_str(), (int)title.size());
             SelectObject(dc, g_font);
-            SetTextColor(dc, RGB(90, 96, 106));
-            const wchar_t* sub = L"Lenguaje de programación sencillo para aprender y crear juegos";
+            SetTextColor(dc, RGB(170, 192, 235));
+            const wchar_t* sub = L"Programa en español: juegos, IA, web, datos, gráficos y más";
             TextOutW(dc, S(96), S(52), sub, (int)wcslen(sub));
             SelectObject(dc, old);
             EndPaint(h, &ps);
@@ -587,6 +600,12 @@ static LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_COMMAND:
             switch (LOWORD(wp)) {
                 case ID_BROWSE: browseFolder(); return 0;
+                case ID_REPL: {
+                    // consola interactiva en una ventana nueva, en la carpeta del usuario
+                    std::wstring exe = g_opt.dir + L"\\bin\\hyper.exe";
+                    ShellExecuteW(nullptr, L"open", exe.c_str(), L"repl", knownFolder(FOLDERID_Profile).c_str(), SW_SHOWNORMAL);
+                    return 0;
+                }
                 case ID_INSTALL:
                     if (g_done) { openExamples(); DestroyWindow(h); }
                     else if (!g_busy) startInstall();
@@ -607,11 +626,15 @@ static LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             if (wp) {
                 g_done = true;
                 SetWindowTextW(g_installBtn, L"Abrir ejemplos");
+                ShowWindow(g_replBtn, SW_SHOW);
                 SetWindowTextW(g_cancelBtn, L"Cerrar");
                 EnableWindow(g_installBtn, TRUE);
                 EnableWindow(g_cancelBtn, TRUE);
                 std::wstring msg = L"HyperEZ se ha instalado en:\n" + g_opt.dir +
-                                   L"\n\n• Haz doble clic en un archivo .hz para ejecutarlo.\n• Abre una terminal nueva y escribe:  hyper help\n• En VS Code, abre un .hz y pulsa F5.";
+                                   L"\n\n• Doble clic en un archivo .hz para ejecutarlo."
+                                   L"\n• En una terminal nueva:  hyper  (consola interactiva)  ·  hyper new mi-juego"
+                                   L"\n• En VS Code: F5 ejecuta y Ctrl+Alt+F5 repite cada vez que guardas."
+                                   L"\n• Clic derecho en una carpeta → Abrir HyperEZ aquí.";
                 for (auto& w : g_warnings) msg += L"\n\nAviso: " + w;
                 MessageBoxW(h, msg.c_str(), L"Instalación completada", MB_ICONINFORMATION);
             } else {

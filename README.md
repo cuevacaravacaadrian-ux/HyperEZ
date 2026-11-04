@@ -1,18 +1,24 @@
 <p align="center">
-  <img src="assets/icons/hyperez-256.png" width="120" alt="Logotipo de HyperEZ">
-</p>
-
-<h1 align="center">HyperEZ</h1>
-
-<p align="center">
-  Un lenguaje de programación sencillo, con mensajes en español, para aprender a programar y crear juegos.
+  <img src="assets/branding/banner.png" alt="HyperEZ: programa en español. Juegos, IA, web, datos y más." width="100%">
 </p>
 
 <p align="center">
   <a href="https://github.com/cuevacaravacaadrian-ux/HyperEZ/actions/workflows/ci.yml"><img src="https://github.com/cuevacaravacaadrian-ux/HyperEZ/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest"><img src="https://img.shields.io/github/v/release/cuevacaravacaadrian-ux/HyperEZ?label=descargar" alt="Última versión"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/licencia-MIT-blue" alt="Licencia MIT"></a>
+  <a href="https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest"><img src="https://img.shields.io/github/v/release/cuevacaravacaadrian-ux/HyperEZ?label=descargar&color=2f81f7" alt="Última versión"></a>
+  <img src="https://img.shields.io/badge/Windows%20%C2%B7%20Linux%20%C2%B7%20macOS-0f1424" alt="Windows, Linux y macOS">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licencia-MIT-7ee787" alt="Licencia MIT"></a>
 </p>
+
+<p align="center">
+  <a href="docs/empezar/instalacion.md"><b>Instalar</b></a> ·
+  <a href="docs/empezar/primeros-pasos.md"><b>Primeros pasos</b></a> ·
+  <a href="docs/GUIA.md"><b>Guía</b></a> ·
+  <a href="docs/README.md"><b>Documentación</b></a> ·
+  <a href="examples"><b>Ejemplos</b></a> ·
+  <a href="docs/hoja-de-ruta.md"><b>Hoja de ruta</b></a>
+</p>
+
+**HyperEZ** es un lenguaje de programación con mensajes en español, pensado para aprender a programar y para hacer de todo: juegos, inteligencia artificial, webs, análisis de datos, gráficos, sonido, scripts del sistema y herramientas de bajo nivel. Todo cabe en un único ejecutable, `hyper`, sin nada más que instalar.
 
 ```hz
 class Jugador {
@@ -26,7 +32,7 @@ var ana = Jugador("Ana")
 print("¡Hola, ${ana.nombre}! Vidas: ${ana.vida}")
 ```
 
-Los programas se guardan en archivos `.hz` (o `.hez`). Si te equivocas, HyperEZ te lo dice en español y te sugiere cómo arreglarlo:
+Si te equivocas, HyperEZ te lo dice en español antes de ejecutar y te propone el arreglo:
 
 ```text
 error[E0205]: No existe nada llamado 'pirnt'
@@ -36,105 +42,180 @@ error[E0205]: No existe nada llamado 'pirnt'
    = ayuda: ¿quisiste decir 'print'?
 ```
 
-## Qué incluye
+## 🚀 Instalar
 
-- **Un lenguaje completo**: variables con tipos opcionales, funciones, clases, structs, enums, interfaces, `match`, errores con `try`/`catch`, eventos (`event`/`on`/`emit`), tareas asíncronas (`async`/`await`), módulos y pruebas integradas.
-- **Biblioteca para juegos de consola**: teclas sin pulsar Intro, colores, cursor, vectores (`Vec2`, `Vec3`), colores, números aleatorios, archivos y JSON para guardar partidas.
-- **Resultados al instante**: consola interactiva, modo *watch* que vuelve a ejecutar al guardar y **F5** en VS Code.
-- **Extensión de Visual Studio Code**: errores mientras escribes, autocompletado según el tipo, documentación al pasar el ratón, ir a la definición, renombrar, arreglos rápidos y fragmentos en español.
-- **Instalador para Windows**: asocia `.hz` y `.hez` con su icono (doble clic para ejecutar), añade `hyper` al `PATH` e instala la extensión de VS Code. No necesita permisos de administrador.
-
-## Instalar
-
-1. Descarga **`HyperEZ-Setup-0.5.0.exe`** de la [última versión](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest).
-2. Ejecútalo y pulsa **Instalar**. Si Windows SmartScreen avisa ("Windows protegió su PC"), pulsa *Más información → Ejecutar de todas formas*: el instalador no está firmado.
-3. Abre una terminal nueva y comprueba que funciona: `hyper version`.
-
-El instalador copia HyperEZ en `%LOCALAPPDATA%\Programs\HyperEZ`, asocia `.hz`/`.hez`, añade `hyper` al `PATH`, crea accesos en el menú Inicio e instala la extensión si tienes VS Code. Se desinstala desde *Configuración → Aplicaciones*. Para una instalación silenciosa: `HyperEZ-Setup-0.5.0.exe /S` (opciones `/D=carpeta`, `/NOASSOC`, `/NOPATH`, `/NOSHORTCUTS`, `/NOVSCODE`).
-
-## Empezar en un minuto
-
-**Con VS Code** (lo más cómodo): crea `hola.hz`, escribe `print("¡Hola!")` y pulsa **F5**. Con **Ctrl+Alt+F5** el programa se vuelve a ejecutar cada vez que guardas.
-
-**Con la consola interactiva**: escribe `hyper` en una terminal (o abre *HyperEZ (consola interactiva)* en el menú Inicio) y prueba código línea a línea. Lo que defines se conserva:
-
-```text
-hz> var vidas = 3
-hz> vidas * 10
-30
-hz> function doble(n: number): number { return n * 2 }
-hz> doble(vidas)
-6
-hz> .guardar prueba.hz
-✓ Guardado en prueba.hz (ejecútalo con: hyper prueba.hz)
-```
-
-**Con un proyecto**:
-
-```text
-hyper new mi-juego      crea un proyecto con un juego de ejemplo y sus pruebas
-cd mi-juego
-hyper watch             ejecuta main.hz y lo repite cada vez que guardas
-hyper test              ejecuta las pruebas de tests/
-```
-
-| Comando | Qué hace |
+| Sistema | Cómo |
 |---|---|
-| `hyper` | Consola interactiva (también `hyper repl`) |
-| `hyper archivo.hz [args]` | Ejecuta un programa (`System.args` recibe los argumentos) |
-| `hyper watch [archivo.hz]` | Ejecuta y vuelve a ejecutar cada vez que guardas un `.hz` |
-| `hyper check <archivos o carpetas>` | Busca errores sin ejecutar |
-| `hyper test [carpeta]` | Ejecuta las pruebas; si hay un `.out` al lado, compara la salida |
-| `hyper new <nombre>` | Crea un proyecto |
-| `hyper docs [salida.md]` | Genera la referencia completa de la API |
-| `hyper lsp` | Servidor de lenguaje para editores |
-| `hyper register` / `unregister` | Asocia (o desasocia) `.hz`/`.hez` con ese `hyper.exe` |
+| **Windows** | Descarga y ejecuta **`HyperEZ-Setup-0.6.0.exe`** de la [última versión](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest). No necesita administrador. |
+| **Linux / macOS** | Descarga `HyperEZ-0.6.0-linux-x64.tar.gz` (o `macos-arm64`), descomprímelo y ejecuta `sh install.sh`. |
+| **VS Code** | Lo instala el instalador de Windows; también `code --install-extension hyperez-0.6.0.vsix`. |
 
-## Aprender
+En Windows, los archivos `.hz` y `.hez` se abren **siempre** con HyperEZ: doble clic para ejecutarlos y, con el clic derecho, *Editar con VS Code*, *Comprobar errores*, *Ejecutar y repetir al guardar* o *Abrir HyperEZ aquí*. Más detalles en la [guía de instalación](docs/empezar/instalacion.md).
 
-- [Guía del lenguaje](docs/GUIA.md): recorrido completo con ejemplos que puedes copiar.
-- [Ejemplos](examples/): serpiente, tres en raya con una IA que nunca pierde, una mazmorra por turnos y adivina el número.
-- `hyper docs API.md`: referencia de todas las funciones, clases y módulos.
+## ⚡ Resultados al instante
 
-## Compilar desde el código
-
-Requisitos: Windows, [MSYS2](https://www.msys2.org/) con GCC, CMake y Ninja de UCRT64, Python 3 y Node.js 20+ (para la extensión).
+| Forma | Cómo |
+|---|---|
+| **Consola interactiva** | escribe `hyper`: cada línea se ejecuta al pulsar Intro y lo que defines se conserva |
+| **Modo watch** | `hyper watch juego.hz` (o **Ctrl+Alt+F5** en VS Code) vuelve a ejecutar cada vez que guardas |
+| **VS Code** | **F5** ejecuta; errores, autocompletado y documentación mientras escribes |
+| **Proyectos** | `hyper new mi-juego --tipo juego\|app\|ia\|script` crea una carpeta ordenada que funciona desde el primer momento |
 
 ```text
-pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+hz> var precios = [3.5, 12, 7.25]
+hz> precios.sum()
+22.75
+hz> precios.map(p => round(p * 1.21, 2))
+[4.24, 14.52, 8.77]
 ```
+
+## 🧰 Qué se puede hacer
+
+<table>
+<tr><td width="50%" valign="top">
+
+**🎮 Juegos de consola**
+```hz
+var pos = Vec2(0, 0)
+foreach tecla in ["right", "right", "down"] {
+    pos = pos + match tecla {
+        "right" => Vec2(1, 0)
+        "down" => Vec2(0, 1)
+        else => Vec2(0, 0)
+    }
+}
+print("El héroe está en", pos)
+```
+
+</td><td width="50%" valign="top">
+
+**🧠 Inteligencia artificial**
+```hz
+import ai
+randomSeed(1)
+var red = ai.NeuralNetwork([2, 8, 1], "tanh")
+var X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+red.train(X, [[0], [1], [1], [0]], 2000, 0.5)
+print("XOR aprendido:", red.classify(X))
+```
+
+</td></tr>
+<tr><td valign="top">
+
+**🌐 Webs y APIs**
+```hz
+import web
+var app = web.App()
+app.get("/hola/:nombre", req => "Hola, " + req.params.nombre)
+print(app.handle(web.request("GET", "/hola/Ana")))
+// app.listen(8080) para servirla de verdad
+```
+
+</td><td valign="top">
+
+**📊 Datos y estadística**
+```hz
+import csv
+import stats
+var filas = csv.parse("mes,ventas\nene,120\nfeb,95\nmar,160")
+var ventas = filas.map(f => f.ventas)
+print(stats.mean(ventas), stats.median(ventas), stats.stdev(ventas))
+```
+
+</td></tr>
+<tr><td valign="top">
+
+**🖼️ Gráficos y 🔊 sonido**
+```hz
+import audio
+var im = Image(200, 100, "#0f1424")
+im.circle(100, 50, 30, "#2f81f7")
+im.text(10, 75, "HyperEZ", "white", 16)
+im.save(Path.join(Path.temp, "logo.png"))
+audio.Sound().melody("C4 E4 G4", 0.2).save(Path.join(Path.temp, "do-mi-sol.wav"))
+print("imagen y sonido creados")
+```
+
+</td><td valign="top">
+
+**⚙️ Sistema y bajo nivel**
+```hz
+var r = Process.run(System.exe, ["version"])
+print(r.output.lines()[0])
+var b = Bytes("HZS1").pushU16(2).pushU32(15)
+print(b.toHex(" "), Hash.crc32(b))
+print((255).toHex(), Regex(r"\d+").findAll("1 22 333").length)
+```
+
+</td></tr>
+</table>
+
+Y además: archivos y rutas, fechas, JSON, base de datos de documentos, expresiones regulares, compresión, peticiones HTTPS, servidor web, matrices en C++, ensamblador x86 para sectores de arranque, pruebas integradas, eventos y tareas `async`/`await`. Mira el [mapa de la biblioteca](docs/biblioteca/README.md) y los [ejemplos por áreas](examples).
+
+## ✨ El lenguaje
+
+- **Tipos opcionales** (tipado gradual): escríbelos cuando ayuden; si no, HyperEZ deduce muchos solo.
+- **Clases, structs, interfaces y enums**, herencia, propiedades `get`/`set`, sobrecarga de operadores.
+- **`match`** con valores, rangos, guardas y bloques.
+- **Funciones** con valores por defecto, argumentos con nombre, `...resto`, lambdas y clausuras.
+- **Desestructuración**: `var [a, b] = lista`, `var {nombre, vida} = jugador`.
+- **Errores** con `try`/`catch`/`finally` y tipos de error propios.
+- **Eventos** (`event`, `on`, `emit`) y **tareas asíncronas** (`async`, `await`, `spawn`).
+- **Módulos** con `import` y bibliotecas incluidas.
+
+Toda la sintaxis está en la [referencia del lenguaje](docs/lenguaje/README.md), con su [gramática](docs/lenguaje/gramatica.md).
+
+## 🛠️ Herramientas
+
+| Orden | Qué hace |
+|---|---|
+| `hyper` | consola interactiva |
+| `hyper archivo.hz` | ejecuta un programa |
+| `hyper watch [archivo.hz]` | ejecuta y repite al guardar |
+| `hyper check` | busca errores sin ejecutar |
+| `hyper test` | ejecuta las pruebas (`test(...)` y salidas esperadas `.out`) |
+| `hyper new <nombre> --tipo T` | crea un proyecto |
+| `hyper docs` | genera la referencia de la API |
+| `hyper lsp` | servidor de lenguaje para cualquier editor |
+
+La **extensión de VS Code** trae errores en vivo, autocompletado según el tipo, documentación al pasar el ratón, ir a la definición, renombrar, arreglos rápidos, 40 fragmentos, el tema *HyperEZ Noche* y un tutorial de bienvenida. Ver [VS Code](docs/herramientas/vscode.md).
+
+## 🏎️ Rendimiento
+
+Bytecode en una máquina virtual optimizada: cachés en línea, instrucciones fusionadas, llamadas directas, asignador de objetos propio y compilación con LTO y PGO. Lo pesado (matrices, imágenes, expresiones regulares, compresión, HTTP) va en C++. Los números están en [rendimiento](docs/interno/rendimiento.md).
+
+## 🧑‍💻 Compilar desde el código
 
 ```powershell
-./build.ps1            # compila (con PGO), pasa las pruebas, empaqueta la extensión y crea el instalador
-./build.ps1 -NoPGO     # compilación más rápida, sin optimización guiada por perfil
-./build.ps1 -SkipVsix  # sin la extensión de VS Code
+./build.ps1              # Windows: compila (con PGO), pasa las pruebas, empaqueta la extensión y crea el instalador
 ```
-
-El resultado queda en `dist/`. Paso a paso, sin el script:
 
 ```text
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build                 # hyper.exe y el instalador
-ctest --test-dir build              # pruebas
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release     # Linux y macOS
+cmake --build build && ctest --test-dir build
 ```
 
-## Estructura
+Requisitos y detalles en [CONTRIBUTING.md](CONTRIBUTING.md). Cómo está hecho por dentro: [arquitectura](docs/interno/arquitectura.md).
+
+## 📁 Estructura del repositorio
 
 | Carpeta | Contenido |
 |---|---|
-| `src/core` | Utilidades comunes (texto, UTF-8, archivos, consola) |
-| `src/lang` | Lexer, parser, analizador (tipos graduales), generador de bytecode, VM con GC, fibras async y eventos, biblioteca estándar |
-| `src/tools` | La herramienta `hyper`: CLI, consola interactiva, modo watch, servidor de lenguaje, integración con Windows |
-| `editors/vscode` | Extensión de VS Code |
-| `packaging` | Iconos e instalador de Windows |
-| `tests` | Pruebas del lenguaje (`hyper test tests`) y benchmarks |
-| `examples` | Ejemplos |
-| `tools` | Scripts de mantenimiento (versión, documentación, usuario de GitHub) |
+| [`src/core`](src/core) | utilidades comunes: texto, UTF-8, archivos, consola, procesos |
+| [`src/lang`](src/lang) | el lenguaje: `syntax` (lexer, parser), `sema` (analizador), `compiler` (bytecode), `vm` (máquina virtual), `stdlib` (biblioteca nativa), `prelude` |
+| [`src/lib`](src/lib) | bibliotecas escritas en HyperEZ: `ai`, `stats`, `csv`, `cli`, `web`, `html`, `db`, `audio`, `x86` |
+| [`src/tools`](src/tools) | la orden `hyper`: CLI, consola interactiva, watch, servidor de lenguaje, integración con el sistema |
+| [`editors/vscode`](editors/vscode) | extensión de VS Code |
+| [`packaging`](packaging) | instalador de Windows, paquetes de Linux y macOS, iconos |
+| [`examples`](examples) | ejemplos por áreas: juegos, IA, datos, web, gráficos, audio, sistema, sistemas operativos... |
+| [`tests`](tests) | pruebas del lenguaje, las bibliotecas, la consola y los errores |
+| [`docs`](docs) | documentación completa |
+| [`tools`](tools) | scripts de mantenimiento |
 
-## Contribuir
+## 🤝 Contribuir
 
-Las ideas, los avisos de errores y los cambios son bienvenidos. Lee [CONTRIBUTING.md](CONTRIBUTING.md) para compilar, probar y enviar cambios.
+Las ideas, los avisos de errores y los cambios son bienvenidos: lee [CONTRIBUTING.md](CONTRIBUTING.md) y el [código de conducta](CODE_OF_CONDUCT.md). Para dudas, [SUPPORT.md](SUPPORT.md).
 
-## Licencia
+## 📄 Licencia
 
-[MIT](LICENSE) © 2026 Adrián Cueva Caravaca. Las bibliotecas de `third_party/` mantienen sus propias licencias.
+[MIT](LICENSE) © 2026 Adrián Cueva Caravaca. Las bibliotecas de `third_party/` y la fuente DejaVu mantienen sus propias licencias.

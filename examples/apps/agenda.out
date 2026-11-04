@@ -1,0 +1,14 @@
+nombre       teléfono     email
+-----------  -----------  -----------------
+Andrés Gil   611 333 444  andres@correo.es
+Lucía Pérez  600 111 222  lucia@correo.es
+Marta Ruiz   622 555 666  marta@empresa.com
+
+Buscar 'correo':
+nombre       teléfono     email
+-----------  -----------  ----------------
+Andrés Gil   611 333 444  andres@correo.es
+Lucía Pérez  600 111 222  lucia@correo.es
+
+Borrar a Andrés: true
+Al volver a abrir la agenda hay 2 contactos guardados

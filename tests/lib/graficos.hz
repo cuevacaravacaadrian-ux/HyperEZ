@@ -1,0 +1,83 @@
+// Image y compresión de Bytes. (Los nombres de color como "red" son la paleta de HyperEZ; aquí se usan colores exactos.)
+
+test("crear, pintar y leer píxeles", () => {
+    var im = Image(20, 10, "white")
+    assertEqual([im.width, im.height], [20, 10])
+    assertEqual(im.get(0, 0), Color(255, 255, 255, 255))
+    im.set(3, 4, Color(255, 0, 0))
+    assertEqual(im.get(3, 4), Color(255, 0, 0, 255))
+    im.rect(10, 0, 5, 5, "#0000ff")
+    assertEqual(im.get(12, 2), Color(0, 0, 255, 255))
+    im.fill(Color(0, 0, 0, 0))
+    assertEqual(im.get(12, 2).a, 0)
+    assertThrows(() => im.get(50, 50))
+    assertThrows(() => Image(0, 10))
+})
+
+test("transparencia, líneas y círculos", () => {
+    var im = Image(10, 10, "black")
+    im.rect(0, 0, 10, 10, Color(255, 255, 255, 128))   // blanco al 50 % sobre negro
+    var p = im.get(5, 5)
+    assert(abs(p.r - 128) <= 1, "mezcla al 50 %: ${p.r}")
+    var c = Image(21, 21, "black").circle(10, 10, 8, "#ff0000")
+    assertEqual(c.get(10, 10), Color(255, 0, 0, 255))
+    assertEqual(c.get(0, 0), Color(0, 0, 0, 255))
+    var l = Image(10, 10).line(0, 5, 9, 5, "#00ff00", 1)
+    assert(l.get(5, 5).g > 200, "la línea pasa por el centro")
+})
+
+test("texto con la fuente incluida", () => {
+    var im = Image(200, 40, "black")
+    var ancho = im.text(5, 5, "HyperEZ ñ", "white", 24)
+    assert(ancho > 60 and ancho < 190, "ancho del texto: ${ancho}")
+    assertEqual(round(Image.textWidth("HyperEZ ñ", 24)), round(ancho))
+    var blancos = 0
+    for x in 0..200 {
+        for y in 0..40 { if im.get(x, y).r > 200 { blancos += 1 } }
+    }
+    assert(blancos > 100, "se dibujaron letras (${blancos} píxeles)")
+})
+
+test("transformaciones", () => {
+    var im = Image(4, 2, "black")
+    im.set(0, 0, "#ff0000")
+    var f = im.copy().flipH()
+    assertEqual(f.get(3, 0), Color(255, 0, 0, 255))
+    assertEqual(im.copy().flipV().get(0, 1), Color(255, 0, 0, 255))
+    assertEqual(im.crop(0, 0, 2, 2).width, 2)
+    var r = im.resize(8, 4, false)
+    assertEqual([r.width, r.height], [8, 4])
+    assertEqual(r.get(1, 1), Color(255, 0, 0, 255))
+    var g = Image(1, 1, Color(255, 0, 0)).grayscale().get(0, 0)
+    assertEqual([g.r, g.g, g.b], [76, 76, 76])
+    assertEqual(Image(1, 1, "white").invert().get(0, 0), Color(0, 0, 0, 255))
+    var base = Image(4, 4, "white").paste(Image(2, 2, "#0000ff"), 1, 1)
+    assertEqual(base.get(2, 2), Color(0, 0, 255, 255))
+    assertEqual(base.get(0, 0), Color(255, 255, 255, 255))
+})
+
+test("guardar y cargar PNG, BMP y JPG", () => {
+    var im = Image(16, 8, "#000080")
+    im.circle(8, 4, 3, "#ffff00")
+    foreach ext in ["png", "bmp", "tga", "jpg"] {
+        var ruta = Path.join(Path.temp, "hz_img_" + str(Process.pid) + "." + ext)
+        im.save(ruta)
+        var otra = Image.load(ruta)
+        assertEqual([otra.width, otra.height], [16, 8])
+        if ext != "jpg" { assertEqual(otra.get(8, 4), im.get(8, 4)) }
+        File.delete(ruta)
+    }
+    var bytes = im.pixels()
+    assertEqual(bytes.length, 16 * 8 * 4)
+    assertEqual(Image.fromBytes(16, 8, bytes).get(8, 4), im.get(8, 4))
+    assertThrows(() => im.save("imagen.xyz"))
+})
+
+test("comprimir y descomprimir", () => {
+    var datos = Bytes("HyperEZ " * 200)
+    var z = datos.compress()
+    assert(z.length < datos.length / 10, "comprime texto repetido: ${z.length} bytes")
+    assertEqual(z.decompress().toText(), "HyperEZ " * 200)
+    assertEqual(Bytes([1, 2, 3]).compress(9).decompress().toList(), [1, 2, 3])
+    assertThrows(() => Bytes("no comprimido").decompress())
+})

@@ -1,8 +1,8 @@
 {
   "name": "hyperez",
   "displayName": "HyperEZ",
-  "description": "Soporte completo para el lenguaje HyperEZ: resaltado, errores en vivo, autocompletado, documentación al pasar el ratón, renombrar, fragmentos, ejecución con F5, modo watch y consola interactiva.",
-  "version": "0.5.0",
+  "description": "Lenguaje de programación en español para hacer de todo: juegos, IA, web, datos, gráficos y sistemas. Errores en vivo, autocompletado, F5 para ejecutar, modo watch, consola interactiva, tema y tutorial.",
+  "version": "0.6.0",
   "publisher": "hyperez",
   "license": "MIT",
   "author": {
@@ -19,7 +19,7 @@
   "homepage": "https://github.com/cuevacaravacaadrian-ux/HyperEZ#readme",
   "icon": "icons/hyperez-128.png",
   "galleryBanner": {
-    "color": "#111111",
+    "color": "#0f1424",
     "theme": "dark"
   },
   "engines": {
@@ -29,21 +29,32 @@
     "Programming Languages",
     "Snippets",
     "Linters",
-    "Formatters"
+    "Themes",
+    "Education",
+    "Testing"
   ],
   "keywords": [
     "hyperez",
     "hz",
     "hez",
     "español",
+    "spanish",
+    "aprender",
+    "educación",
     "juegos",
-    "aprender"
+    "games",
+    "ia",
+    "inteligencia artificial",
+    "lenguaje",
+    "language server",
+    "repl"
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
     "onLanguage:hyperez",
     "workspaceContains:**/*.hz",
-    "workspaceContains:**/*.hez"
+    "workspaceContains:**/*.hez",
+    "onStartupFinished"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -145,6 +156,30 @@
         "command": "hyperez.showVersion",
         "title": "Mostrar versión",
         "category": "HyperEZ"
+      },
+      {
+        "command": "hyperez.newFile",
+        "title": "Nuevo archivo HyperEZ",
+        "category": "HyperEZ",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "hyperez.openWalkthrough",
+        "title": "Empezar con HyperEZ (tutorial)",
+        "category": "HyperEZ",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "hyperez.openGuide",
+        "title": "Abrir la guía del lenguaje",
+        "category": "HyperEZ",
+        "icon": "$(book)"
+      },
+      {
+        "command": "hyperez.openExamples",
+        "title": "Abrir los ejemplos",
+        "category": "HyperEZ",
+        "icon": "$(folder-library)"
       }
     ],
     "menus": {
@@ -178,6 +213,11 @@
         }
       ],
       "explorer/context": [
+        {
+          "command": "hyperez.newFile",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation@9"
+        },
         {
           "command": "hyperez.run",
           "when": "resourceExtname =~ /^\\.(hz|hez)$/",
@@ -311,12 +351,86 @@
           }
         }
       }
+    ],
+    "themes": [
+      {
+        "label": "HyperEZ Noche",
+        "uiTheme": "vs-dark",
+        "path": "./themes/hyperez-noche-color-theme.json"
+      }
+    ],
+    "walkthroughs": [
+      {
+        "id": "empezar",
+        "title": "Empezar con HyperEZ",
+        "description": "Escribe, ejecuta y prueba tu primer programa en HyperEZ en cinco pasos.",
+        "steps": [
+          {
+            "id": "hola",
+            "title": "Escribe tu primer programa",
+            "description": "Crea un archivo .hz y escribe un saludo.\n[Nuevo archivo HyperEZ](command:hyperez.newFile)",
+            "media": {
+              "markdown": "walkthrough/1-hola.md"
+            },
+            "completionEvents": [
+              "onCommand:hyperez.newFile",
+              "onLanguage:hyperez"
+            ]
+          },
+          {
+            "id": "ejecutar",
+            "title": "Ejecútalo con F5",
+            "description": "F5 ejecuta; Ctrl+Alt+F5 vuelve a ejecutar cada vez que guardas.\n[Ejecutar](command:hyperez.run)",
+            "media": {
+              "markdown": "walkthrough/2-ejecutar.md"
+            },
+            "completionEvents": [
+              "onCommand:hyperez.run",
+              "onCommand:hyperez.watch"
+            ]
+          },
+          {
+            "id": "consola",
+            "title": "Prueba la consola interactiva",
+            "description": "Escribe código y ve el resultado al momento.\n[Abrir la consola](command:hyperez.repl)",
+            "media": {
+              "markdown": "walkthrough/3-consola.md"
+            },
+            "completionEvents": [
+              "onCommand:hyperez.repl"
+            ]
+          },
+          {
+            "id": "proyecto",
+            "title": "Crea un proyecto",
+            "description": "Un juego, una app, una IA o una herramienta, con su estructura de carpetas.\n[Nuevo proyecto](command:hyperez.newProject)",
+            "media": {
+              "markdown": "walkthrough/4-proyecto.md"
+            },
+            "completionEvents": [
+              "onCommand:hyperez.newProject"
+            ]
+          },
+          {
+            "id": "aprender",
+            "title": "Sigue aprendiendo",
+            "description": "La guía, la referencia de la API y el tema HyperEZ Noche.\n[Abrir la guía](command:hyperez.openGuide)",
+            "media": {
+              "markdown": "walkthrough/5-aprender.md"
+            },
+            "completionEvents": [
+              "onCommand:hyperez.openGuide",
+              "onCommand:hyperez.showDocs"
+            ]
+          }
+        ]
+      }
     ]
   },
   "scripts": {
     "bundle": "node tools/bundle.js",
     "vscode:prepublish": "node tools/bundle.js",
-    "package": "vsce package --no-dependencies --allow-missing-repository --allow-star-activation -o hyperez-0.5.0.vsix",
+    "package": "vsce package --no-dependencies --allow-missing-repository --allow-star-activation -o hyperez-0.6.0.vsix",
     "test": "node test/grammar.test.js",
     "test:vscode": "node test/runTest.js"
   },
@@ -329,5 +443,7 @@
     "esbuild": "^0.28.2",
     "vscode-oniguruma": "^2.0.1",
     "vscode-textmate": "^9.1.0"
-  }
+  },
+  "pricing": "Free",
+  "qna": "https://github.com/cuevacaravacaadrian-ux/HyperEZ/issues"
 }

@@ -1,4 +1,4 @@
-#include "common.h"
+#include "core/common.h"
 
 #include <algorithm>
 #include <charconv>
@@ -13,6 +13,11 @@
 #include <io.h>
 #else
 #include <unistd.h>
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#include <climits>
+#include <cstdlib>
+#endif
 #endif
 
 namespace fs = std::filesystem;
@@ -227,6 +232,12 @@ std::string exePath() {
     wchar_t buf[MAX_PATH * 4];
     DWORD n = GetModuleFileNameW(nullptr, buf, (DWORD)(sizeof buf / sizeof buf[0]));
     return S(fs::path(std::wstring(buf, n)));
+#elif defined(__APPLE__)
+    char buf[PATH_MAX];
+    uint32_t size = sizeof buf;
+    if (_NSGetExecutablePath(buf, &size) != 0) return "";
+    char real[PATH_MAX];
+    return realpath(buf, real) ? std::string(real) : std::string(buf);
 #else
     std::error_code ec;
     return S(fs::read_symlink("/proc/self/exe", ec));

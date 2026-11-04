@@ -18,7 +18,7 @@ add_custom_command(OUTPUT ${HZ_PAYLOAD}
   COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DSTAGE=${HZ_STAGE} -DHYPER=$<TARGET_FILE:hyper>
           -P ${CMAKE_CURRENT_SOURCE_DIR}/stage.cmake
   COMMAND hzpack ${HZ_PAYLOAD} ${HZ_STAGE}
-  DEPENDS hyper hzpack ${CMAKE_CURRENT_SOURCE_DIR}/stage.cmake ${HZ_STAGE_INPUTS} ${CMAKE_SOURCE_DIR}/README.md ${CMAKE_SOURCE_DIR}/LICENSE ${CMAKE_SOURCE_DIR}/CHANGELOG.md
+  DEPENDS hyper hzpack ${CMAKE_CURRENT_SOURCE_DIR}/stage.cmake ${HZ_STAGE_INPUTS} ${CMAKE_SOURCE_DIR}/README.md ${CMAKE_SOURCE_DIR}/LICENSE ${CMAKE_SOURCE_DIR}/CHANGELOG.md ${CMAKE_SOURCE_DIR}/THIRD-PARTY-NOTICES.md
   COMMENT "Empaquetando los archivos del instalador"
   VERBATIM)
 add_custom_target(payload DEPENDS ${HZ_PAYLOAD})
@@ -27,7 +27,7 @@ configure_file(setup.rc.in ${CMAKE_BINARY_DIR}/setup.rc @ONLY)
 set_source_files_properties(${CMAKE_BINARY_DIR}/setup.rc PROPERTIES OBJECT_DEPENDS
   "${HZ_PAYLOAD};${CMAKE_CURRENT_SOURCE_DIR}/setup.manifest;${CMAKE_SOURCE_DIR}/src/core/version.h")
 
-add_executable(setup WIN32 setup.cpp ${CMAKE_SOURCE_DIR}/src/tools/winshell.cpp ${CMAKE_BINARY_DIR}/setup.rc)
+add_executable(setup WIN32 setup.cpp ${CMAKE_SOURCE_DIR}/src/tools/platform/winshell.cpp ${CMAKE_BINARY_DIR}/setup.rc)
 add_dependencies(setup payload)
 target_include_directories(setup PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_compile_definitions(setup PRIVATE UNICODE _UNICODE)

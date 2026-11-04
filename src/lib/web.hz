@@ -1,0 +1,99 @@
+// web — aplicaciones web con rutas, sobre Http.serve.
+//
+//   import web
+//   var app = web.App()
+//   app.get("/", req => "<h1>Hola</h1>")
+//   app.get("/jugadores/:id", req => ({ id: req.params.id }))
+//   app.post("/puntos", req => ({ status: 201, json: req.json }))
+//   app.listen(8080)
+//
+// Las rutas pueden tener partes variables (:nombre) que llegan en req.params.
+
+/// Divide una ruta en sus partes: "/a/b/" -> ["a", "b"].
+function parts(ruta: text): list {
+    return ruta.split("/").filter(p => p != "")
+}
+
+/// Compara una ruta con un patrón ("/jugadores/:id"). Devuelve los parámetros o null si no encaja.
+function matchRoute(patron: text, ruta: text): map? {
+    var a = parts(patron)
+    var b = parts(ruta)
+    if a.length != b.length and not (a.length > 0 and a[-1] == "*") { return null }
+    var params = {}
+    for i in 0..a.length {
+        if a[i] == "*" {
+            params["*"] = b.skip(i).join("/")
+            return params
+        }
+        if i >= b.length { return null }
+        if a[i].startsWith(":") {
+            params[a[i].substring(1)] = b[i]
+        } else if a[i] != b[i] {
+            return null
+        }
+    }
+    return params
+}
+
+/// Aplicación web: una lista de rutas (método + patrón + función).
+class App {
+    var routes: list = []
+    var middleware: list = []
+    var notFound: function = req => ({ status: 404, body: "No encontrado: " + req.path })
+
+    /// Añade una ruta para un método HTTP ("GET", "POST"... o "*" para todos).
+    function route(metodo: text, patron: text, manejador: function): App {
+        routes.add({ method: metodo.upper(), pattern: patron, handler: manejador })
+        return this
+    }
+    function get(patron: text, manejador: function): App { return route("GET", patron, manejador) }
+    function post(patron: text, manejador: function): App { return route("POST", patron, manejador) }
+    function put(patron: text, manejador: function): App { return route("PUT", patron, manejador) }
+    function delete(patron: text, manejador: function): App { return route("DELETE", patron, manejador) }
+
+    /// Función que se ejecuta antes de cada ruta. Si devuelve algo distinto de null, esa es la respuesta.
+    function use(f: function): App {
+        middleware.add(f)
+        return this
+    }
+
+    /// Responde a una petición (también sirve para probar la aplicación sin servidor).
+    function handle(req: map): any {
+        foreach m in middleware {
+            var r = m(req)
+            if r != null { return r }
+        }
+        foreach r in routes {
+            if r.method != "*" and r.method != req.method and not (r.method == "GET" and req.method == "HEAD") { continue }
+            var params = matchRoute(r.pattern, req.path)
+            if params != null {
+                req.params = params
+                return r.handler(req)
+            }
+        }
+        return notFound(req)
+    }
+
+    /// Arranca el servidor (ver Http.serve para las opciones: host, static, cors, quiet, maxRequests).
+    function listen(puerto: number = 8080, opciones: map = {}): number {
+        return Http.serve(puerto, req => handle(req), opciones)
+    }
+}
+
+/// Petición de prueba para llamar a app.handle sin servidor.
+function request(metodo: text, ruta: text, json: any = null): map {
+    var partes = ruta.split("?")
+    var query = {}
+    if partes.length > 1 {
+        foreach par in partes[1].split("&") {
+            var kv = par.split("=")
+            query[kv[0]] = kv.length > 1 ? kv[1] : ""
+        }
+    }
+    return { method: metodo.upper(), path: partes[0], url: ruta, query: query, headers: {}, body: json == null ? "" : JSON.stringify(json), json: json }
+}
+
+/// Redirección a otra dirección.
+function redirect(url: text): map {
+    return { status: 302, headers: { Location: url }, body: "" }
+}

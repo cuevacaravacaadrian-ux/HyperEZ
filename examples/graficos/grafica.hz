@@ -1,0 +1,43 @@
+// Gráficos: una gráfica de barras a partir de datos, con título, ejes y etiquetas.
+// Uso:  hyper grafica.hz [archivo.png]
+
+var datos = { enero: 120, febrero: 95, marzo: 160, abril: 140, mayo: 210, junio: 185 }
+
+const ANCHO = 480
+const ALTO = 300
+const MARGEN = 50
+var im = Image(ANCHO, ALTO, "#ffffff")
+
+// Título centrado
+var titulo = "Visitas por mes"
+im.text((ANCHO - Image.textWidth(titulo, 20)) / 2, 10, titulo, "#1f2328", 20)
+
+// Ejes
+var bajo = ALTO - MARGEN
+im.line(MARGEN, MARGEN, MARGEN, bajo, "#57606a", 2)
+im.line(MARGEN, bajo, ANCHO - 20, bajo, "#57606a", 2)
+
+// Líneas de referencia cada 50
+var maximo = datos.values().max()
+var escala = (bajo - MARGEN - 10) / maximo
+for v in 0..=maximo step 50 {
+    var y = bajo - v * escala
+    im.line(MARGEN + 1, y, ANCHO - 20, y, "#eaeef2", 1)
+    im.text(8, y - 8, str(v), "#57606a", 12)
+}
+
+// Barras
+var meses = datos.keys()
+var hueco = (ANCHO - MARGEN - 30) / meses.length
+foreach i, mes in meses {
+    var alto = datos[mes] * escala
+    var x = MARGEN + 10 + i * hueco
+    im.rect(x, bajo - alto, hueco - 14, alto, "#0969da")
+    im.text(x, bajo - alto - 16, str(datos[mes]), "#1f2328", 12)
+    im.text(x, bajo + 6, mes.substring(0, 3), "#57606a", 12)
+}
+
+var destino = System.args.length > 0 ? System.args[0] : Path.join(Path.temp, "grafica.png")
+im.save(destino)
+print("Gráfica de ${meses.length} barras guardada; el mejor mes fue ${meses.maxBy(m => datos[m])}")
+if System.args.length == 0 { File.delete(destino) }

@@ -1,4 +1,4 @@
-# Compila HyperEZ y ejecuta todas las pruebas en cada push y pull request.
+# Compila HyperEZ y ejecuta todas las pruebas en Windows, Linux y macOS en cada push y pull request.
 name: CI
 
 on:
@@ -13,6 +13,7 @@ concurrency:
 
 jobs:
   windows:
+    name: Windows
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
@@ -50,4 +51,41 @@ jobs:
         with:
           name: HyperEZ-windows
           path: dist/*
+          if-no-files-found: error
+
+  unix:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+          - name: macOS
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Herramientas
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then sudo apt-get update -q && sudo apt-get install -y -q ninja-build; else brew install ninja; fi
+
+      - name: Compilar
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+
+      - name: Pruebas
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Paquete
+        run: sh packaging/unix/package.sh build/hyper
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HyperEZ-${{ matrix.name }}
+          path: dist/*.tar.gz
           if-no-files-found: error

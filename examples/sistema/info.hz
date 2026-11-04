@@ -1,0 +1,22 @@
+// Información del sistema y ejecución de otros programas.
+// (La salida cambia en cada equipo, por eso este ejemplo no tiene un .out con la salida esperada.)
+
+print("HyperEZ ${System.version} en ${System.platform} (${System.arch}), ${System.cpuCount} núcleos")
+print("Usuario: ${System.user} · Equipo: ${System.hostname}")
+print("Carpeta del usuario: ${Path.home}")
+print("Hoy es ${Time.date().dayName}, ${Time.format(Time.now(), "%d/%m/%Y %H:%M")}")
+
+// Ejecutar otro programa y leer lo que escribe
+var r = Process.run(System.exe, ["version"])
+print("hyper version ->", r.output.trim())
+
+// Una orden del sistema (cmd en Windows, sh en Linux y macOS)
+var orden = System.platform == "windows" ? "echo %OS%" : "uname -s"
+print("${orden} ->", Process.shell(orden).output.trim())
+
+// Medir cuánto tarda algo
+var t = Time.measure(() => {
+    var suma = 0
+    for i in 0..1000000 { suma += i }
+})
+print("Sumar un millón de números tarda ${round(t * 1000)} ms")

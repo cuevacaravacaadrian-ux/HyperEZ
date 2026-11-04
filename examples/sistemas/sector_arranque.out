@@ -1,0 +1,6 @@
+Código máquina: 44 bytes (de 510 posibles)
+  7c00  31 c0 8e d8 be 16 7c ac 08 c0 74 06 b4 0e cd 10
+  7c10  eb f5 fa f4 eb fc 48 6f 6c 61 20 64 65 73 64 65
+  7c20  20 48 79 70 65 72 45 5a 21 0d 0a 00
+Firma de arranque: 55 aa (la BIOS solo arranca discos que terminan así)
+Imagen de 512 bytes guardada

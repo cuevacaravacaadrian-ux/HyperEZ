@@ -1,0 +1,34 @@
+#!/usr/bin/env hyper
+// Novedades de la versión 0.6: desestructuración, textos r"...", la línea #! y operadores en clases.
+
+test("desestructurar listas", () => {
+    var [a, b] = [1, 2]
+    assertEqual(a + b, 3)
+    var [primero, ...resto] = ["x", "y", "z"]
+    assertEqual(primero, "x")
+    assertEqual(resto, ["y", "z"])
+    const [lo, hi] = [[5, 1, 9].min(), [5, 1, 9].max()]
+    assertEqual([lo, hi], [1, 9])
+    assertThrows(() => {
+        var [p, q] = [1]
+    })
+})
+
+test("desestructurar mapas y objetos", () => {
+    var {nombre, vida} = { nombre: "Ana", vida: 3 }
+    assertEqual(nombre, "Ana")
+    assertEqual(vida, 3)
+    var {x, y: alto} = Vec2(3, 4)
+    assertEqual([x, alto], [3, 4])
+})
+
+test("intercambiar con desestructuración", () => {
+    var a = 1
+    var b = 2
+    var [c, d] = [b, a]
+    assertEqual([c, d], [2, 1])
+})
+
+test("la primera línea #! se ignora", () => {
+    assertEqual(1 + 1, 2)
+})

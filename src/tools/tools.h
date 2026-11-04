@@ -1,7 +1,8 @@
-// Piezas compartidas de la herramienta hyper (CLI, servidor de lenguaje, integración con Windows).
+// Piezas compartidas de la herramienta hyper (CLI, consola, watch, servidor de lenguaje, integración con el sistema).
 #pragma once
 
-#include "../core/common.h"
+#include "core/common.h"
+#include "core/process.h"
 
 namespace hz {
 
@@ -10,23 +11,15 @@ class VM;
 // Registra la biblioteca estándar y el preludio en una VM nueva.
 void setupVM(VM& vm);
 
-// Ejecuta un proceso y captura stdout+stderr. Devuelve el código de salida, o -1 si se agotó el tiempo.
-int runProcess(const std::vector<std::string>& argv, const std::string& cwd, std::string& output, int timeoutMs);
-
-#ifdef _WIN32
-// Proceso hijo que comparte la consola (hyper watch). Devuelve su handle, o nullptr si no se pudo iniciar.
-void* spawnProcess(const std::vector<std::string>& argv);
-// true si terminó antes de waitMs (-1: esperar siempre); deja su código en exitCode.
-bool processFinished(void* p, int waitMs, int& exitCode);
-void endProcess(void* p, bool kill); // libera el handle (y antes lo termina si kill)
-#endif
-
 // Consola interactiva (hyper repl)
 int runRepl();
 // Ejecuta el programa y lo repite cada vez que cambia un archivo .hz de su carpeta (hyper watch)
 int runWatch(const std::string& file, const std::vector<std::string>& args);
 
-// Plantillas de 'hyper new'
+// Plantillas de 'hyper new': tipos de proyecto (juego, app, ia, script) y sus archivos
+struct ProjectFile { std::string path, content; };
+std::vector<std::string> projectKinds();
+std::vector<ProjectFile> projectFiles(const std::string& kind, const std::string& title);
 std::string projectTemplateMain(const std::string& title);
 std::string projectTemplateModule();
 std::string projectTemplateTest();
@@ -43,6 +36,9 @@ int runLanguageServer();
 // classesRoot permite redirigir las claves en las pruebas (por defecto Software\Classes).
 bool registerFileTypes(const std::string& hyperExe, bool install, const std::wstring& classesRoot = L"Software\\Classes",
                        bool quiet = false);
+#elif !defined(__APPLE__)
+// Linux/freedesktop: tipo MIME text/x-hyperez, lanzador .desktop e icono en ~/.local/share.
+bool registerFileTypes(const std::string& hyperExe, bool install);
 #endif
 
 } // namespace hz

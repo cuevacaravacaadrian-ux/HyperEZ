@@ -1,0 +1,52 @@
+// Web: una aplicación con página HTML y API JSON para guardar las puntuaciones de un juego.
+//   hyper puntuaciones.hz          y abre http://localhost:8080
+//   GET  /                 página con la tabla de puntuaciones
+//   GET  /api/puntos       lista en JSON
+//   POST /api/puntos       añade {jugador, puntos}
+//   GET  /api/puntos/:id   una puntuación
+// Sin teclado (en las pruebas) no arranca el servidor: prueba las rutas directamente.
+import web
+import html
+import db
+
+var base = db.Database(Console.interactive ? Path.join(System.scriptDir, "puntuaciones.json") : "")
+var puntos = base.collection("puntos")
+if puntos.count() == 0 {
+    puntos.insertMany([{ jugador: "Ana", puntos: 1200 }, { jugador: "Luis", puntos: 950 }, { jugador: "Eva", puntos: 1800 }])
+}
+
+var app = web.App()
+
+app.get("/", req => {
+    var filas = [["#", "Jugador", "Puntos"]]
+    foreach i, p in puntos.all().sortBy(p => -p.puntos) { filas.add([i + 1, p.jugador, p.puntos]) }
+    return html.page("Puntuaciones", html.raw(html.tag("h1", {}, "🏆 Puntuaciones") + str(html.table(filas))))
+})
+
+app.get("/api/puntos", req => puntos.all().sortBy(p => -p.puntos))
+
+app.get("/api/puntos/:id", req => {
+    var p = puntos.get(toNumber(req.params.id) ?? -1)
+    return p ?? { status: 404, json: { error: "no existe" } }
+})
+
+app.post("/api/puntos", req => {
+    var d = req.json
+    if d == null or typeof(d.jugador) != "text" or typeof(d.puntos) != "number" {
+        return { status: 400, json: { error: "hace falta {jugador: texto, puntos: número}" } }
+    }
+    return { status: 201, json: { id: puntos.insert({ jugador: d.jugador, puntos: d.puntos }) } }
+})
+
+if Console.interactive {
+    app.listen(8080)
+} else {
+    // Demostración sin servidor
+    print(app.handle(web.request("GET", "/api/puntos")).map(p => "${p.jugador}: ${p.puntos}"))
+    print(app.handle(web.request("POST", "/api/puntos", { jugador: "Marta", puntos: 1500 })))
+    print(app.handle(web.request("POST", "/api/puntos", { jugador: "?" })).status)
+    print(app.handle(web.request("GET", "/api/puntos/4")).jugador)
+    print(app.handle(web.request("GET", "/api/puntos/99")).status)
+    var pagina = app.handle(web.request("GET", "/"))
+    print(pagina.contains("<table>"), pagina.contains("Marta"))
+}

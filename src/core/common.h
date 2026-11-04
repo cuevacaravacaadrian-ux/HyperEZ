@@ -12,7 +12,7 @@
 #include <functional>
 #include <unordered_map>
 
-#include "version.h"
+#include "core/version.h"
 
 namespace hz {
 

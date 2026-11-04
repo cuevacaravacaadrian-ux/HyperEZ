@@ -1,0 +1,95 @@
+// csv — leer y escribir tablas en formato CSV (valores separados por comas), como las de Excel.
+//
+//   import csv
+//   var filas = csv.read("ventas.csv")        // lista de mapas, con la primera fila como cabecera
+//   csv.write("resumen.csv", [{producto: "pan", total: 3}])
+
+/// Divide una línea CSV en campos (respeta comillas: "a, b" es un solo campo).
+function parseLine(linea: text, separador: text = ","): list {
+    var campos = []
+    var actual = ""
+    var comillas = false
+    var i = 0
+    var cs = linea.chars()
+    while i < cs.length {
+        var c = cs[i]
+        if comillas {
+            if c == "\"" {
+                if i + 1 < cs.length and cs[i + 1] == "\"" {
+                    actual += "\""
+                    i += 1
+                } else {
+                    comillas = false
+                }
+            } else {
+                actual += c
+            }
+        } else if c == "\"" {
+            comillas = true
+        } else if c == separador {
+            campos.add(actual)
+            actual = ""
+        } else {
+            actual += c
+        }
+        i += 1
+    }
+    campos.add(actual)
+    return campos
+}
+
+/// Convierte "12" en 12 y "3.5" en 3.5; el resto lo deja como texto.
+function convert(valor: text): any {
+    var t = valor.trim()
+    if t != "" and t.isNumeric() { return toNumber(t) }
+    if t == "true" { return true }
+    if t == "false" { return false }
+    return valor
+}
+
+/// Texto CSV a datos. Con cabecera (por defecto) devuelve una lista de mapas; sin ella, una lista de listas.
+function parse(texto: text, cabecera: bool = true, separador: text = ",", convertir: bool = true): list {
+    var lineas = texto.lines().filter(l => l.trim() != "")
+    if lineas.isEmpty() { return [] }
+    var filas = lineas.map(l => parseLine(l, separador).map(v => convertir ? convert(v) : v))
+    if not cabecera { return filas }
+    var nombres = parseLine(lineas[0], separador).map(n => n.trim())
+    return filas.skip(1).map(f => {
+        var m = {}
+        foreach i, n in nombres { m[n] = i < f.length ? f[i] : null }
+        return m
+    })
+}
+
+/// Escapa un campo si hace falta (comas, comillas o saltos de línea).
+function field(valor: any, separador: text = ","): text {
+    var t = valor == null ? "" : str(valor)
+    if t.contains(separador) or t.contains("\"") or t.contains("\n") {
+        return "\"" + t.replace("\"", "\"\"") + "\""
+    }
+    return t
+}
+
+/// Datos a texto CSV. Acepta una lista de mapas (las claves del primero son la cabecera) o de listas.
+function stringify(filas: list, separador: text = ","): text {
+    if filas.isEmpty() { return "" }
+    var lineas = []
+    if typeof(filas[0]) == "map" {
+        var nombres = filas[0].keys()
+        lineas.add(nombres.map(n => field(n, separador)).join(separador))
+        foreach f in filas { lineas.add(nombres.map(n => field(f.get(n), separador)).join(separador)) }
+    } else {
+        foreach f in filas { lineas.add(f.map(v => field(v, separador)).join(separador)) }
+    }
+    return lineas.join("\n") + "\n"
+}
+
+/// Lee un archivo CSV (ver parse).
+function read(ruta: text, cabecera: bool = true, separador: text = ","): list {
+    return parse(File.read(ruta), cabecera, separador)
+}
+
+/// Escribe un archivo CSV (ver stringify).
+function write(ruta: text, filas: list, separador: text = ","): void {
+    File.write(ruta, stringify(filas, separador))
+}

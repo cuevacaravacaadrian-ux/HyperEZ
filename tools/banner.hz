@@ -1,0 +1,45 @@
+// Genera las imágenes de presentación del proyecto con el propio HyperEZ (módulo Image):
+//   assets/branding/social-preview.png   1280×640, la vista previa al compartir el repositorio en GitHub
+//   assets/branding/banner.png           cabecera del README
+// Uso (desde la raíz del repositorio):  hyper tools/banner.hz
+
+const RAIZ = Path.dir(System.scriptDir)
+
+function fondo(ancho: number, alto: number): Image {
+    var im = Image(ancho, alto)
+    // degradado diagonal oscuro
+    for y in 0..alto {
+        var f = y / alto
+        im.rect(0, y, ancho, 1, Color(round(13 + 10 * f), round(17 + 12 * f), round(30 + 30 * f)))
+    }
+    // rejilla tenue de "código"
+    for x in 0..ancho step 32 { im.line(x, 0, x, alto, Color(255, 255, 255, 10), 1) }
+    for y in 0..alto step 32 { im.line(0, y, ancho, y, Color(255, 255, 255, 10), 1) }
+    return im
+}
+
+function centrado(im: Image, y: number, texto: text, color: any, tamano: number) {
+    im.text((im.width - Image.textWidth(texto, tamano)) / 2, y, texto, color, tamano)
+}
+
+var logo = Image.load(Path.join(RAIZ, "assets/icons/hyperez-256.png"))
+
+// ---- Vista previa para GitHub ----
+var social = fondo(1280, 640)
+social.paste(logo.resize(200, 200), 540, 70)
+centrado(social, 290, "HyperEZ", "#ffffff", 96)
+centrado(social, 410, "Un lenguaje de programación en español para hacer de todo", "#c9d1d9", 34)
+var areas = "juegos · inteligencia artificial · web · datos · gráficos · sonido · sistemas"
+centrado(social, 470, areas, "#58a6ff", 26)
+centrado(social, 560, "hyper · consola interactiva · VS Code · Windows, Linux y macOS", "#8b949e", 22)
+social.save(Path.join(RAIZ, "assets/branding/social-preview.png"))
+
+// ---- Banner del README ----
+var banner = fondo(1200, 300)
+banner.paste(logo.resize(160, 160), 70, 70)
+banner.text(270, 70, "HyperEZ", "#ffffff", 84)
+banner.text(274, 175, "Programa en español. Juegos, IA, web, datos y más.", "#c9d1d9", 30)
+banner.text(274, 225, "print(\"¡Hola, mundo!\")", "#7ee787", 26)
+banner.save(Path.join(RAIZ, "assets/branding/banner.png"))
+
+print("Imágenes generadas en assets/branding")

@@ -1,0 +1,44 @@
+// Gráficos: el conjunto de Mandelbrot dibujado píxel a píxel y guardado como PNG.
+// Uso:  hyper fractal.hz [archivo.png]   (sin archivo se guarda en la carpeta temporal)
+
+const ANCHO = 240
+const ALTO = 160
+const ITERACIONES = 40
+
+/// Cuántas vueltas aguanta el punto (cx, cy) antes de escaparse (ITERACIONES si no se escapa).
+function escape(cx: number, cy: number): number {
+    var x = 0
+    var y = 0
+    var n = 0
+    while n < ITERACIONES and x * x + y * y <= 4 {
+        var t = x * x - y * y + cx
+        y = 2 * x * y + cy
+        x = t
+        n += 1
+    }
+    return n
+}
+
+/// Paleta de colores: del azul oscuro al amarillo, y negro dentro del conjunto.
+function colorPara(n: number): Color {
+    if n >= ITERACIONES { return Color(0, 0, 0) }
+    var f = n / ITERACIONES
+    return Color(round(255 * f ** 0.5), round(200 * f), round(120 + 135 * (1 - f)))
+}
+
+var imagen = Image(ANCHO, ALTO)
+var dentro = 0
+for py in 0..ALTO {
+    for px in 0..ANCHO {
+        var n = escape(px / ANCHO * 3.2 - 2.2, py / ALTO * 2.2 - 1.1)
+        if n >= ITERACIONES { dentro += 1 }
+        imagen.set(px, py, colorPara(n))
+    }
+}
+imagen.text(6, ALTO - 22, "Mandelbrot · HyperEZ", "white", 14)
+
+var destino = System.args.length > 0 ? System.args[0] : Path.join(Path.temp, "mandelbrot.png")
+imagen.save(destino)
+print("Imagen ${ANCHO}×${ALTO} guardada (${File.size(destino) > 1000 ? "más de 1 KB" : "?"})")
+print("Píxeles dentro del conjunto: ${dentro} (${round(dentro / (ANCHO * ALTO) * 100)} %)")
+if System.args.length == 0 { File.delete(destino) }

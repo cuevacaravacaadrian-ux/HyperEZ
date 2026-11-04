@@ -1,0 +1,14 @@
+Leídas 12 ventas de 4 días
+
+producto             unidades  importe  media/día
+-------------------  --------  -------  ---------
+café                 16        72       5.3
+galletas, chocolate  19        43.7     9.5
+leche                37        35.15    12.3
+pan                  115       138      28.8
+
+Importe por venta: media 24.07 €, mediana 23.9 €, máximo 42 €
+Producto que más factura: pan (138 €)
+Total facturado: 288.85 €
+
+Informe guardado con 4 filas
