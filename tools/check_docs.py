@@ -11,6 +11,11 @@ import subprocess
 import sys
 import tempfile
 
+# La consola de Windows (y la de GitHub Actions) puede no ser UTF-8: los ✓ y las tildes no deben romper el script
+for _s in (sys.stdout, sys.stderr):
+    if hasattr(_s, "reconfigure"):
+        _s.reconfigure(encoding="utf-8", errors="replace")
+
 
 def blocks(path):
     text = open(path, encoding="utf-8").read()

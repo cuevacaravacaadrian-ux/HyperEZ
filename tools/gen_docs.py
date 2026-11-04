@@ -13,6 +13,11 @@ import re
 import subprocess
 import sys
 
+# La consola de Windows (y la de GitHub Actions) puede no ser UTF-8: los ✓ y las tildes no deben romper el script
+for _s in (sys.stdout, sys.stderr):
+    if hasattr(_s, "reconfigure"):
+        _s.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 CATEGORIES = [
@@ -77,7 +82,8 @@ def readable(expr):
 
 def error_catalog():
     codes = {}
-    for dirpath, _, files in os.walk(os.path.join(ROOT, "src", "lang")):
+    for dirpath, dirnames, files in os.walk(os.path.join(ROOT, "src", "lang")):
+        dirnames.sort()  # el orden de os.walk depende del sistema: así sale igual en Windows, Linux y macOS
         for f in sorted(files):
             if not f.endswith(".cpp"):
                 continue

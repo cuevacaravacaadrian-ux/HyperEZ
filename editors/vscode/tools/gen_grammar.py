@@ -5,6 +5,12 @@ escapadas dentro de JSON. Ejecuta:  python tools/gen_grammar.py
 """
 import json
 import os
+import sys
+
+# La consola de Windows (y la de GitHub Actions) puede no ser UTF-8: los ✓ y las tildes no deben romper el script
+for _s in (sys.stdout, sys.stderr):
+    if hasattr(_s, "reconfigure"):
+        _s.reconfigure(encoding="utf-8", errors="replace")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "syntaxes")

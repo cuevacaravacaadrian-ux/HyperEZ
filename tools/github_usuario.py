@@ -9,6 +9,11 @@ import os
 import re
 import sys
 
+# La consola de Windows (y la de GitHub Actions) puede no ser UTF-8: los ✓ y las tildes no deben romper el script
+for _s in (sys.stdout, sys.stderr):
+    if hasattr(_s, "reconfigure"):
+        _s.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKIP_DIRS = {".git", "build", "dist", "node_modules", ".vscode-test", "third_party", "bin"}
 EXTS = {".md", ".json", ".h", ".cpp", ".yml", ".yaml", ".txt", ".ps1", ".py", ".js", ".hz", ".cmake"}
