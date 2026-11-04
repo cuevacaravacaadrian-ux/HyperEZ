@@ -79,7 +79,7 @@ bool needsMore(const std::string& code) {
     if (!last) return false;
     switch (last->kind) {
         case Tok::Plus: case Tok::Minus: case Tok::Star: case Tok::Slash: case Tok::Percent: case Tok::StarStar:
-        case Tok::Eq: case Tok::PlusEq: case Tok::MinusEq: case Tok::StarEq: case Tok::SlashEq: case Tok::PercentEq:
+        case Tok::Eq: case Tok::PlusEq: case Tok::MinusEq: case Tok::StarEq: case Tok::SlashEq: case Tok::PercentEq: case Tok::StarStarEq:
         case Tok::EqEq: case Tok::NotEq: case Tok::Less: case Tok::LessEq: case Tok::Greater: case Tok::GreaterEq:
         case Tok::AmpAmp: case Tok::PipePipe: case Tok::KwAnd: case Tok::KwOr: case Tok::KwNot: case Tok::Comma:
         case Tok::Dot: case Tok::Arrow: case Tok::QuestionQuestion: case Tok::Colon:

@@ -21,6 +21,8 @@ private:
     std::vector<bool> nlStack{true}; // true: los saltos de línea terminan sentencias
     std::vector<StmtP> extraStmts;   // sentencias extra que genera una desestructuración (var [a, b] = ...)
     int destructureCount = 0;
+    int comprehensionCount = 0;
+    int indexDepth = 0; // > 0 dentro de obj[...]: se admiten los rangos abiertos lista[2..]
     int funcDepth = 0;
 
     const Token& cur() const { return toks[p]; }
@@ -62,6 +64,9 @@ private:
     // Expresiones
     ExprP assignment();
     ExprP expression();
+    ExprP pipeline();
+    ExprP comprehension(SrcLoc loc, ExprP elem, ExprP value);
+    ExprP indexExpression();
     ExprP ternary();
     ExprP nullish();
     ExprP logicOr();

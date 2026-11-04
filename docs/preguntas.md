@@ -35,3 +35,15 @@ El instalador aún no está firmado digitalmente. Pulsa *Más información → E
 
 **¿Cómo informo de un error?**
 En las [incidencias de GitHub](https://github.com/cuevacaravacaadrian-ux/HyperEZ/issues/new/choose), con el programa más pequeño que lo reproduzca y la salida de `hyper version`.
+
+## ¿Por qué GitHub no muestra HyperEZ en la barra de lenguajes?
+
+GitHub reconoce los lenguajes con [Linguist](https://github.com/github-linguist/linguist), y solo añade un lenguaje nuevo cuando se usa en al menos 200 repositorios públicos. Mientras tanto, el `.gitattributes` del repositorio hace que GitHub coloree los `.hez` y `.hz` con un lenguaje parecido. Todo lo necesario para proponerlo está en [editors/linguist](../editors/linguist/README.md).
+
+## ¿Puedo usar HyperEZ en otro editor?
+
+Sí: además de HyperEZ Editor y VS Code hay colores para Notepad++, Sublime Text, Vim y highlight.js, y cualquier editor con LSP (Neovim, Helix, Zed...) puede usar `hyper lsp`. Ver [otros editores](../editors/README.md).
+
+## ¿Cómo hago una página web?
+
+`hyper new mi-web --tipo web` (aplicación con plantillas, formularios y API) o `hyper new mi-blog --tipo sitio` (páginas desde Markdown), y `hyper serve` para verla con recarga automática. Todo en [hacer webs](biblioteca/web.md).

@@ -54,8 +54,9 @@ print("¡Hola, ${ana.nombre}! Vidas: ${ana.vida}")
 
 ## 📦 Qué trae el lenguaje
 
-- **Sintaxis clara**: tipos opcionales, clases, `match`, eventos, `async`/`await`, desestructuración, sobrecarga de operadores.
+- **Sintaxis clara**: tipos opcionales, clases, `match`, eventos, `async`/`await`, desestructuración, comprensiones `[x * 2 for x in lista]`, tubería `|>`, sobrecarga de operadores.
 - **Biblioteca para todo**: archivos y procesos, HTTP (cliente y servidor), JSON y CSV, base de datos, expresiones regulares, `Bytes`, compresión y `.zip`, matrices (con inversa y sistemas de ecuaciones) y redes neuronales, imágenes PNG/JPG, gráficas SVG, sonido WAV, plantillas, Markdown, colas, grafos y caminos con A*, consola para juegos.
+- **Webs**: `hyper new mi-web --tipo web` y `hyper serve` (el navegador se recarga al guardar), plantillas, formularios, sitios desde Markdown.
 - **Herramientas**: HyperEZ Editor, consola interactiva, modo watch, formateador, pruebas con salidas esperadas, instaladores para Windows, Linux y macOS.
 
 ## ⚙️ Requisitos

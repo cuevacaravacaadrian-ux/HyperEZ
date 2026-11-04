@@ -3,7 +3,7 @@
 `hyper` (o `hyper repl`) abre una consola donde cada línea se ejecuta al pulsar Intro. Es la forma más rápida de probar una idea, aprender una función o hacer cálculos.
 
 ```text
-HyperEZ 0.7.0 · consola interactiva
+HyperEZ 0.8.0 · consola interactiva
 Escribe código y pulsa Intro. Lo que definas se conserva entre líneas.
 .ayuda muestra los comandos · .salir para terminar
 

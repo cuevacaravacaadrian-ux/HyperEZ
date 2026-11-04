@@ -29,12 +29,13 @@ static void printHelp() {
     auto row = [&](const char* cmd, const char* what) { std::printf("  %s%-34s%s %s\n", B, cmd, R, what); };
     section("Empezar");
     row("hyper", "consola interactiva: escribe código y ve el resultado");
-    row("hyper new <nombre> [--tipo T]", "crea un proyecto: juego, app, ia o script");
+    row("hyper new <nombre> [--tipo T]", "crea un proyecto: juego, app, ia, script, web o sitio");
     std::printf("\n");
     section("Ejecutar");
     row("hyper <archivo.hz> [args...]", "ejecuta un programa (args llegan en System.args)");
     row("hyper run [archivo.hz] [args...]", "igual; sin archivo ejecuta main.hz");
     row("hyper watch [archivo.hz]", "ejecuta y repite cada vez que guardas un .hz");
+    row("hyper serve [carpeta] [--puerto N]", "sirve una web y recarga el navegador al guardar");
     std::printf("\n");
     section("Comprobar y probar");
     row("hyper check [archivos|carpetas]", "busca errores sin ejecutar");
@@ -319,6 +320,42 @@ static int cmdTest(const std::vector<std::string>& paths, bool update) {
 }
 
 // ---------------------------------------------------------------------------
+// serve: servidor para desarrollar webs (recarga el navegador al guardar)
+// ---------------------------------------------------------------------------
+
+static int cmdServe(const std::vector<std::string>& args) {
+    std::string folder = ".", port = "8080", host = "127.0.0.1";
+    bool open = false, reload = true;
+    for (size_t i = 0; i < args.size(); i++) {
+        const std::string& a = args[i];
+        if ((a == "--puerto" || a == "--port" || a == "-p") && i + 1 < args.size()) port = args[++i];
+        else if (a == "--abrir" || a == "--open") open = true;
+        else if (a == "--sin-recarga" || a == "--no-reload") reload = false;
+        else if (a == "--red" || a == "--lan") host = "0.0.0.0";
+        else if (!a.empty() && a[0] == '-') {
+            std::fprintf(stderr, "Uso: hyper serve [carpeta] [--puerto 8080] [--abrir] [--sin-recarga] [--red]\n");
+            return 2;
+        } else folder = a;
+    }
+    if (!dirExists(folder)) {
+        std::fprintf(stderr, "%serror:%s no existe la carpeta '%s'\n", color::red(), color::reset(), folder.c_str());
+        return 1;
+    }
+    VM vm;
+    setupVM(vm);
+    vm.projectRoot = pathAbsolute(".");
+    vm.scriptArgs = {pathAbsolute(folder), port, open ? "1" : "0", reload ? "1" : "0", host};
+    const std::string code = "import web\n"
+                             "web.devServer(System.args[0], { port: toNumber(System.args[1]), open: System.args[2] == \"1\",\n"
+                             "                                reload: System.args[3] == \"1\", host: System.args[4] })\n";
+    ModuleUnit* unit = vm.compileSource(pathJoin(vm.projectRoot, "hyper-serve.hz"), code, true, true);
+    if (vm.unitHasErrors(unit)) { vm.printDiagnostics(unit, stderr, false); return 1; }
+    bool ok = vm.runModule(unit);
+    vm.flushOutput();
+    return ok ? 0 : 1;
+}
+
+// ---------------------------------------------------------------------------
 // new
 // ---------------------------------------------------------------------------
 
@@ -331,11 +368,13 @@ static int cmdNew(const std::vector<std::string>& args) {
     }
     auto kinds = projectKinds();
     if (name.empty() || std::find(kinds.begin(), kinds.end(), kind) == kinds.end()) {
-        std::fprintf(stderr, "Uso: hyper new <nombre> [--tipo juego|app|ia|script]\n\n"
+        std::fprintf(stderr, "Uso: hyper new <nombre> [--tipo juego|app|ia|script|web|sitio]\n\n"
                              "  juego   juego de consola con teclado (por defecto)\n"
                              "  app     aplicación de consola con menú y datos guardados\n"
                              "  ia      red neuronal que aprende de un CSV\n"
-                             "  script  herramienta de línea de órdenes con argumentos\n");
+                             "  script  herramienta de línea de órdenes con argumentos\n"
+                             "  web     aplicación web: plantillas HTML, formulario, API JSON y CSS\n"
+                             "  sitio   sitio web estático escrito en Markdown (blog, documentación...)\n");
         return 2;
     }
     if (fileExists(name) || (dirExists(name) && !listFilesRecursive(name).empty())) {
@@ -477,6 +516,7 @@ int main(int argc, char** argv) {
     }
     if (cmd == "new") return cmdNew(rest);
     if (cmd == "fmt" || cmd == "format") return cmdFmt(rest);
+    if (cmd == "serve") return cmdServe(rest);
     if (cmd == "bytecode") {
         if (rest.empty()) { std::fprintf(stderr, "Uso: hyper bytecode <archivo.hz>\n"); return 2; }
         VM vm;

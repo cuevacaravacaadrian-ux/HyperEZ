@@ -768,8 +768,12 @@
           "match": "\\?\\?=?|\\?\\."
         },
         {
+          "name": "keyword.operator.pipe.hyperez",
+          "match": "\\|>"
+        },
+        {
           "name": "keyword.operator.assignment.compound.hyperez",
-          "match": "\\+=|-=|\\*=|/=|%="
+          "match": "\\*\\*=|\\+=|-=|\\*=|/=|%="
         },
         {
           "name": "keyword.operator.comparison.hyperez",

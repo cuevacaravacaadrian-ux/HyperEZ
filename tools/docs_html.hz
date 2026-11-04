@@ -1,0 +1,97 @@
+// Documentación en HTML para leer sin conexión (la instala HyperEZ-Setup en docs-html/ y la abre la
+// Ayuda de HyperEZ Editor). Está hecha con el propio HyperEZ: la biblioteca site convierte cada .md.
+//
+//   hyper tools/docs_html.hz docs carpeta-de-salida
+import site
+
+const REPO = "https://github.com/cuevacaravacaadrian-ux/HyperEZ/blob/main/"
+
+if System.args.length < 2 {
+    print("Uso: hyper tools/docs_html.hz <carpeta docs> <carpeta de salida>")
+    exit(2)
+}
+// las rutas relativas, desde la carpeta en la que se ejecuta (no desde tools/)
+var origen = Path.join(System.cwd, System.args[0])
+var destino = Path.join(System.cwd, System.args[1])
+
+var menu = [
+    { grupo: "Empezar" },
+    { titulo: "Inicio", url: "index.html" },
+    { titulo: "Instalación", url: "empezar/instalacion.html" },
+    { titulo: "Primeros pasos", url: "empezar/primeros-pasos.html" },
+    { titulo: "Guía rápida", url: "GUIA.html" },
+    { titulo: "Tutorial: un juego", url: "empezar/tutorial-juego.html" },
+    { titulo: "Tutorial: una red neuronal", url: "empezar/tutorial-ia.html" },
+    { grupo: "El lenguaje" },
+    { titulo: "Referencia del lenguaje", url: "lenguaje/README.html" },
+    { titulo: "Léxico", url: "lenguaje/01-lexico.html" },
+    { titulo: "Variables y tipos", url: "lenguaje/02-variables-tipos.html" },
+    { titulo: "Operadores", url: "lenguaje/03-operadores.html" },
+    { titulo: "Control del flujo", url: "lenguaje/04-control.html" },
+    { titulo: "Funciones", url: "lenguaje/05-funciones.html" },
+    { titulo: "Colecciones", url: "lenguaje/06-colecciones.html" },
+    { titulo: "Clases", url: "lenguaje/07-clases.html" },
+    { titulo: "Errores", url: "lenguaje/08-errores.html" },
+    { titulo: "Eventos y tareas", url: "lenguaje/09-eventos-async.html" },
+    { titulo: "Módulos", url: "lenguaje/10-modulos.html" },
+    { titulo: "Pruebas", url: "lenguaje/11-pruebas.html" },
+    { titulo: "Gramática", url: "lenguaje/gramatica.html" },
+    { grupo: "La biblioteca" },
+    { titulo: "Mapa de la biblioteca", url: "biblioteca/README.html" },
+    { titulo: "Sistema y archivos", url: "biblioteca/sistema.html" },
+    { titulo: "Textos, números y fechas", url: "biblioteca/textos-documentos.html" },
+    { titulo: "Colecciones y algoritmos", url: "biblioteca/colecciones-algoritmos.html" },
+    { titulo: "Webs y APIs", url: "biblioteca/web.html" },
+    { titulo: "Internet", url: "biblioteca/red.html" },
+    { titulo: "IA y datos", url: "biblioteca/ia-datos.html" },
+    { titulo: "Gráficos y sonido", url: "biblioteca/graficos-sonido.html" },
+    { titulo: "Binario, hash y zip", url: "biblioteca/binario.html" },
+    { titulo: "Expresiones regulares", url: "biblioteca/regex.html" },
+    { titulo: "Consola y juegos", url: "biblioteca/consola.html" },
+    { titulo: "Sistemas operativos", url: "biblioteca/sistemas-operativos.html" },
+    { titulo: "Todas las funciones (API)", url: "biblioteca/API.html" },
+    { grupo: "Herramientas" },
+    { titulo: "HyperEZ Editor", url: "herramientas/editor.html" },
+    { titulo: "La orden hyper", url: "herramientas/cli.html" },
+    { titulo: "Consola interactiva", url: "herramientas/consola-interactiva.html" },
+    { titulo: "Visual Studio Code", url: "herramientas/vscode.html" },
+    { titulo: "Instaladores", url: "herramientas/instaladores.html" },
+    { titulo: "Códigos de error", url: "errores.html" },
+    { grupo: "Por dentro" },
+    { titulo: "Arquitectura", url: "interno/arquitectura.html" },
+    { titulo: "Compilador", url: "interno/compilador.html" },
+    { titulo: "Máquina virtual", url: "interno/maquina-virtual.html" },
+    { titulo: "Bytecode", url: "interno/bytecode.html" },
+    { titulo: "Rendimiento", url: "interno/rendimiento.html" },
+    { titulo: "Ampliar HyperEZ", url: "interno/extender.html" },
+    { grupo: "El proyecto" },
+    { titulo: "Hoja de ruta", url: "hoja-de-ruta.html" },
+    { titulo: "Preguntas frecuentes", url: "preguntas.html" }
+]
+
+var t0 = Time.clock()
+var hechos = site.build(origen, destino, {
+    title: "Documentación de HyperEZ " + System.version,
+    index: "README.md",
+    menu: menu,
+    footer: "HyperEZ " + System.version + " · documentación para leer sin conexión · " + REPO.replace("/blob/main/", "")
+})
+
+// Los enlaces que salen de docs/ (../CHANGELOG.md, ../../CONTRIBUTING.md...) van al repositorio en GitHub;
+// los de examples/ se quedan relativos: en la instalación, examples/ está junto a docs-html/.
+const FUERA = Regex(r'href="((?:\.\./)+)([^"#]+?)\.html(#[^"]*)?"')
+var paginas = 0
+foreach ruta in hechos {
+    if not ruta.endsWith(".html") { continue }
+    paginas += 1
+    var rel = Path.relative(ruta, destino).replace("\\", "/")
+    var nivel = rel.split("/").length - 1
+    var html = File.read(ruta)
+    var cambiado = FUERA.replace(html, m => {
+        var subidas = m.groups[0].length / 3
+        if subidas <= nivel { return m.text }
+        return "href=\"" + REPO + m.groups[1] + ".md" + (m.groups[2] ?? "") + "\""
+    })
+    if cambiado != html { File.write(ruta, cambiado) }
+}
+print("✓ ${paginas} páginas HTML en ${destino} (${round(Time.clock() - t0, 1)} s)")

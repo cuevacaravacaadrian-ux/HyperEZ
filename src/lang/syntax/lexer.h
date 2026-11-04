@@ -14,10 +14,11 @@ enum class Tok : uint8_t {
     DotDot, DotDotEq, Ellipsis, At,
     // Operadores
     Plus, Minus, Star, Slash, Percent, StarStar,
-    Eq, PlusEq, MinusEq, StarEq, SlashEq, PercentEq, QuestionQuestionEq,
+    Eq, PlusEq, MinusEq, StarEq, SlashEq, PercentEq, QuestionQuestionEq, StarStarEq,
     EqEq, NotEq, Less, LessEq, Greater, GreaterEq,
     AmpAmp, PipePipe, Bang, Amp, Pipe, Caret, Tilde, Shl, Shr,
     PlusPlus, MinusMinus,
+    PipeGreater /* |> */,
     // Palabras clave
     KwVar, KwLet, KwConst, KwFunction, KwReturn, KwIf, KwElse, KwFor, KwForeach, KwIn, KwWhile, KwRepeat,
     KwBreak, KwContinue, KwClass, KwStruct, KwConstructor, KwThis, KwSuper, KwExtends, KwImplements,

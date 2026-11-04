@@ -1,9 +1,11 @@
 // HyperEZ Editor: editor de código clásico para Windows, con fondo blanco y todo lo necesario para
 // programar en HyperEZ sin instalar nada más:
-//   colores de sintaxis, números de línea, errores mientras escribes (el mismo analizador que el
-//   compilador), ejecutar con F5, modo watch, consola interactiva, buscar y reemplazar, ir a la línea,
-//   sangría automática, comentar líneas, autocompletado (Ctrl+Espacio), zoom, archivos recientes,
-//   ejemplos y arrastrar y soltar. Los archivos nuevos se guardan como .hez.
+//   barra de herramientas clásica, pestañas (varios archivos a la vez), colores de sintaxis, números de
+//   línea, errores mientras escribes (el mismo analizador que el compilador), ejecutar con F5 (en una
+//   consola) o con Mayús+F5 (en el panel de salida), modo watch, consola interactiva, buscar y
+//   reemplazar, ir a la línea, sangría automática, comentar líneas, autocompletado (Ctrl+Espacio),
+//   formato, imprimir, elegir la fuente, zoom, archivos recientes, plantillas, ejemplos y arrastrar y
+//   soltar. Los archivos nuevos se guardan como .hez.
 #ifndef UNICODE
 #define UNICODE
 #endif
@@ -17,6 +19,7 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#include <windowsx.h>
 #include <commctrl.h>
 #include <commdlg.h>
 #include <richedit.h>
@@ -35,6 +38,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <thread>
 #include <vector>
 
 using namespace hz;
@@ -47,7 +51,7 @@ namespace {
 // ---------------------------------------------------------------------------
 
 enum : int {
-    ID_EDIT = 100, ID_GUTTER, ID_PANEL, ID_STATUS, ID_COMPLETE,
+    ID_EDIT = 100, ID_GUTTER, ID_PANEL, ID_STATUS, ID_COMPLETE, ID_TABS, ID_TOOLBAR, ID_BOTTOMTABS, ID_OUTPUT,
     ID_TB_NEW = 200, ID_TB_OPEN, ID_TB_SAVE, ID_TB_RUN, ID_TB_CHECK, ID_TB_WATCH, ID_TB_REPL, ID_TB_EXAMPLES, ID_TB_HELP,
     // Menú
     CMD_NEW = 1000, CMD_OPEN, CMD_SAVE, CMD_SAVEAS, CMD_EXIT, CMD_OPEN_FOLDER,
@@ -56,6 +60,8 @@ enum : int {
     CMD_RUN, CMD_CHECK, CMD_WATCH, CMD_REPL, CMD_TESTS,
     CMD_ZOOMIN, CMD_ZOOMOUT, CMD_ZOOMRESET, CMD_WRAP, CMD_PANEL, CMD_LINENUMBERS,
     CMD_HELP_GUIDE, CMD_HELP_API, CMD_HELP_DOCS, CMD_HELP_KEYS, CMD_ABOUT,
+    CMD_CLOSETAB, CMD_NEXTTAB, CMD_PREVTAB, CMD_PRINT, CMD_FONT, CMD_RUNPANEL, CMD_STOP, CMD_TOOLBAR, CMD_STATUSBAR,
+    CMD_CLEAROUTPUT, CMD_EXAMPLESMENU, CMD_CLOSEOTHERS,
     CMD_RECENT = 2000,  // 2000..2009
     CMD_EXAMPLE = 3000, // 3000..3999
     CMD_TEMPLATE = 4000 // 4000..4099
@@ -65,7 +71,6 @@ enum : UINT_PTR { TIMER_HIGHLIGHT = 1, TIMER_CHECK = 2, TIMER_GUTTER = 3 };
 
 HINSTANCE g_inst;
 HWND g_wnd, g_edit, g_gutter, g_panel, g_status, g_complete, g_findDlg;
-std::vector<HWND> g_tools;
 HFONT g_font, g_uiFont, g_gutterFont, g_boldGutterFont;
 ITextDocument* g_doc = nullptr;
 int g_dpi = 96;
@@ -85,6 +90,23 @@ WNDPROC g_editProc = nullptr;
 
 struct Problem { int line = 0, col = 0; LONG cpStart = 0, cpEnd = 0; std::wstring text; bool error = true; };
 std::vector<Problem> g_problems;
+
+// Un documento abierto en una pestaña
+struct Doc {
+    HWND edit = nullptr;
+    ITextDocument* tom = nullptr;
+    std::wstring file, saved;
+    bool dirty = false, overwrite = false;
+    std::vector<Problem> problems;
+};
+std::vector<Doc> g_docs;
+int g_cur = -1;
+HWND g_tabs = nullptr, g_toolbar = nullptr, g_bottomTabs = nullptr, g_output = nullptr;
+HFONT g_outFont = nullptr;
+bool g_overwrite = false, g_showToolbar = true, g_showStatus = true;
+std::wstring g_fontFace = L"Consolas";
+int g_bottomPage = 0; // 0: problemas, 1: salida
+HMENU g_examplesMenu = nullptr;
 
 // Catálogo para el autocompletado: nombres globales y miembros de módulos/clases
 std::vector<std::wstring> g_globals;
@@ -180,6 +202,13 @@ void loadSettings() {
     g_wrap = readDword(L"WordWrap", 0) != 0;
     g_showPanel = readDword(L"ShowPanel", 1) != 0;
     g_showNumbers = readDword(L"LineNumbers", 1) != 0;
+    g_showToolbar = readDword(L"Toolbar", 1) != 0;
+    g_showStatus = readDword(L"StatusBar", 1) != 0;
+    {
+        wchar_t face[LF_FACESIZE];
+        DWORD fsz = sizeof face;
+        if (RegGetValueW(HKEY_CURRENT_USER, kKey, L"FontFace", RRF_RT_REG_SZ, nullptr, face, &fsz) == ERROR_SUCCESS && face[0]) g_fontFace = face;
+    }
     for (int i = 0; i < 10; i++) {
         wchar_t name[16], buf[MAX_PATH * 2];
         wsprintfW(name, L"Recent%d", i);
@@ -193,6 +222,8 @@ void saveSettings() {
     writeDword(L"WordWrap", g_wrap);
     writeDword(L"ShowPanel", g_showPanel);
     writeDword(L"LineNumbers", g_showNumbers);
+    writeDword(L"Toolbar", g_showToolbar);
+    writeDword(L"StatusBar", g_showStatus);
     HKEY k;
     if (RegCreateKeyExW(HKEY_CURRENT_USER, kKey, 0, nullptr, 0, KEY_WRITE, nullptr, &k, nullptr) == ERROR_SUCCESS) {
         for (int i = 0; i < 10; i++) {
@@ -202,6 +233,7 @@ void saveSettings() {
                 RegSetValueExW(k, name, 0, REG_SZ, (const BYTE*)g_recent[i].c_str(), (DWORD)((g_recent[i].size() + 1) * sizeof(wchar_t)));
             else RegDeleteValueW(k, name);
         }
+        RegSetValueExW(k, L"FontFace", 0, REG_SZ, (const BYTE*)g_fontFace.c_str(), (DWORD)((g_fontFace.size() + 1) * sizeof(wchar_t)));
         WINDOWPLACEMENT wp{sizeof wp};
         GetWindowPlacement(g_wnd, &wp);
         RegSetValueExW(k, L"Placement", 0, REG_BINARY, (const BYTE*)&wp, sizeof wp);
@@ -373,6 +405,7 @@ void highlight() {
 // ---------------------------------------------------------------------------
 
 void updateStatus();
+void showProblems();
 
 void checkProgram() {
     std::wstring w = editorText();
@@ -408,9 +441,15 @@ void checkProgram() {
         }
     }
     g_problems = found;
+    showProblems();
+    highlight();
+    updateStatus();
+}
+
+void showProblems() {
     SendMessageW(g_panel, LB_RESETCONTENT, 0, 0);
     if (g_problems.empty()) {
-        SendMessageW(g_panel, LB_ADDSTRING, 0, (LPARAM)L"✓ Sin errores. Pulsa F5 para ejecutar.");
+        SendMessageW(g_panel, LB_ADDSTRING, 0, (LPARAM)L"✓ Sin errores. F5 ejecuta en una consola; Mayús+F5, aquí en el panel de salida.");
     } else {
         for (auto& p : g_problems) {
             wchar_t head[64];
@@ -419,18 +458,26 @@ void checkProgram() {
             SendMessageW(g_panel, LB_ADDSTRING, 0, (LPARAM)item.c_str());
         }
     }
-    highlight();
-    updateStatus();
+    if (g_bottomTabs) {
+        std::wstring label = g_problems.empty() ? L"Problemas" : L"Problemas (" + std::to_wstring(g_problems.size()) + L")";
+        TCITEMW it{};
+        it.mask = TCIF_TEXT;
+        it.pszText = label.data();
+        SendMessageW(g_bottomTabs, TCM_SETITEMW, 0, (LPARAM)&it);
+    }
 }
 
 // ---------------------------------------------------------------------------
 // Barra de estado, título y números de línea
 // ---------------------------------------------------------------------------
 
+void updateTabLabel(int i);
+
 void updateTitle() {
     std::wstring name = g_file.empty() ? L"sin título.hez" : fs::path(g_file).filename().wstring();
     std::wstring t = (g_dirty ? L"• " : L"") + name + L" — HyperEZ Editor";
     SetWindowTextW(g_wnd, t.c_str());
+    updateTabLabel(g_cur);
 }
 
 void updateStatus() {
@@ -449,10 +496,11 @@ void updateStatus() {
     else wsprintfW(pr, L"  ✓ Sin errores");
     SendMessageW(g_status, SB_SETTEXTW, 1, (LPARAM)pr);
     std::wstring ext = g_file.empty() ? L".hez" : fs::path(g_file).extension().wstring();
-    std::wstring fmt = L"  UTF-8 · " + ext + L" · " + std::to_wstring(g_fontPt) + L" pt";
+    std::wstring fmt = L"  UTF-8 · " + ext + L" · " + g_fontFace + L" " + std::to_wstring(g_fontPt) + L" pt";
     SendMessageW(g_status, SB_SETTEXTW, 2, (LPARAM)fmt.c_str());
+    SendMessageW(g_status, SB_SETTEXTW, 3, (LPARAM)(g_overwrite ? L"  SOB" : L"  INS"));
     std::wstring ver = L"  HyperEZ " + widen(HYPEREZ_VERSION);
-    SendMessageW(g_status, SB_SETTEXTW, 3, (LPARAM)ver.c_str());
+    SendMessageW(g_status, SB_SETTEXTW, 4, (LPARAM)ver.c_str());
     InvalidateRect(g_gutter, nullptr, FALSE);
 }
 
@@ -531,34 +579,89 @@ LRESULT CALLBACK gutterProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
 // Disposición de la ventana
 // ---------------------------------------------------------------------------
 
+// Alto de la tira de pestañas de un control de pestañas (sin su área de contenido)
+int tabStripHeight(HWND tabs, int width) {
+    RECT r{0, 0, width, S(300)};
+    SendMessageW(tabs, TCM_ADJUSTRECT, FALSE, (LPARAM)&r);
+    return std::max(S(20), (int)r.top - S(2));
+}
+
 void layout() {
+    if (!g_wnd) return;
     RECT rc;
     GetClientRect(g_wnd, &rc);
-    SendMessageW(g_status, WM_SIZE, 0, 0);
-    RECT sr;
-    GetWindowRect(g_status, &sr);
-    int statusH = sr.bottom - sr.top;
-    int parts[4] = {S(190), S(370), S(560), -1};
-    SendMessageW(g_status, SB_SETPARTS, 4, (LPARAM)parts);
-    int toolH = S(40);
-    int x = S(8);
-    for (size_t i = 0; i < g_tools.size(); i++) {
-        wchar_t text[64];
-        GetWindowTextW(g_tools[i], text, 64);
-        bool wide = wcslen(text) > 8;
-        int w = S(wide ? 112 : 84);
-        if (i == 3 || i == 7) x += S(10); // separadores
-        MoveWindow(g_tools[i], x, S(6), w, S(28), TRUE);
-        x += w + S(4);
+    int statusH = 0;
+    if (g_status) {
+        ShowWindow(g_status, g_showStatus ? SW_SHOW : SW_HIDE);
+        if (g_showStatus) {
+            SendMessageW(g_status, WM_SIZE, 0, 0);
+            RECT sr;
+            GetWindowRect(g_status, &sr);
+            statusH = sr.bottom - sr.top;
+            int parts[5] = {S(190), S(370), S(640), S(700), -1};
+            SendMessageW(g_status, SB_SETPARTS, 5, (LPARAM)parts);
+        }
     }
-    int panelH = g_showPanel ? S(110) : 0;
-    int top = toolH, bottom = rc.bottom - statusH - panelH;
+    int top = 0;
+    if (g_toolbar) {
+        ShowWindow(g_toolbar, g_showToolbar ? SW_SHOW : SW_HIDE);
+        if (g_showToolbar) {
+            DWORD bs = (DWORD)SendMessageW(g_toolbar, TB_GETBUTTONSIZE, 0, 0);
+            int th = HIWORD(bs) + S(6);
+            MoveWindow(g_toolbar, 0, 0, rc.right, th, TRUE);
+            top = th;
+        }
+    }
+    if (g_tabs) {
+        int th = tabStripHeight(g_tabs, rc.right);
+        MoveWindow(g_tabs, 0, top, rc.right, th, TRUE);
+        top += th;
+    }
+    int panelH = g_showPanel ? S(170) : 0;
+    int bottom = rc.bottom - statusH - panelH;
     int gw = gutterWidth();
     MoveWindow(g_gutter, 0, top, gw, bottom - top, TRUE);
     ShowWindow(g_gutter, g_showNumbers ? SW_SHOW : SW_HIDE);
-    MoveWindow(g_edit, gw, top, rc.right - gw, bottom - top, TRUE);
-    MoveWindow(g_panel, 0, bottom, rc.right, panelH, TRUE);
-    ShowWindow(g_panel, g_showPanel ? SW_SHOW : SW_HIDE);
+    if (g_edit) MoveWindow(g_edit, gw, top, rc.right - gw, bottom - top, TRUE);
+    if (g_bottomTabs) {
+        ShowWindow(g_bottomTabs, g_showPanel ? SW_SHOW : SW_HIDE);
+        int bh = tabStripHeight(g_bottomTabs, rc.right);
+        MoveWindow(g_bottomTabs, 0, bottom, rc.right, bh, TRUE);
+        int ch = std::max(0, panelH - bh);
+        MoveWindow(g_panel, 0, bottom + bh, rc.right, ch, TRUE);
+        MoveWindow(g_output, 0, bottom + bh, rc.right, ch, TRUE);
+        ShowWindow(g_panel, g_showPanel && g_bottomPage == 0 ? SW_SHOW : SW_HIDE);
+        ShowWindow(g_output, g_showPanel && g_bottomPage == 1 ? SW_SHOW : SW_HIDE);
+    }
+}
+
+void applyFontTo(HWND edit, ITextDocument* tom) {
+    if (!edit) return;
+    CHARFORMAT2W cf{};
+    cf.cbSize = sizeof cf;
+    cf.dwMask = CFM_FACE | CFM_SIZE | CFM_CHARSET;
+    wcsncpy_s(cf.szFaceName, g_fontFace.c_str(), _TRUNCATE);
+    cf.yHeight = g_fontPt * 20;
+    cf.bCharSet = DEFAULT_CHARSET;
+    g_formatting = true;
+    if (tom) tom->Undo(tomSuspend, nullptr);
+    SendMessageW(edit, EM_SETCHARFORMAT, SCF_ALL, (LPARAM)&cf);
+    SendMessageW(edit, EM_SETCHARFORMAT, SCF_DEFAULT, (LPARAM)&cf);
+    // tabuladores de 4 espacios
+    PARAFORMAT2 pf{};
+    pf.cbSize = sizeof pf;
+    pf.dwMask = PFM_TABSTOPS;
+    HDC dc = GetDC(edit);
+    HGDIOBJ old = SelectObject(dc, g_font);
+    SIZE sz;
+    GetTextExtentPoint32W(dc, L"0000", 4, &sz);
+    SelectObject(dc, old);
+    ReleaseDC(edit, dc);
+    pf.cTabCount = 32;
+    for (int i = 0; i < 32; i++) pf.rgxTabs[i] = MulDiv(sz.cx * (i + 1), 1440, g_dpi);
+    SendMessageW(edit, EM_SETPARAFORMAT, 0, (LPARAM)&pf);
+    if (tom) tom->Undo(tomResume, nullptr);
+    g_formatting = false;
 }
 
 void applyFont() {
@@ -566,34 +669,11 @@ void applyFont() {
     if (g_gutterFont) DeleteObject(g_gutterFont);
     if (g_boldGutterFont) DeleteObject(g_boldGutterFont);
     int px = -MulDiv(g_fontPt, g_dpi, 72);
-    g_font = CreateFontW(px, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, FIXED_PITCH, L"Consolas");
-    g_gutterFont = CreateFontW(px, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, FIXED_PITCH, L"Consolas");
-    g_boldGutterFont = CreateFontW(px, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, FIXED_PITCH, L"Consolas");
-    CHARFORMAT2W cf{};
-    cf.cbSize = sizeof cf;
-    cf.dwMask = CFM_FACE | CFM_SIZE | CFM_CHARSET;
-    wcscpy_s(cf.szFaceName, L"Consolas");
-    cf.yHeight = g_fontPt * 20;
-    cf.bCharSet = DEFAULT_CHARSET;
-    g_formatting = true;
-    if (g_doc) g_doc->Undo(tomSuspend, nullptr);
-    SendMessageW(g_edit, EM_SETCHARFORMAT, SCF_ALL, (LPARAM)&cf);
-    SendMessageW(g_edit, EM_SETCHARFORMAT, SCF_DEFAULT, (LPARAM)&cf);
-    // tabuladores de 4 espacios
-    PARAFORMAT2 pf{};
-    pf.cbSize = sizeof pf;
-    pf.dwMask = PFM_TABSTOPS;
-    HDC dc = GetDC(g_edit);
-    HGDIOBJ old = SelectObject(dc, g_font);
-    SIZE sz;
-    GetTextExtentPoint32W(dc, L"0000", 4, &sz);
-    SelectObject(dc, old);
-    ReleaseDC(g_edit, dc);
-    pf.cTabCount = 32;
-    for (int i = 0; i < 32; i++) pf.rgxTabs[i] = MulDiv(sz.cx * (i + 1), 1440, g_dpi);
-    SendMessageW(g_edit, EM_SETPARAFORMAT, 0, (LPARAM)&pf);
-    if (g_doc) g_doc->Undo(tomResume, nullptr);
-    g_formatting = false;
+    const wchar_t* face = g_fontFace.c_str();
+    g_font = CreateFontW(px, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, FIXED_PITCH, face);
+    g_gutterFont = CreateFontW(px, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, FIXED_PITCH, face);
+    g_boldGutterFont = CreateFontW(px, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, FIXED_PITCH, face);
+    for (auto& d : g_docs) applyFontTo(d.edit, d.tom);
     layout();
     updateStatus();
 }
@@ -610,7 +690,8 @@ void setText(const std::wstring& w) {
     g_formatting = false;
     g_dirty = false;
     g_savedText = editorText();
-    applyFont();
+    applyFontTo(g_edit, g_doc);
+    layout();
     checkProgram();
     updateTitle();
 }
@@ -624,7 +705,15 @@ void addRecent(const std::wstring& f) {
 
 void rebuildMenus();
 
+int addTab();
+void activate(int i);
+void storeCurrent();
+
 bool openFile(const std::wstring& path) {
+    std::wstring abs = fs::absolute(path).wstring();
+    storeCurrent();
+    for (size_t i = 0; i < g_docs.size(); i++) // ya abierto: ir a su pestaña
+        if (!g_docs[i].file.empty() && _wcsicmp(g_docs[i].file.c_str(), abs.c_str()) == 0) { activate((int)i); return true; }
     std::string data;
     if (!readFile(narrow(path), data)) {
         MessageBoxW(g_wnd, (L"No se puede abrir el archivo:\n" + path).c_str(), L"HyperEZ Editor", MB_ICONERROR);
@@ -639,7 +728,10 @@ bool openFile(const std::wstring& path) {
         else if (w[i] == L'\n') clean += L'\r';
         else clean += w[i];
     }
-    g_file = fs::absolute(path).wstring();
+    // se reutiliza la pestaña activa si es un documento nuevo que no se ha tocado
+    bool reuse = g_cur >= 0 && g_file.empty() && !g_dirty;
+    if (!reuse) addTab();
+    g_file = abs;
     setText(clean);
     addRecent(g_file);
     rebuildMenus();
@@ -744,16 +836,16 @@ const Template kTemplates[] = {
 };
 
 void newFile(const wchar_t* code = nullptr) {
-    if (!confirmDiscard()) return;
+    bool reuse = g_cur >= 0 && g_file.empty() && !g_dirty && editorText().empty();
+    if (!reuse) addTab();
     g_file.clear();
-    setText(code ? code : kWelcome);
+    setText(code ? code : L"");
     LONG end = (LONG)editorText().size();
     CHARRANGE cr{end, end};
     SendMessageW(g_edit, EM_EXSETSEL, 0, (LPARAM)&cr);
 }
 
 void openDialog() {
-    if (!confirmDiscard()) return;
     wchar_t buf[MAX_PATH * 2] = L"";
     std::wstring initial = g_file.empty() ? projectsDir() : fs::path(g_file).parent_path().wstring();
     OPENFILENAMEW of{sizeof of};
@@ -764,7 +856,7 @@ void openDialog() {
     of.nMaxFile = (DWORD)std::size(buf);
     of.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
     of.lpstrTitle = L"Abrir programa HyperEZ";
-    if (GetOpenFileNameW(&of)) { g_dirty = false; openFile(buf); }
+    if (GetOpenFileNameW(&of)) openFile(buf);
 }
 
 // ---------------------------------------------------------------------------
@@ -1137,6 +1229,12 @@ LRESULT CALLBACK editProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             return 0;
         }
         if (ctrl && wp == VK_SPACE) { showComplete(); return 0; }
+        if (wp == VK_INSERT && !ctrl && !shift) {
+            g_overwrite = !g_overwrite; // RichEdit cambia de modo con Insert: lo mostramos en la barra de estado
+            LRESULT r = CallWindowProcW(g_editProc, h, msg, wp, lp);
+            updateStatus();
+            return r;
+        }
     }
     if (msg == WM_CHAR) {
         if (wp == L' ' && GetKeyState(VK_CONTROL) < 0) return 0; // Ctrl+Espacio ya gestionado
@@ -1247,6 +1345,395 @@ void onFindMessage(FINDREPLACEW* fr) {
 // Menús y barra de herramientas
 // ---------------------------------------------------------------------------
 
+void setCheck(int cmd, bool on);
+
+// ---------------------------------------------------------------------------
+// Pestañas: cada documento tiene su propio control de texto. Los globales g_edit, g_doc, g_file,
+// g_dirty, g_savedText y g_problems son siempre los del documento activo (se guardan al cambiar).
+// ---------------------------------------------------------------------------
+
+void showProblems();
+void applyFontTo(HWND edit, ITextDocument* tom);
+
+Doc makeEditor() {
+    Doc d;
+    d.edit = CreateWindowExW(0, MSFTEDIT_CLASS, L"",
+                             WS_CHILD | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_NOHIDESEL | ES_WANTRETURN,
+                             0, 0, 10, 10, g_wnd, (HMENU)(INT_PTR)ID_EDIT, g_inst, nullptr);
+    SendMessageW(d.edit, EM_SETEVENTMASK, 0, ENM_CHANGE | ENM_SELCHANGE | ENM_SCROLL);
+    SendMessageW(d.edit, EM_EXLIMITTEXT, 0, 64 * 1024 * 1024);
+    SendMessageW(d.edit, EM_SETTEXTMODE, TM_RICHTEXT | TM_MULTILEVELUNDO | TM_MULTICODEPAGE, 0);
+    SendMessageW(d.edit, EM_SETUNDOLIMIT, 500, 0);
+    SendMessageW(d.edit, EM_SETBKGNDCOLOR, 0, RGB(255, 255, 255));
+    SendMessageW(d.edit, EM_SETMARGINS, EC_LEFTMARGIN, S(6));
+    SendMessageW(d.edit, EM_SETTARGETDEVICE, 0, g_wrap ? 0 : 1);
+    SendMessageW(d.edit, EM_SETLANGOPTIONS, 0, SendMessageW(d.edit, EM_GETLANGOPTIONS, 0, 0) & ~IMF_AUTOFONT);
+    IRichEditOle* ole = nullptr;
+    SendMessageW(d.edit, EM_GETOLEINTERFACE, 0, (LPARAM)&ole);
+    if (ole) {
+        static const GUID IID_ITextDocument_ = {0x8CC497C0, 0xA1DF, 0x11CE, {0x80, 0x98, 0x00, 0xAA, 0x00, 0x47, 0xBE, 0x5D}};
+        ole->QueryInterface(IID_ITextDocument_, (void**)&d.tom);
+        ole->Release();
+    }
+    WNDPROC prev = (WNDPROC)SetWindowLongPtrW(d.edit, GWLP_WNDPROC, (LONG_PTR)editProc);
+    if (!g_editProc) g_editProc = prev;
+    return d;
+}
+
+// Guarda en su Doc el estado del documento activo
+void storeCurrent() {
+    if (g_cur < 0 || g_cur >= (int)g_docs.size()) return;
+    Doc& d = g_docs[(size_t)g_cur];
+    d.file = g_file;
+    d.dirty = g_dirty;
+    d.saved = g_savedText;
+    d.problems = g_problems;
+    d.overwrite = g_overwrite;
+}
+
+std::wstring docName(const std::wstring& file) { return file.empty() ? L"sin título.hez" : fs::path(file).filename().wstring(); }
+
+void updateTabLabel(int i) {
+    if (!g_tabs || i < 0 || i >= (int)g_docs.size()) return;
+    bool dirty = i == g_cur ? g_dirty : g_docs[(size_t)i].dirty;
+    std::wstring file = i == g_cur ? g_file : g_docs[(size_t)i].file;
+    std::wstring label = (dirty ? L"• " : L"") + docName(file) + L"   ";
+    TCITEMW it{};
+    it.mask = TCIF_TEXT;
+    it.pszText = label.data();
+    SendMessageW(g_tabs, TCM_SETITEMW, (WPARAM)i, (LPARAM)&it);
+}
+
+void activate(int i) {
+    if (i < 0 || i >= (int)g_docs.size()) return;
+    if (i != g_cur) {
+        storeCurrent();
+        if (g_cur >= 0 && g_cur < (int)g_docs.size()) ShowWindow(g_docs[(size_t)g_cur].edit, SW_HIDE);
+        g_cur = i;
+        Doc& d = g_docs[(size_t)i];
+        g_edit = d.edit;
+        g_doc = d.tom;
+        g_file = d.file;
+        g_dirty = d.dirty;
+        g_savedText = d.saved;
+        g_problems = d.problems;
+        g_overwrite = d.overwrite;
+        g_lastFirstLine = -1;
+        if (!g_file.empty()) SetCurrentDirectoryW(fs::path(g_file).parent_path().c_str());
+    }
+    SendMessageW(g_tabs, TCM_SETCURSEL, (WPARAM)i, 0);
+    ShowWindow(g_edit, SW_SHOW);
+    layout();
+    showProblems();
+    updateTitle();
+    updateStatus();
+    SetFocus(g_edit);
+}
+
+int addTab() {
+    storeCurrent();
+    Doc d = makeEditor();
+    g_docs.push_back(d);
+    int i = (int)g_docs.size() - 1;
+    std::wstring label = L"sin título.hez   ";
+    TCITEMW it{};
+    it.mask = TCIF_TEXT;
+    it.pszText = label.data();
+    SendMessageW(g_tabs, TCM_INSERTITEMW, (WPARAM)i, (LPARAM)&it);
+    applyFontTo(d.edit, d.tom);
+    activate(i);
+    return i;
+}
+
+bool confirmDiscard();
+
+// Cierra una pestaña (pregunta si tiene cambios). Siempre queda al menos una.
+bool closeTab(int i) {
+    if (i < 0 || i >= (int)g_docs.size()) return false;
+    activate(i);
+    if (!confirmDiscard()) return false;
+    if (g_doc) g_doc->Release();
+    DestroyWindow(g_edit);
+    g_docs.erase(g_docs.begin() + i);
+    SendMessageW(g_tabs, TCM_DELETEITEM, (WPARAM)i, 0);
+    g_cur = -1;
+    g_edit = nullptr;
+    g_doc = nullptr;
+    g_problems.clear();
+    if (g_docs.empty()) {
+        addTab();
+        g_file.clear();
+        g_dirty = false;
+        g_savedText = editorText();
+        updateTitle();
+    } else {
+        activate(std::min(i, (int)g_docs.size() - 1));
+    }
+    return true;
+}
+
+// Pestaña de documentos: el botón central del ratón cierra la pestaña
+WNDPROC g_tabsProc = nullptr;
+LRESULT CALLBACK tabsProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
+    if (msg == WM_MBUTTONUP) {
+        TCHITTESTINFO hit{};
+        hit.pt = {GET_X_LPARAM(lp), GET_Y_LPARAM(lp)};
+        int i = (int)SendMessageW(h, TCM_HITTEST, 0, (LPARAM)&hit);
+        if (i >= 0) { closeTab(i); return 0; }
+    }
+    return CallWindowProcW(g_tabsProc, h, msg, wp, lp);
+}
+
+// ---------------------------------------------------------------------------
+// Panel de salida: ejecutar el programa dentro del editor (Mayús+F5)
+// ---------------------------------------------------------------------------
+
+enum : UINT { WM_APP_OUTPUT = WM_APP + 20, WM_APP_DONE = WM_APP + 21 };
+HANDLE g_runProc = nullptr;
+double g_runStart = 0;
+std::string g_outCarry; // trozo de un carácter UTF-8 que llegó partido
+
+void setBottomPage(int page) {
+    g_bottomPage = page;
+    SendMessageW(g_bottomTabs, TCM_SETCURSEL, (WPARAM)page, 0);
+    if (!g_showPanel) { g_showPanel = true; setCheck(CMD_PANEL, true); }
+    layout();
+}
+
+void appendOutput(const std::wstring& w) {
+    std::wstring t;
+    t.reserve(w.size() + 16);
+    for (size_t i = 0; i < w.size(); i++) {
+        if (w[i] == L'\n' && (i == 0 || w[i - 1] != L'\r')) t += L"\r\n";
+        else t += w[i];
+    }
+    int len = GetWindowTextLengthW(g_output);
+    if (len > 2000000) { SetWindowTextW(g_output, L"(salida anterior recortada)\r\n"); len = GetWindowTextLengthW(g_output); }
+    SendMessageW(g_output, EM_SETSEL, (WPARAM)len, (LPARAM)len);
+    SendMessageW(g_output, EM_REPLACESEL, FALSE, (LPARAM)t.c_str());
+    SendMessageW(g_output, EM_SCROLLCARET, 0, 0);
+}
+
+void appendOutputUtf8(const std::string& chunk) {
+    std::string s = g_outCarry + chunk;
+    g_outCarry.clear();
+    // no cortar un carácter UTF-8 por la mitad
+    size_t end = s.size(), i = s.size();
+    int back = 0;
+    while (i > 0 && back < 4 && ((unsigned char)s[i - 1] & 0xC0) == 0x80) { i--; back++; }
+    if (i > 0) {
+        unsigned char lead = (unsigned char)s[i - 1];
+        int need = lead >= 0xF0 ? 4 : lead >= 0xE0 ? 3 : lead >= 0xC0 ? 2 : 1;
+        if (need > 1 && back + 1 < need) { end = i - 1; g_outCarry = s.substr(end); }
+    }
+    appendOutput(widen(s.substr(0, end)));
+}
+
+double nowSeconds() {
+    LARGE_INTEGER f, c;
+    QueryPerformanceFrequency(&f);
+    QueryPerformanceCounter(&c);
+    return (double)c.QuadPart / (double)f.QuadPart;
+}
+
+// Entorno del proceso actual con NO_COLOR=1 (sin códigos de color en el panel)
+std::vector<wchar_t> environmentWithNoColor() {
+    std::vector<wchar_t> env;
+    LPWCH cur = GetEnvironmentStringsW();
+    for (LPWCH p = cur; p && *p; p += wcslen(p) + 1) {
+        if (_wcsnicmp(p, L"NO_COLOR=", 9) == 0 || _wcsnicmp(p, L"HYPEREZ_COLOR=", 14) == 0) continue;
+        env.insert(env.end(), p, p + wcslen(p) + 1);
+    }
+    if (cur) FreeEnvironmentStringsW(cur);
+    const wchar_t* extra = L"NO_COLOR=1";
+    env.insert(env.end(), extra, extra + wcslen(extra) + 1);
+    env.push_back(L'\0');
+    return env;
+}
+
+void stopRun() {
+    if (g_runProc) TerminateProcess(g_runProc, 1);
+}
+
+bool ensureSaved();
+
+void runInPanel() {
+    if (!ensureSaved()) return;
+    checkProgram();
+    if (std::any_of(g_problems.begin(), g_problems.end(), [](const Problem& p) { return p.error; })) {
+        setBottomPage(0);
+        MessageBeep(MB_ICONWARNING);
+        SendMessageW(g_status, SB_SETTEXTW, 1, (LPARAM)L"  ✗ Corrige los errores para ejecutar");
+        return;
+    }
+    if (g_runProc) {
+        MessageBeep(MB_ICONINFORMATION);
+        SendMessageW(g_status, SB_SETTEXTW, 1, (LPARAM)L"  Ya hay un programa en marcha (Ejecutar → Detener)");
+        return;
+    }
+    std::wstring exe = hyperExe();
+    if (!fs::exists(exe)) {
+        MessageBoxW(g_wnd, L"No se encuentra hyper.exe junto al editor. Reinstala HyperEZ.", L"HyperEZ Editor", MB_ICONERROR);
+        return;
+    }
+    setBottomPage(1);
+    SetWindowTextW(g_output, L"");
+    g_outCarry.clear();
+    appendOutput(L"▶ " + docName(g_file) + L"   (sin teclado: para juegos e input() usa F5)\r\n\r\n");
+    SECURITY_ATTRIBUTES sa{sizeof sa, nullptr, TRUE};
+    HANDLE rd = nullptr, wr = nullptr;
+    if (!CreatePipe(&rd, &wr, &sa, 0)) return;
+    SetHandleInformation(rd, HANDLE_FLAG_INHERIT, 0);
+    HANDLE nul = CreateFileW(L"NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, OPEN_EXISTING, 0, nullptr);
+    STARTUPINFOW si{sizeof si};
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdInput = nul;
+    si.hStdOutput = wr;
+    si.hStdError = wr;
+    PROCESS_INFORMATION pi{};
+    std::wstring cmd = L"\"" + exe + L"\" run \"" + g_file + L"\"";
+    std::vector<wchar_t> env = environmentWithNoColor();
+    std::wstring cwd = fs::path(g_file).parent_path().wstring();
+    BOOL ok = CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, TRUE, CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT, env.data(), cwd.c_str(), &si, &pi);
+    CloseHandle(wr);
+    if (nul != INVALID_HANDLE_VALUE) CloseHandle(nul);
+    if (!ok) {
+        CloseHandle(rd);
+        appendOutput(L"No se pudo ejecutar hyper.exe\r\n");
+        return;
+    }
+    CloseHandle(pi.hThread);
+    g_runProc = pi.hProcess;
+    g_runStart = nowSeconds();
+    HWND target = g_wnd;
+    HANDLE proc = pi.hProcess;
+    std::thread([rd, proc, target] {
+        char buf[4096];
+        DWORD n = 0;
+        while (ReadFile(rd, buf, sizeof buf, &n, nullptr) && n > 0)
+            PostMessageW(target, WM_APP_OUTPUT, 0, (LPARAM)new std::string(buf, n));
+        CloseHandle(rd);
+        WaitForSingleObject(proc, INFINITE);
+        DWORD code = 0;
+        GetExitCodeProcess(proc, &code);
+        PostMessageW(target, WM_APP_DONE, code, 0);
+    }).detach();
+    SendMessageW(g_toolbar, TB_ENABLEBUTTON, CMD_STOP, TRUE);
+}
+
+void runFinished(DWORD code) {
+    double secs = nowSeconds() - g_runStart;
+    if (!g_outCarry.empty()) { appendOutput(widen(g_outCarry)); g_outCarry.clear(); }
+    wchar_t buf[160];
+    swprintf(buf, std::size(buf), L"\r\n%ls Terminó %ls (código %lu) en %.2f s\r\n", code == 0 ? L"■" : L"✗",
+             code == 0 ? L"bien" : L"con errores", (unsigned long)code, secs);
+    std::wstring msg = buf;
+    for (auto& c : msg) if (c == L'.') { c = L','; break; }
+    appendOutput(msg);
+    if (g_runProc) { CloseHandle(g_runProc); g_runProc = nullptr; }
+    SendMessageW(g_toolbar, TB_ENABLEBUTTON, CMD_STOP, FALSE);
+}
+
+// Doble clic en una línea de la salida con "archivo.hez:12:5" (o "(archivo.hez:12)") lleva a esa línea
+WNDPROC g_outputProc = nullptr;
+LRESULT CALLBACK outputProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
+    LRESULT r = CallWindowProcW(g_outputProc, h, msg, wp, lp);
+    if (msg == WM_LBUTTONDBLCLK) {
+        DWORD a = 0;
+        SendMessageW(h, EM_GETSEL, (WPARAM)&a, 0);
+        int line = (int)SendMessageW(h, EM_LINEFROMCHAR, a, 0);
+        wchar_t buf[1024];
+        *(WORD*)buf = (WORD)(std::size(buf) - 1);
+        int n = (int)SendMessageW(h, EM_GETLINE, (WPARAM)line, (LPARAM)buf);
+        std::wstring t(buf, (size_t)std::max(0, n));
+        for (const wchar_t* ext : {L".hez:", L".hz:"}) {
+            size_t p = t.find(ext);
+            if (p == std::wstring::npos) continue;
+            size_t q = p + wcslen(ext);
+            int ln = _wtoi(t.c_str() + q);
+            int col = 1;
+            size_t c2 = t.find(L':', q);
+            if (c2 != std::wstring::npos && c2 < q + 8) col = std::max(1, _wtoi(t.c_str() + c2 + 1));
+            if (ln > 0) { gotoLine(ln, col); return r; }
+        }
+    }
+    return r;
+}
+
+// ---------------------------------------------------------------------------
+// Imprimir (Ctrl+P): con los colores del código, el nombre del archivo y el número de página
+// ---------------------------------------------------------------------------
+
+void printDocument() {
+    PRINTDLGW pd{};
+    pd.lStructSize = sizeof pd;
+    pd.hwndOwner = g_wnd;
+    pd.Flags = PD_RETURNDC | PD_NOSELECTION | PD_NOPAGENUMS | PD_USEDEVMODECOPIESANDCOLLATE;
+    if (!PrintDlgW(&pd)) return;
+    HDC dc = pd.hDC;
+    std::wstring name = docName(g_file);
+    DOCINFOW di{sizeof di};
+    di.lpszDocName = name.c_str();
+    if (StartDocW(dc, &di) > 0) {
+        int dpiX = GetDeviceCaps(dc, LOGPIXELSX), dpiY = GetDeviceCaps(dc, LOGPIXELSY);
+        int pw = GetDeviceCaps(dc, PHYSICALWIDTH), ph = GetDeviceCaps(dc, PHYSICALHEIGHT);
+        int ox = GetDeviceCaps(dc, PHYSICALOFFSETX), oy = GetDeviceCaps(dc, PHYSICALOFFSETY);
+        auto twX = [&](int px) { return MulDiv(px, 1440, dpiX); };
+        auto twY = [&](int px) { return MulDiv(px, 1440, dpiY); };
+        int margin = 1134; // 2 cm
+        FORMATRANGE fr{};
+        fr.hdc = fr.hdcTarget = dc;
+        fr.rcPage = {0, 0, twX(pw), twY(ph)};
+        fr.rc = {margin - twX(ox), margin + 360 - twY(oy), twX(pw) - margin - twX(ox), twY(ph) - margin - twY(oy)};
+        GETTEXTLENGTHEX gl{GTL_DEFAULT | GTL_NUMCHARS, 1200};
+        LONG len = (LONG)SendMessageW(g_edit, EM_GETTEXTLENGTHEX, (WPARAM)&gl, 0);
+        fr.chrg = {0, -1};
+        HFONT hf = CreateFontW(-MulDiv(9, dpiY, 72), 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, 0, 0, 0, 0, L"Segoe UI");
+        int page = 1;
+        do {
+            StartPage(dc);
+            HGDIOBJ old = SelectObject(dc, hf);
+            SetTextColor(dc, RGB(110, 110, 110));
+            std::wstring head = name + L"   ·   página " + std::to_wstring(page);
+            TextOutW(dc, MulDiv(margin, dpiX, 1440) - ox, MulDiv(margin, dpiY, 1440) - oy, head.c_str(), (int)head.size());
+            SelectObject(dc, old);
+            LONG next = (LONG)SendMessageW(g_edit, EM_FORMATRANGE, TRUE, (LPARAM)&fr);
+            EndPage(dc);
+            if (next <= fr.chrg.cpMin) break;
+            fr.chrg.cpMin = next;
+            page++;
+        } while (fr.chrg.cpMin < len);
+        SendMessageW(g_edit, EM_FORMATRANGE, FALSE, 0);
+        DeleteObject(hf);
+        EndDoc(dc);
+        SendMessageW(g_status, SB_SETTEXTW, 1, (LPARAM)(L"  Impreso: " + std::to_wstring(page) + L" página(s)").c_str());
+    }
+    DeleteDC(dc);
+    if (pd.hDevMode) GlobalFree(pd.hDevMode);
+    if (pd.hDevNames) GlobalFree(pd.hDevNames);
+}
+
+// Ver → Fuente: solo fuentes de ancho fijo
+void chooseFont() {
+    LOGFONTW lf{};
+    lf.lfHeight = -MulDiv(g_fontPt, g_dpi, 72);
+    wcsncpy_s(lf.lfFaceName, g_fontFace.c_str(), _TRUNCATE);
+    CHOOSEFONTW cf{};
+    cf.lStructSize = sizeof cf;
+    cf.hwndOwner = g_wnd;
+    cf.lpLogFont = &lf;
+    cf.Flags = CF_SCREENFONTS | CF_FIXEDPITCHONLY | CF_INITTOLOGFONTSTRUCT | CF_NOSCRIPTSEL | CF_NOVERTFONTS;
+    if (!ChooseFontW(&cf)) return;
+    g_fontFace = lf.lfFaceName;
+    g_fontPt = std::clamp(cf.iPointSize / 10, 7, 40);
+    applyFont();
+    highlight();
+}
+
+// ---------------------------------------------------------------------------
+// Menús
+// ---------------------------------------------------------------------------
+
 void collectExamples() {
     g_examples.clear();
     std::error_code ec;
@@ -1274,8 +1761,9 @@ HMENU buildMenu() {
     HMENU bar = CreateMenu();
     HMENU file = CreatePopupMenu(), edit = CreatePopupMenu(), run = CreatePopupMenu(), view = CreatePopupMenu(), help = CreatePopupMenu();
     HMENU templates = CreatePopupMenu(), examples = CreatePopupMenu();
+    g_examplesMenu = examples;
     g_recentMenu = CreatePopupMenu();
-    AppendMenuW(file, MF_STRING, CMD_NEW, L"&Nuevo\tCtrl+N");
+    AppendMenuW(file, MF_STRING, CMD_NEW, L"&Nuevo (pestaña nueva)\tCtrl+N");
     for (size_t i = 0; i < std::size(kTemplates); i++) AppendMenuW(templates, MF_STRING, CMD_TEMPLATE + i, kTemplates[i].name);
     AppendMenuW(file, MF_POPUP, (UINT_PTR)templates, L"Nuevo desde &plantilla");
     AppendMenuW(file, MF_STRING, CMD_OPEN, L"&Abrir...\tCtrl+O");
@@ -1298,6 +1786,11 @@ HMENU buildMenu() {
     AppendMenuW(file, MF_STRING, CMD_SAVE, L"&Guardar\tCtrl+S");
     AppendMenuW(file, MF_STRING, CMD_SAVEAS, L"Guardar &como...\tCtrl+Mayús+S");
     AppendMenuW(file, MF_STRING, CMD_OPEN_FOLDER, L"Abrir la &carpeta del archivo");
+    AppendMenuW(file, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(file, MF_STRING, CMD_CLOSETAB, L"Ce&rrar la pestaña\tCtrl+W");
+    AppendMenuW(file, MF_STRING, CMD_CLOSEOTHERS, L"Cerrar las &demás pestañas");
+    AppendMenuW(file, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(file, MF_STRING, CMD_PRINT, L"&Imprimir...\tCtrl+P");
     AppendMenuW(file, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(file, MF_STRING, CMD_EXIT, L"&Salir\tAlt+F4");
 
@@ -1322,20 +1815,30 @@ HMENU buildMenu() {
     AppendMenuW(edit, MF_STRING, CMD_INDENT, L"Aumentar sangría\tTab");
     AppendMenuW(edit, MF_STRING, CMD_OUTDENT, L"Reducir sangría\tMayús+Tab");
 
-    AppendMenuW(run, MF_STRING, CMD_RUN, L"&Ejecutar\tF5");
+    AppendMenuW(run, MF_STRING, CMD_RUN, L"&Ejecutar en una consola\tF5");
+    AppendMenuW(run, MF_STRING, CMD_RUNPANEL, L"Ejecutar en el &panel de salida\tMayús+F5");
+    AppendMenuW(run, MF_STRING, CMD_STOP, L"&Detener el programa del panel\tCtrl+Pausa");
     AppendMenuW(run, MF_STRING, CMD_CHECK, L"&Comprobar errores\tF7");
     AppendMenuW(run, MF_STRING, CMD_WATCH, L"Ejecutar y repetir al &guardar\tCtrl+F5");
     AppendMenuW(run, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(run, MF_STRING, CMD_REPL, L"Abrir la consola &interactiva\tF6");
     AppendMenuW(run, MF_STRING, CMD_TESTS, L"Ejecutar las &pruebas de la carpeta");
+    AppendMenuW(run, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(run, MF_STRING, CMD_CLEAROUTPUT, L"&Borrar el panel de salida");
 
     AppendMenuW(view, MF_STRING, CMD_ZOOMIN, L"&Aumentar texto\tCtrl++");
     AppendMenuW(view, MF_STRING, CMD_ZOOMOUT, L"&Reducir texto\tCtrl+-");
     AppendMenuW(view, MF_STRING, CMD_ZOOMRESET, L"&Tamaño normal\tCtrl+0");
+    AppendMenuW(view, MF_STRING, CMD_FONT, L"&Fuente...");
     AppendMenuW(view, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(view, MF_STRING, CMD_NEXTTAB, L"Pestaña &siguiente\tCtrl+Tab");
+    AppendMenuW(view, MF_STRING, CMD_PREVTAB, L"Pestaña &anterior\tCtrl+Mayús+Tab");
+    AppendMenuW(view, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(view, MF_STRING | (g_showToolbar ? MF_CHECKED : 0), CMD_TOOLBAR, L"&Barra de herramientas");
+    AppendMenuW(view, MF_STRING | (g_showStatus ? MF_CHECKED : 0), CMD_STATUSBAR, L"Barra de &estado");
     AppendMenuW(view, MF_STRING | (g_showNumbers ? MF_CHECKED : 0), CMD_LINENUMBERS, L"&Números de línea");
     AppendMenuW(view, MF_STRING | (g_wrap ? MF_CHECKED : 0), CMD_WRAP, L"A&juste de línea");
-    AppendMenuW(view, MF_STRING | (g_showPanel ? MF_CHECKED : 0), CMD_PANEL, L"&Panel de errores");
+    AppendMenuW(view, MF_STRING | (g_showPanel ? MF_CHECKED : 0), CMD_PANEL, L"&Panel de problemas y salida");
 
     AppendMenuW(help, MF_STRING, CMD_HELP_GUIDE, L"&Guía del lenguaje\tF1");
     AppendMenuW(help, MF_STRING, CMD_HELP_DOCS, L"&Documentación completa");
@@ -1368,17 +1871,17 @@ void openDoc(const wchar_t* html, const wchar_t* md) {
 void onCommand(int id) {
     if (id >= CMD_RECENT && id < CMD_RECENT + 10) {
         size_t i = (size_t)(id - CMD_RECENT);
-        if (i < g_recent.size() && confirmDiscard()) { std::wstring f = g_recent[i]; g_dirty = false; openFile(f); }
+        if (i < g_recent.size()) { std::wstring f = g_recent[i]; openFile(f); }
         return;
     }
     if (id >= CMD_EXAMPLE && id < CMD_EXAMPLE + 1000) {
         size_t i = (size_t)(id - CMD_EXAMPLE);
-        if (i < g_examples.size() && confirmDiscard()) { g_dirty = false; openFile(g_examples[i]); }
+        if (i < g_examples.size()) openFile(g_examples[i]);
         return;
     }
     if (id >= CMD_TEMPLATE && id < CMD_TEMPLATE + 100) {
         size_t i = (size_t)(id - CMD_TEMPLATE);
-        if (i < std::size(kTemplates)) newFile(kTemplates[i].code);
+        if (i < std::size(kTemplates)) newFile(kTemplates[i].code ? kTemplates[i].code : kWelcome);
         return;
     }
     switch (id) {
@@ -1435,24 +1938,45 @@ void onCommand(int id) {
         case CMD_ZOOMRESET: g_fontPt = 11; applyFont(); highlight(); break;
         case CMD_WRAP:
             g_wrap = !g_wrap;
-            SendMessageW(g_edit, EM_SETTARGETDEVICE, 0, g_wrap ? 0 : 1);
+            for (auto& d : g_docs) SendMessageW(d.edit, EM_SETTARGETDEVICE, 0, g_wrap ? 0 : 1);
             setCheck(CMD_WRAP, g_wrap);
             break;
+        case CMD_CLOSETAB: closeTab(g_cur); break;
+        case CMD_CLOSEOTHERS: {
+            storeCurrent();
+            HWND keep = g_edit;
+            for (int i = (int)g_docs.size() - 1; i >= 0; i--)
+                if (g_docs[(size_t)i].edit != keep && !closeTab(i)) break;
+            for (size_t i = 0; i < g_docs.size(); i++) if (g_docs[i].edit == keep) activate((int)i);
+            break;
+        }
+        case CMD_NEXTTAB: if (!g_docs.empty()) activate((g_cur + 1) % (int)g_docs.size()); break;
+        case CMD_PREVTAB: if (!g_docs.empty()) activate((g_cur + (int)g_docs.size() - 1) % (int)g_docs.size()); break;
+        case CMD_PRINT: printDocument(); break;
+        case CMD_FONT: chooseFont(); break;
+        case CMD_RUNPANEL: runInPanel(); break;
+        case CMD_STOP: stopRun(); break;
+        case CMD_CLEAROUTPUT: SetWindowTextW(g_output, L""); setBottomPage(1); break;
+        case CMD_TOOLBAR: g_showToolbar = !g_showToolbar; setCheck(CMD_TOOLBAR, g_showToolbar); layout(); break;
+        case CMD_STATUSBAR: g_showStatus = !g_showStatus; setCheck(CMD_STATUSBAR, g_showStatus); layout(); break;
         case CMD_PANEL: g_showPanel = !g_showPanel; setCheck(CMD_PANEL, g_showPanel); layout(); break;
         case CMD_LINENUMBERS: g_showNumbers = !g_showNumbers; setCheck(CMD_LINENUMBERS, g_showNumbers); layout(); break;
         case CMD_HELP_GUIDE: case ID_TB_HELP: openDoc(L"docs-html\\GUIA.html", L"docs\\GUIA.md"); break;
         case CMD_HELP_DOCS: openDoc(L"docs-html\\index.html", L"docs\\README.md"); break;
         case CMD_HELP_API: openDoc(L"docs-html\\biblioteca\\API.html", L"docs\\biblioteca\\API.md"); break;
-        case ID_TB_EXAMPLES: {
-            RECT r;
-            GetWindowRect(g_tools[7], &r);
-            HMENU m = GetSubMenu(GetSubMenu(GetMenu(g_wnd), 0), 4);
-            TrackPopupMenu(m, TPM_LEFTALIGN | TPM_TOPALIGN, r.left, r.bottom, 0, g_wnd, nullptr);
+        case CMD_EXAMPLESMENU: {
+            RECT r{};
+            SendMessageW(g_toolbar, TB_GETRECT, CMD_EXAMPLESMENU, (LPARAM)&r);
+            MapWindowPoints(g_toolbar, nullptr, (POINT*)&r, 2);
+            TrackPopupMenu(g_examplesMenu, TPM_LEFTALIGN | TPM_TOPALIGN, r.left, r.bottom, 0, g_wnd, nullptr);
             break;
         }
         case CMD_HELP_KEYS:
             MessageBoxW(g_wnd,
-                        L"F5\tEjecutar\nCtrl+F5\tEjecutar y repetir al guardar\nF6\tConsola interactiva\nF7\tComprobar errores\n\n"
+                        L"F5\tEjecutar en una consola\nMayús+F5\tEjecutar en el panel de salida\nCtrl+Pausa\tDetener el programa del panel\n"
+                        L"Ctrl+F5\tEjecutar y repetir al guardar\nF6\tConsola interactiva\nF7\tComprobar errores\n\n"
+                        L"Ctrl+N\tPestaña nueva\nCtrl+W\tCerrar la pestaña\nCtrl+Tab\tPestaña siguiente\nCtrl+P\tImprimir\n"
+                        L"Insert\tSobrescribir (SOB) o insertar (INS)\n\n"
                         L"Ctrl+N / O / S\tNuevo / Abrir / Guardar\nCtrl+F / H\tBuscar / Reemplazar\nF3\tBuscar siguiente\n"
                         L"Ctrl+G\tIr a la línea\nCtrl+Espacio\tCompletar nombre\nCtrl+/\tComentar líneas\nCtrl+D\tDuplicar línea\n"
                         L"Ctrl+Mayús+F\tFormatear documento\n"
@@ -1461,9 +1985,17 @@ void onCommand(int id) {
             break;
         case CMD_ABOUT: {
             std::wstring msg = L"HyperEZ Editor " + widen(HYPEREZ_VERSION) +
-                               L"\n\nUn editor sencillo para programar en HyperEZ, el lenguaje de programación en español."
+                               L"\n\nUn editor sencillo y clásico para programar en HyperEZ, el lenguaje de programación en español."
+                               L"\n\nIncluye el lenguaje completo: el editor usa su mismo analizador, formateador y catálogo de funciones."
                                L"\n\n" + widen(HYPEREZ_REPO_URL) + L"\n\nLicencia MIT © 2026 Adrián Cueva Caravaca";
-            MessageBoxW(g_wnd, msg.c_str(), L"Acerca de HyperEZ", MB_ICONINFORMATION);
+            MSGBOXPARAMSW mb{sizeof mb};
+            mb.hwndOwner = g_wnd;
+            mb.hInstance = g_inst;
+            mb.lpszText = msg.c_str();
+            mb.lpszCaption = L"Acerca de HyperEZ Editor";
+            mb.dwStyle = MB_OK | MB_USERICON;
+            mb.lpszIcon = MAKEINTRESOURCEW(1);
+            MessageBoxIndirectW(&mb);
             break;
         }
     }
@@ -1478,20 +2010,49 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     switch (msg) {
         case WM_CREATE: {
             g_wnd = h;
-            auto button = [&](const wchar_t* text, int id) {
-                HWND b = CreateWindowExW(0, L"BUTTON", text, WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 10, 10, h, (HMENU)(INT_PTR)id, g_inst, nullptr);
-                SendMessageW(b, WM_SETFONT, (WPARAM)g_uiFont, TRUE);
-                g_tools.push_back(b);
+            // Barra de herramientas clásica: iconos estándar de Windows y botones con texto para ejecutar
+            g_toolbar = CreateWindowExW(0, TOOLBARCLASSNAMEW, nullptr,
+                                        WS_CHILD | WS_VISIBLE | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | TBSTYLE_LIST | CCS_NODIVIDER | CCS_NOPARENTALIGN |
+                                            CCS_NORESIZE,
+                                        0, 0, 10, 10, h, (HMENU)(INT_PTR)ID_TOOLBAR, g_inst, nullptr);
+            SendMessageW(g_toolbar, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
+            SendMessageW(g_toolbar, TB_SETEXTENDEDSTYLE, 0, TBSTYLE_EX_MIXEDBUTTONS | TBSTYLE_EX_DRAWDDARROWS);
+            SendMessageW(g_toolbar, WM_SETFONT, (WPARAM)g_uiFont, TRUE);
+            SendMessageW(g_toolbar, TB_LOADIMAGES, g_dpi >= 144 ? IDB_STD_LARGE_COLOR : IDB_STD_SMALL_COLOR, (LPARAM)HINST_COMMCTRL);
+            auto btn = [](int image, int cmd, const wchar_t* text, BYTE style = BTNS_BUTTON) {
+                TBBUTTON b{};
+                b.iBitmap = image;
+                b.idCommand = cmd;
+                b.fsState = TBSTATE_ENABLED;
+                b.fsStyle = style;
+                b.iString = (INT_PTR)text;
+                return b;
             };
-            button(L"Nuevo", ID_TB_NEW);
-            button(L"Abrir", ID_TB_OPEN);
-            button(L"Guardar", ID_TB_SAVE);
-            button(L"▶  Ejecutar", ID_TB_RUN);
-            button(L"✓  Comprobar", ID_TB_CHECK);
-            button(L"⟳  Repetir", ID_TB_WATCH);
-            button(L"Consola", ID_TB_REPL);
-            button(L"Ejemplos ▾", ID_TB_EXAMPLES);
-            button(L"Ayuda", ID_TB_HELP);
+            TBBUTTON sep{};
+            sep.fsStyle = BTNS_SEP;
+            TBBUTTON buttons[] = {
+                btn(STD_FILENEW, CMD_NEW, L"Nuevo (Ctrl+N)"), btn(STD_FILEOPEN, CMD_OPEN, L"Abrir (Ctrl+O)"),
+                btn(STD_FILESAVE, CMD_SAVE, L"Guardar (Ctrl+S)"), btn(STD_PRINT, CMD_PRINT, L"Imprimir (Ctrl+P)"), sep,
+                btn(STD_CUT, CMD_CUT, L"Cortar (Ctrl+X)"), btn(STD_COPY, CMD_COPY, L"Copiar (Ctrl+C)"), btn(STD_PASTE, CMD_PASTE, L"Pegar (Ctrl+V)"), sep,
+                btn(STD_UNDO, CMD_UNDO, L"Deshacer (Ctrl+Z)"), btn(STD_REDOW, CMD_REDO, L"Rehacer (Ctrl+Y)"), sep,
+                btn(STD_FIND, CMD_FIND, L"Buscar (Ctrl+F)"), btn(STD_REPLACE, CMD_REPLACE, L"Reemplazar (Ctrl+H)"), sep,
+                btn(I_IMAGENONE, CMD_RUN, L"▶ Ejecutar", BTNS_BUTTON | BTNS_SHOWTEXT | BTNS_AUTOSIZE),
+                btn(I_IMAGENONE, CMD_RUNPANEL, L"▷ En el panel", BTNS_BUTTON | BTNS_SHOWTEXT | BTNS_AUTOSIZE),
+                btn(I_IMAGENONE, CMD_STOP, L"■", BTNS_BUTTON | BTNS_SHOWTEXT | BTNS_AUTOSIZE),
+                btn(I_IMAGENONE, CMD_CHECK, L"✓ Comprobar", BTNS_BUTTON | BTNS_SHOWTEXT | BTNS_AUTOSIZE),
+                btn(I_IMAGENONE, CMD_WATCH, L"⟳ Repetir", BTNS_BUTTON | BTNS_SHOWTEXT | BTNS_AUTOSIZE),
+                btn(I_IMAGENONE, CMD_REPL, L"Consola", BTNS_BUTTON | BTNS_SHOWTEXT | BTNS_AUTOSIZE), sep,
+                btn(I_IMAGENONE, CMD_EXAMPLESMENU, L"Ejemplos ▾", BTNS_BUTTON | BTNS_SHOWTEXT | BTNS_AUTOSIZE),
+                btn(STD_HELP, CMD_HELP_GUIDE, L"Guía del lenguaje (F1)"),
+            };
+            SendMessageW(g_toolbar, TB_ADDBUTTONSW, (WPARAM)std::size(buttons), (LPARAM)buttons);
+            SendMessageW(g_toolbar, TB_AUTOSIZE, 0, 0);
+            SendMessageW(g_toolbar, TB_ENABLEBUTTON, CMD_STOP, FALSE);
+            // Pestañas de documentos
+            g_tabs = CreateWindowExW(0, WC_TABCONTROLW, L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | TCS_FOCUSNEVER, 0, 0, 10, 10, h,
+                                     (HMENU)(INT_PTR)ID_TABS, g_inst, nullptr);
+            SendMessageW(g_tabs, WM_SETFONT, (WPARAM)g_uiFont, TRUE);
+            g_tabsProc = (WNDPROC)SetWindowLongPtrW(g_tabs, GWLP_WNDPROC, (LONG_PTR)tabsProc);
             WNDCLASSW gc{};
             gc.lpfnWndProc = gutterProc;
             gc.hInstance = g_inst;
@@ -1499,26 +2060,26 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             gc.lpszClassName = L"HzGutter";
             RegisterClassW(&gc);
             g_gutter = CreateWindowExW(0, L"HzGutter", L"", WS_CHILD | WS_VISIBLE, 0, 0, 10, 10, h, (HMENU)(INT_PTR)ID_GUTTER, g_inst, nullptr);
-            g_edit = CreateWindowExW(0, MSFTEDIT_CLASS, L"",
-                                     WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_NOHIDESEL |
-                                         ES_WANTRETURN,
-                                     0, 0, 10, 10, h, (HMENU)(INT_PTR)ID_EDIT, g_inst, nullptr);
-            SendMessageW(g_edit, EM_SETEVENTMASK, 0, ENM_CHANGE | ENM_SELCHANGE | ENM_SCROLL);
-            SendMessageW(g_edit, EM_EXLIMITTEXT, 0, 64 * 1024 * 1024);
-            SendMessageW(g_edit, EM_SETTEXTMODE, TM_RICHTEXT | TM_MULTILEVELUNDO | TM_MULTICODEPAGE, 0);
-            SendMessageW(g_edit, EM_SETUNDOLIMIT, 500, 0);
-            SendMessageW(g_edit, EM_SETBKGNDCOLOR, 0, RGB(255, 255, 255));
-            SendMessageW(g_edit, EM_SETMARGINS, EC_LEFTMARGIN, S(6));
-            SendMessageW(g_edit, EM_SETTARGETDEVICE, 0, g_wrap ? 0 : 1);
-            SendMessageW(g_edit, EM_SETLANGOPTIONS, 0, SendMessageW(g_edit, EM_GETLANGOPTIONS, 0, 0) & ~IMF_AUTOFONT);
-            IRichEditOle* ole = nullptr;
-            SendMessageW(g_edit, EM_GETOLEINTERFACE, 0, (LPARAM)&ole);
-            if (ole) {
-                static const GUID IID_ITextDocument_ = {0x8CC497C0, 0xA1DF, 0x11CE, {0x80, 0x98, 0x00, 0xAA, 0x00, 0x47, 0xBE, 0x5D}};
-                ole->QueryInterface(IID_ITextDocument_, (void**)&g_doc);
-                ole->Release();
+            // Panel inferior: Problemas | Salida
+            g_bottomTabs = CreateWindowExW(0, WC_TABCONTROLW, L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | TCS_FOCUSNEVER, 0, 0, 10, 10, h,
+                                           (HMENU)(INT_PTR)ID_BOTTOMTABS, g_inst, nullptr);
+            SendMessageW(g_bottomTabs, WM_SETFONT, (WPARAM)g_uiFont, TRUE);
+            {
+                const wchar_t* names[] = {L"Problemas", L"Salida"};
+                for (int i = 0; i < 2; i++) {
+                    TCITEMW it{};
+                    it.mask = TCIF_TEXT;
+                    it.pszText = const_cast<wchar_t*>(names[i]);
+                    SendMessageW(g_bottomTabs, TCM_INSERTITEMW, (WPARAM)i, (LPARAM)&it);
+                }
             }
-            g_editProc = (WNDPROC)SetWindowLongPtrW(g_edit, GWLP_WNDPROC, (LONG_PTR)editProc);
+            g_output = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL |
+                                           ES_AUTOHSCROLL | ES_NOHIDESEL,
+                                       0, 0, 10, 10, h, (HMENU)(INT_PTR)ID_OUTPUT, g_inst, nullptr);
+            g_outFont = CreateFontW(-MulDiv(10, g_dpi, 72), 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, FIXED_PITCH, L"Consolas");
+            SendMessageW(g_output, WM_SETFONT, (WPARAM)g_outFont, TRUE);
+            SendMessageW(g_output, EM_SETLIMITTEXT, 0, 0);
+            g_outputProc = (WNDPROC)SetWindowLongPtrW(g_output, GWLP_WNDPROC, (LONG_PTR)outputProc);
             g_panel = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL | LBS_NOTIFY | LBS_NOINTEGRALHEIGHT,
                                       0, 0, 10, 10, h, (HMENU)(INT_PTR)ID_PANEL, g_inst, nullptr);
             SendMessageW(g_panel, WM_SETFONT, (WPARAM)g_uiFont, TRUE);
@@ -1530,6 +2091,7 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             SendMessageW(g_status, WM_SETFONT, (WPARAM)g_uiFont, TRUE);
             DragAcceptFiles(h, TRUE);
             SetTimer(h, TIMER_GUTTER, 60, nullptr);
+            addTab(); // la primera pestaña
             return 0;
         }
         case WM_SIZE: layout(); return 0;
@@ -1572,21 +2134,53 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_NOTIFY: {
             auto* n = (NMHDR*)lp;
             if (n->hwndFrom == g_edit && n->code == EN_SELCHANGE && !g_formatting) updateStatus();
+            if (n->hwndFrom == g_tabs && n->code == TCN_SELCHANGE) activate((int)SendMessageW(g_tabs, TCM_GETCURSEL, 0, 0));
+            if (n->hwndFrom == g_bottomTabs && n->code == TCN_SELCHANGE) {
+                g_bottomPage = (int)SendMessageW(g_bottomTabs, TCM_GETCURSEL, 0, 0);
+                layout();
+            }
             return 0;
         }
+        case WM_CTLCOLORSTATIC:
+            if ((HWND)lp == g_output) { // la salida, en blanco como el editor aunque sea de solo lectura
+                SetBkColor((HDC)wp, RGB(255, 255, 255));
+                SetTextColor((HDC)wp, RGB(31, 35, 40));
+                return (LRESULT)GetStockObject(WHITE_BRUSH);
+            }
+            break;
+        case WM_APP_OUTPUT: {
+            auto* chunk = (std::string*)lp;
+            appendOutputUtf8(*chunk);
+            delete chunk;
+            return 0;
+        }
+        case WM_APP_DONE: runFinished((DWORD)wp); return 0;
         case WM_DROPFILES: {
-            wchar_t buf[MAX_PATH * 2];
-            if (DragQueryFileW((HDROP)wp, 0, buf, (UINT)std::size(buf)) && confirmDiscard()) { g_dirty = false; openFile(buf); }
+            UINT count = DragQueryFileW((HDROP)wp, 0xFFFFFFFF, nullptr, 0);
+            for (UINT i = 0; i < count; i++) {
+                wchar_t buf[MAX_PATH * 2];
+                if (DragQueryFileW((HDROP)wp, i, buf, (UINT)std::size(buf))) openFile(buf);
+            }
             DragFinish((HDROP)wp);
             return 0;
         }
-        case WM_CLOSE:
-            if (!confirmDiscard()) return 0;
+        case WM_CLOSE: {
+            storeCurrent();
+            for (int i = 0; i < (int)g_docs.size(); i++) {
+                if (!g_docs[(size_t)i].dirty) continue;
+                activate(i);
+                if (!confirmDiscard()) return 0;
+                storeCurrent();
+            }
             saveSettings();
             DestroyWindow(h);
             return 0;
+        }
         case WM_DESTROY:
-            if (g_doc) { g_doc->Release(); g_doc = nullptr; }
+            stopRun();
+            for (auto& d : g_docs) if (d.tom) d.tom->Release();
+            g_docs.clear();
+            g_doc = nullptr;
             PostQuitMessage(0);
             return 0;
     }
@@ -1599,7 +2193,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int show) {
     g_inst = inst;
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     OleInitialize(nullptr);
-    INITCOMMONCONTROLSEX icc{sizeof icc, ICC_BAR_CLASSES | ICC_STANDARD_CLASSES};
+    INITCOMMONCONTROLSEX icc{sizeof icc, ICC_BAR_CLASSES | ICC_STANDARD_CLASSES | ICC_TAB_CLASSES};
     InitCommonControlsEx(&icc);
     LoadLibraryW(L"Msftedit.dll");
     HDC screen = GetDC(nullptr);
@@ -1635,8 +2229,15 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int show) {
     applyFont();
     int argc = 0;
     LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if (argc > 1 && fs::exists(argv[1])) openFile(argv[1]);
-    else newFile();
+    bool opened = false;
+    for (int i = 1; i < argc; i++)
+        if (fs::exists(argv[i])) { openFile(argv[i]); opened = true; }
+    if (!opened) { // primera vez: un programa de bienvenida
+        setText(kWelcome);
+        LONG end = (LONG)editorText().size();
+        CHARRANGE cr{end, end};
+        SendMessageW(g_edit, EM_EXSETSEL, 0, (LPARAM)&cr);
+    }
     LocalFree(argv);
     UpdateWindow(h);
 
@@ -1649,6 +2250,9 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int show) {
         {FCONTROL | FVIRTKEY, 'D', CMD_DUPLICATE}, {FCONTROL | FSHIFT | FVIRTKEY, 'F', CMD_FORMAT},{FCONTROL | FVIRTKEY, VK_OEM_PLUS, CMD_ZOOMIN}, {FCONTROL | FVIRTKEY, VK_ADD, CMD_ZOOMIN},
         {FCONTROL | FVIRTKEY, VK_OEM_MINUS, CMD_ZOOMOUT}, {FCONTROL | FVIRTKEY, VK_SUBTRACT, CMD_ZOOMOUT},
         {FCONTROL | FVIRTKEY, '0', CMD_ZOOMRESET}, {FCONTROL | FVIRTKEY, 'Y', CMD_REDO},
+        {FCONTROL | FVIRTKEY, 'W', CMD_CLOSETAB}, {FCONTROL | FVIRTKEY, VK_TAB, CMD_NEXTTAB}, {FCONTROL | FSHIFT | FVIRTKEY, VK_TAB, CMD_PREVTAB},
+        {FCONTROL | FVIRTKEY, 'P', CMD_PRINT}, {FSHIFT | FVIRTKEY, VK_F5, CMD_RUNPANEL}, {FCONTROL | FVIRTKEY, VK_CANCEL, CMD_STOP},
+        {FCONTROL | FVIRTKEY, VK_PAUSE, CMD_STOP},
     };
     HACCEL accel = CreateAcceleratorTableW(keys, (int)std::size(keys));
     MSG m;

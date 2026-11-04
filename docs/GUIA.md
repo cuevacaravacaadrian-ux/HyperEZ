@@ -80,6 +80,17 @@ print(vistos.length, 2 in vistos)
 print(range(5).toList(), (1..=3).toList())
 ```
 
+### Comprensiones, tubería y trozos
+
+```hz
+var cuadrados = [n * n for n in 1..=5 if n % 2 == 1]     // [1, 9, 25]
+var precios = {fruta: precio * 2 for fruta, precio in {pera: 1, uva: 3}}
+var base = {color: "azul", talla: "M"}
+var camiseta = {...base, talla: "L"}                     // copia cambiando una clave
+print(cuadrados, precios, camiseta)
+print([3, 1, 2] |> len, "Programar"[..3], [1, 2, 3, 4][2..])
+```
+
 ## 5. Decisiones y bucles
 
 ```hz
@@ -369,7 +380,7 @@ print(base.collection("notas").count(), html.escape("<b>"))
 | Juegos de consola | `Console`, `Vec2`, `Color`, `random` |
 | Inteligencia artificial | `Matrix`, `import ai` |
 | Datos | `JSON`, `import csv`, `import stats`, `import db` |
-| Webs y APIs | `Http.serve`, `import web`, `import html`, `Http.get` |
+| Webs y APIs | `import web`, `import site`, `hyper serve`, `Http.serve`, `import html`, `Http.get` |
 | Gráficos y sonido | `Image`, `import audio` |
 | Scripts y herramientas | `Process`, `File`, `Path`, `Time`, `import cli` |
 | Bajo nivel | `Bytes`, `Hash`, operadores de bits, `import x86` |
@@ -399,6 +410,7 @@ print(template.render("{{#each n}}{{this}}{{/each}}", { n: [1, 2, 3] }), (1234.5
 | `hyper test` | Ejecuta las pruebas |
 | `hyper new nombre --tipo juego\|app\|ia\|script` | Crea un proyecto |
 | `hyper fmt` | Ordena la sangría y los espacios del código |
+| `hyper serve [carpeta]` | Sirve una web y recarga el navegador al guardar |
 | `hyper bytecode programa.hz` | Muestra las instrucciones que genera el compilador |
 | `hyper docs API.md` | Genera la referencia de la API |
 

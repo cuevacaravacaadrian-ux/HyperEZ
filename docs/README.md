@@ -36,7 +36,7 @@
 | Textos, números, fechas, plantillas, Markdown, INI, registro | [textos-documentos.md](biblioteca/textos-documentos.md) |
 | Colecciones (pilas, colas, grafos) y algoritmos (A*, combinatoria) | [colecciones-algoritmos.md](biblioteca/colecciones-algoritmos.md) |
 | Peticiones a internet | [red.md](biblioteca/red.md) |
-| Webs, APIs y bases de datos | [web.md](biblioteca/web.md) |
+| **Hacer webs**: páginas, aplicaciones, APIs, sitios desde Markdown, `hyper serve` | [web.md](biblioteca/web.md) |
 | Inteligencia artificial y datos | [ia-datos.md](biblioteca/ia-datos.md) |
 | Gráficos y sonido | [graficos-sonido.md](biblioteca/graficos-sonido.md) |
 | Consola, juegos y herramientas | [consola.md](biblioteca/consola.md) |
@@ -46,7 +46,8 @@
 ## Herramientas
 
 - [HyperEZ Editor](herramientas/editor.md): el editor clásico que se instala con HyperEZ.
-- [La orden `hyper`](herramientas/cli.md): ejecutar, comprobar, probar, formatear, bytecode...
+- [La orden `hyper`](herramientas/cli.md): ejecutar, comprobar, probar, formatear, servir webs, bytecode...
+- [Otros editores](../editors/README.md): Notepad++, Sublime Text, Vim, Neovim, Helix, highlight.js y GitHub.
 - [Consola interactiva](herramientas/consola-interactiva.md)
 - [Visual Studio Code](herramientas/vscode.md)
 - [Instaladores y asociación de archivos](herramientas/instaladores.md)

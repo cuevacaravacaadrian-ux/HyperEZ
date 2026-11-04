@@ -1,6 +1,8 @@
 # Publicar la extensión en el Marketplace de VS Code
 
-El archivo listo para publicar es `dist/hyperez-<versión>.vsix` (lo crea `./build.ps1`).
+El archivo listo para publicar es `dist/hyperez-<versión>.vsix` (lo crea `./build.ps1`). También se puede descargar de la [página de versiones](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest) del repositorio: cada versión publicada lo incluye.
+
+Lista rápida: 1) crea el editor (*publisher*) `hyperez` en el Marketplace, 2) sube el `.vsix`, 3) espera unos minutos y búscalo como "HyperEZ" en la pestaña Extensiones de VS Code.
 
 ## Opción A: subir el .vsix desde la web (la más sencilla)
 
@@ -29,7 +31,7 @@ npx vsce publish                compila y publica la versión de package.json
 
 ```text
 npx ovsx create-namespace hyperez -p <token de open-vsx.org>
-npx ovsx publish hyperez-0.7.0.vsix -p <token>
+npx ovsx publish hyperez-0.8.0.vsix -p <token>
 ```
 
 ## Antes de publicar

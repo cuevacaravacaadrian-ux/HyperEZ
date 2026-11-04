@@ -93,7 +93,7 @@ Para medir el rendimiento: `sh tests/bench/minbench.sh build/hyper.exe 7`.
 ## Publicar una versión (mantenedores)
 
 1. `python tools/set_version.py 0.7.0` y añade la sección `0.7.0` a `CHANGELOG.md`.
-2. Haz commit, crea la etiqueta y súbela: `git tag v0.7.0 && git push origin main v0.7.0`.
+2. Haz commit, crea la etiqueta y súbela: `git tag vX.Y.Z && git push origin main vX.Y.Z` (la etiqueta debe coincidir con la versión: lo comprueba el flujo de publicación).
 3. El flujo *Release* compila con PGO, pasa las pruebas y publica el instalador, la extensión (`.vsix`), `hyper.exe` y los paquetes de Linux y macOS.
 4. Publica la extensión en el Marketplace siguiendo [editors/vscode/PUBLICAR.md](editors/vscode/PUBLICAR.md).
 5. Si cambian el logo o el lema, regenera las imágenes con `hyper tools/banner.hz` y sube `assets/branding/social-preview.png` en *Settings → Social preview* del repositorio.

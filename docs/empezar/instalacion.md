@@ -8,9 +8,9 @@
 
 ![El instalador de HyperEZ](../img/instalador.png)
 
-El instalador:
+El instalador tiene dos apartados: **Componentes** (el lenguaje, obligatorio; HyperEZ Editor y la extensión de VS Code, opcionales) e **Integración con Windows**. Por defecto:
 
-- copia HyperEZ y **HyperEZ Editor** en `%LOCALAPPDATA%\Programs\HyperEZ`;
+- copia HyperEZ y **HyperEZ Editor** en `%LOCALAPPDATA%\Programs\HyperEZ`, con la documentación también en HTML;
 - hace que **todos los archivos `.hez` y `.hz`** se abran siempre con HyperEZ (con su icono): doble clic para ejecutar. Si antes habías elegido otro programa para ellos, deja de tener prioridad;
 - añade al menú contextual de los archivos: *Editar con HyperEZ Editor*, *Editar con Visual Studio Code* (si lo tienes), *Comprobar errores* y *Ejecutar y repetir al guardar*; en cualquier carpeta, *Nuevo → Programa HyperEZ* y *Abrir HyperEZ aquí* (consola interactiva);
 - crea la carpeta `Documentos\HyperEZ` para tus programas;
@@ -23,12 +23,12 @@ Se desinstala desde *Configuración → Aplicaciones → HyperEZ* (o con el acce
 ### Instalación silenciosa
 
 ```text
-HyperEZ-Setup-0.7.0.exe /S                  sin preguntas
-HyperEZ-Setup-0.7.0.exe /S /D=C:\HyperEZ    en otra carpeta
-HyperEZ-Setup-0.7.0.exe /S /OPENEDITOR      y abre el editor al terminar
+HyperEZ-Setup-0.8.0.exe /S                  sin preguntas
+HyperEZ-Setup-0.8.0.exe /S /D=C:\HyperEZ    en otra carpeta
+HyperEZ-Setup-0.8.0.exe /S /OPENEDITOR      y abre el editor al terminar
 ```
 
-Opciones: `/NOASSOC` (no asociar archivos), `/NOPATH`, `/NOSHORTCUTS`, `/NODESKTOP`, `/NOVSCODE`, `/OPENEDITOR`.
+Opciones: `/NOASSOC` (no asociar archivos), `/NOPATH`, `/NOSHORTCUTS`, `/NODESKTOP`, `/NOVSCODE`, `/NOEDITOR` (solo el lenguaje), `/OPENEDITOR`.
 
 ## Linux y macOS
 
@@ -36,8 +36,8 @@ Opciones: `/NOASSOC` (no asociar archivos), `/NOPATH`, `/NOSHORTCUTS`, `/NODESKT
 2. Descomprímelo e instala para tu usuario (sin `sudo`):
 
 ```text
-tar xzf HyperEZ-0.7.0-linux-x64.tar.gz
-cd HyperEZ-0.7.0-linux-x64
+tar xzf HyperEZ-0.8.0-linux-x64.tar.gz
+cd HyperEZ-0.8.0-linux-x64
 sh install.sh
 ```
 
@@ -50,7 +50,7 @@ En cualquier sistema, `hyper register` asocia los archivos con el `hyper` que lo
 La instala el instalador de Windows. También se puede instalar a mano: en VS Code, *Extensiones → ⋯ → Instalar desde VSIX…* y elige `hyperez-<versión>.vsix`, o desde la terminal:
 
 ```text
-code --install-extension hyperez-0.7.0.vsix
+code --install-extension hyperez-0.8.0.vsix
 ```
 
 ## Desde el código fuente

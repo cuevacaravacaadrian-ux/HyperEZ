@@ -755,7 +755,7 @@ ExprP Parser::assignment() {
     ExprP target = expression();
     Tok k = cur().kind;
     if (k == Tok::Eq || k == Tok::PlusEq || k == Tok::MinusEq || k == Tok::StarEq || k == Tok::SlashEq ||
-        k == Tok::PercentEq || k == Tok::QuestionQuestionEq) {
+        k == Tok::PercentEq || k == Tok::QuestionQuestionEq || k == Tok::StarStarEq) {
         Token op = advance();
         if (target->kind != ExprKind::Ident && target->kind != ExprKind::Member && target->kind != ExprKind::Index) {
             diags.error(target->loc, "No se puede asignar a esta expresión", "solo se puede asignar a variables, propiedades (obj.x) o índices (lista[i])", "E0106");
@@ -769,7 +769,156 @@ ExprP Parser::assignment() {
     return target;
 }
 
-ExprP Parser::expression() { return ternary(); }
+ExprP Parser::expression() { return pipeline(); }
+
+// ---------------------------------------------------------------------------
+// Azúcar sintáctico (0.8): tubería |>, comprensiones y propagación en mapas.
+// Todo se traduce aquí a código normal, así que el analizador y el compilador no cambian.
+// ---------------------------------------------------------------------------
+
+// a |> f      → f(a)
+// a |> f(x)   → f(a, x)        (el valor entra como primer argumento)
+// a |> obj.m  → obj.m(a)
+ExprP Parser::pipeline() {
+    ExprP left = ternary();
+    while (check(Tok::PipeGreater)) {
+        Token op = advance();
+        ExprP rhs = ternary();
+        auto call = std::make_unique<CallExpr>(op.loc);
+        if (rhs->kind == ExprKind::Call && !static_cast<CallExpr*>(rhs.get())->optional) {
+            auto* c = static_cast<CallExpr*>(rhs.get());
+            call->callee = std::move(c->callee);
+            call->args = std::move(c->args);
+        } else {
+            call->callee = std::move(rhs);
+        }
+        Arg a;
+        a.value = std::move(left);
+        call->args.insert(call->args.begin(), std::move(a));
+        left = std::move(call);
+    }
+    return left;
+}
+
+// Construye  (() => { var __cN = []; for ... { if cond { __cN.add(elem) } }; return __cN })()
+// value == nullptr: comprensión de lista; si no, de mapa (elem es la clave).
+// Se entra justo después de la palabra 'for'.
+ExprP Parser::comprehension(SrcLoc loc, ExprP elem, ExprP value) {
+    std::string var2;
+    SrcLoc var2Loc;
+    SrcLoc varLoc;
+    std::string var = expectIdent("el nombre de la variable de la comprensión", &varLoc);
+    if (match(Tok::Comma)) var2 = expectIdent("el nombre de la segunda variable", &var2Loc);
+    expect(Tok::KwIn, "'in' en la comprensión ([x * 2 for x in lista])");
+    ExprP iterable = expression();
+    ExprP step;
+    if (checkWord("step")) { advance(); step = expression(); }
+    if (step && iterable->kind != ExprKind::Range) diags.error(iterable->loc, "'step' solo se puede usar con rangos (a..b)", "", "E0104");
+    ExprP cond;
+    if (match(Tok::KwIf)) cond = expression();
+
+    std::string acc = "__c" + std::to_string(++comprehensionCount);
+    auto body = std::make_unique<BlockStmt>(loc);
+    auto decl = std::make_unique<VarStmt>(loc);
+    decl->name = acc;
+    decl->nameLoc = loc;
+    if (value) decl->init = std::make_unique<MapExpr>(loc);
+    else decl->init = std::make_unique<ListExpr>(loc);
+    body->body.push_back(std::move(decl));
+
+    // lo que se hace en cada vuelta
+    StmtP add;
+    if (value) {
+        auto ix = std::make_unique<IndexExpr>(elem->loc);
+        ix->object = std::make_unique<IdentExpr>(loc, acc);
+        ix->index = std::move(elem);
+        auto as = std::make_unique<AssignExpr>(loc, Tok::Eq);
+        as->target = std::move(ix);
+        as->value = std::move(value);
+        add = std::make_unique<ExprStmt>(loc, std::move(as));
+    } else {
+        auto m = std::make_unique<MemberExpr>(elem->loc);
+        m->object = std::make_unique<IdentExpr>(loc, acc);
+        m->name = "add";
+        m->nameLoc = elem->loc;
+        auto c = std::make_unique<CallExpr>(elem->loc);
+        c->callee = std::move(m);
+        Arg a;
+        a.value = std::move(elem);
+        c->args.push_back(std::move(a));
+        add = std::make_unique<ExprStmt>(loc, std::move(c));
+    }
+    if (cond) {
+        auto ifs = std::make_unique<IfStmt>(cond->loc);
+        ifs->cond = std::move(cond);
+        ifs->then = std::move(add);
+        add = std::move(ifs);
+    }
+    auto loopBody = std::make_unique<BlockStmt>(loc);
+    loopBody->body.push_back(std::move(add));
+
+    // for numérico si se recorre a..b (más rápido); si no, foreach
+    if (iterable->kind == ExprKind::Range && var2.empty()) {
+        auto* r = static_cast<RangeExpr*>(iterable.get());
+        auto fr = std::make_unique<ForRangeStmt>(loc);
+        fr->var = var;
+        fr->varLoc = varLoc;
+        fr->start = std::move(r->start);
+        fr->end = std::move(r->end);
+        fr->step = step ? std::move(step) : std::move(r->step);
+        fr->inclusive = r->inclusive;
+        fr->body = std::move(loopBody);
+        body->body.push_back(std::move(fr));
+    } else {
+        auto fe = std::make_unique<ForEachStmt>(loc);
+        if (var2.empty()) {
+            fe->var = var;
+            fe->varLoc = varLoc;
+        } else { // for i, x in lista: igual que en foreach
+            fe->var2 = var;
+            fe->var2Loc = varLoc;
+            fe->var = var2;
+            fe->varLoc = var2Loc;
+        }
+        fe->iterable = std::move(iterable);
+        fe->body = std::move(loopBody);
+        body->body.push_back(std::move(fe));
+    }
+    auto ret = std::make_unique<ReturnStmt>(loc);
+    ret->value = std::make_unique<IdentExpr>(loc, acc);
+    body->body.push_back(std::move(ret));
+    body->endLoc = loc;
+
+    auto fn = std::make_unique<FuncDecl>();
+    fn->kind = FuncKind::Lambda;
+    fn->loc = loc;
+    fn->body = std::move(body);
+    auto lam = std::make_unique<LambdaExpr>(loc);
+    lam->fn = std::move(fn);
+    auto call = std::make_unique<CallExpr>(loc);
+    call->callee = std::move(lam);
+    return call;
+}
+
+// Dentro de obj[...]: además de cualquier expresión, los rangos abiertos [..3], [2..] y [..]
+ExprP Parser::indexExpression() {
+    indexDepth++;
+    ExprP r;
+    if (check(Tok::DotDot) || check(Tok::DotDotEq)) {
+        Token op = advance();
+        auto rg = std::make_unique<RangeExpr>(op.loc);
+        rg->inclusive = op.kind == Tok::DotDotEq;
+        rg->start = std::make_unique<NumberExpr>(op.loc, 0, true);
+        if (check(Tok::RBracket)) rg->end = std::make_unique<NumberExpr>(op.loc, 9e15, true);
+        else rg->end = additive();
+        r = std::move(rg);
+    } else {
+        r = expression();
+    }
+    indexDepth--;
+    return r;
+}
+
 
 ExprP Parser::ternary() {
     ExprP cond = nullish();
@@ -888,7 +1037,8 @@ ExprP Parser::range() {
         auto r = std::make_unique<RangeExpr>(left->loc);
         r->inclusive = op.kind == Tok::DotDotEq;
         r->start = std::move(left);
-        r->end = additive();
+        if (indexDepth > 0 && check(Tok::RBracket)) r->end = std::make_unique<NumberExpr>(op.loc, 9e15, true); // lista[2..]
+        else r->end = additive();
         return r;
     }
     return left;
@@ -1011,7 +1161,7 @@ ExprP Parser::postfix() {
                 ix->object = std::move(e);
                 ix->optional = true;
                 nlStack.push_back(false);
-                ix->index = expression();
+                ix->index = indexExpression();
                 nlStack.pop_back();
                 expect(Tok::RBracket, "']'");
                 (void)lb;
@@ -1034,7 +1184,7 @@ ExprP Parser::postfix() {
             auto ix = std::make_unique<IndexExpr>(e->loc);
             ix->object = std::move(e);
             nlStack.push_back(false);
-            ix->index = expression();
+            ix->index = indexExpression();
             nlStack.pop_back();
             expect(Tok::RBracket, "']'");
             e = std::move(ix);
@@ -1131,9 +1281,21 @@ ExprP Parser::listLiteral() {
     Token open = advance();
     auto l = std::make_unique<ListExpr>(open.loc);
     nlStack.push_back(false);
+    int savedIndex = indexDepth;
+    indexDepth = 0;
     while (!check(Tok::RBracket) && !check(Tok::Eof)) {
         bool spread = match(Tok::Ellipsis);
-        l->items.push_back(expression());
+        ExprP item = expression();
+        if (!spread && l->items.empty() && check(Tok::KwFor)) {
+            // [x * 2 for x in lista if x > 0]
+            advance();
+            ExprP comp = comprehension(open.loc, std::move(item), nullptr);
+            nlStack.pop_back();
+            indexDepth = savedIndex;
+            expect(Tok::RBracket, "']' al cerrar la comprensión");
+            return comp;
+        }
+        l->items.push_back(std::move(item));
         l->spread.push_back(spread);
         if (!match(Tok::Comma)) {
             if (check(Tok::RBracket)) break;
@@ -1143,6 +1305,7 @@ ExprP Parser::listLiteral() {
         }
     }
     nlStack.pop_back();
+    indexDepth = savedIndex;
     expect(Tok::RBracket, "']' al cerrar la lista");
     return l;
 }
@@ -1151,9 +1314,43 @@ ExprP Parser::mapLiteral() {
     Token open = advance();
     auto m = std::make_unique<MapExpr>(open.loc);
     nlStack.push_back(false);
+    int savedIndex = indexDepth;
+    indexDepth = 0;
+    // {a: 1, ...otro, b: 2}  →  {a: 1}.merge(otro).merge({b: 2}): las claves de la derecha ganan
+    ExprP merged;
+    auto mergeInto = [&](ExprP base, ExprP other, SrcLoc loc) -> ExprP {
+        auto mem = std::make_unique<MemberExpr>(loc);
+        mem->object = std::move(base);
+        mem->name = "merge";
+        mem->nameLoc = loc;
+        auto c = std::make_unique<CallExpr>(loc);
+        c->callee = std::move(mem);
+        Arg a;
+        a.value = std::move(other);
+        c->args.push_back(std::move(a));
+        return c;
+    };
     while (!check(Tok::RBrace) && !check(Tok::Eof)) {
         ExprP key;
+        bool bareKey = false;
+        Token keyTok = cur();
+        if (check(Tok::Ellipsis)) {
+            Token dots = advance();
+            ExprP src = expression();
+            ExprP base = merged ? std::move(merged) : ExprP(std::move(m));
+            if (!merged && base->kind == ExprKind::Map && static_cast<MapExpr*>(base.get())->entries.empty()) base = std::make_unique<MapExpr>(open.loc);
+            merged = mergeInto(std::move(base), std::move(src), dots.loc);
+            m = std::make_unique<MapExpr>(open.loc);
+            if (!match(Tok::Comma)) {
+                if (check(Tok::RBrace)) break;
+                if (cur().newlineBefore) continue;
+                nlStack.pop_back();
+                fail(cur().loc, "Se esperaba ',' o '}' en el mapa");
+            }
+            continue;
+        }
         if (check(Tok::Ident) || (isKeyword(cur().kind) && ahead(1).kind == Tok::Colon)) {
+            bareKey = check(Tok::Ident);
             Token k = advance();
             auto s = std::make_unique<StringExpr>(k.loc);
             s->parts.push_back({false, k.text, nullptr});
@@ -1178,6 +1375,16 @@ ExprP Parser::mapLiteral() {
         }
         expect(Tok::Colon, "':' entre la clave y el valor");
         ExprP val = expression();
+        if (m->entries.empty() && !merged && check(Tok::KwFor)) {
+            // {[n]: n * n for n in 1..=3}  (en una comprensión la clave también puede ir sin corchetes: {n: n * n for ...})
+            advance();
+            if (bareKey) key = std::make_unique<IdentExpr>(keyTok.loc, keyTok.text);
+            ExprP comp = comprehension(open.loc, std::move(key), std::move(val));
+            nlStack.pop_back();
+            indexDepth = savedIndex;
+            expect(Tok::RBrace, "'}' al cerrar la comprensión");
+            return comp;
+        }
         m->entries.push_back({std::move(key), std::move(val)});
         if (!match(Tok::Comma)) {
             if (check(Tok::RBrace)) break;
@@ -1187,7 +1394,12 @@ ExprP Parser::mapLiteral() {
         }
     }
     nlStack.pop_back();
+    indexDepth = savedIndex;
     expect(Tok::RBrace, "'}' al cerrar el mapa");
+    if (merged) {
+        if (!m->entries.empty()) return mergeInto(std::move(merged), std::move(m), open.loc);
+        return merged;
+    }
     return m;
 }
 

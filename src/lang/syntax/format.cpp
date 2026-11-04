@@ -15,13 +15,14 @@ bool isCloser(Tok k) { return k == Tok::RParen || k == Tok::RBracket || k == Tok
 // Una línea que empieza así continúa la expresión de la anterior
 bool startsContinuation(Tok k) {
     return k == Tok::Dot || k == Tok::QuestionDot || k == Tok::KwAnd || k == Tok::KwOr || k == Tok::AmpAmp || k == Tok::PipePipe ||
-           k == Tok::QuestionQuestion;
+           k == Tok::QuestionQuestion || k == Tok::PipeGreater || k == Tok::Question || k == Tok::Colon; // ? y : de un condicional partido
 }
 // Una línea que acaba así sigue en la siguiente
 bool endsContinuation(Tok k) {
     switch (k) {
         case Tok::Plus: case Tok::Minus: case Tok::Star: case Tok::Slash: case Tok::Percent: case Tok::StarStar:
-        case Tok::Eq: case Tok::PlusEq: case Tok::MinusEq: case Tok::StarEq: case Tok::SlashEq: case Tok::PercentEq:
+        case Tok::Eq: case Tok::PlusEq: case Tok::MinusEq: case Tok::StarEq: case Tok::SlashEq: case Tok::PercentEq: case Tok::StarStarEq:
+        case Tok::PipeGreater:
         case Tok::QuestionQuestionEq: case Tok::EqEq: case Tok::NotEq: case Tok::Less: case Tok::LessEq: case Tok::Greater:
         case Tok::GreaterEq: case Tok::AmpAmp: case Tok::PipePipe: case Tok::KwAnd: case Tok::KwOr: case Tok::QuestionQuestion:
         case Tok::Arrow: case Tok::ThinArrow: case Tok::Amp: case Tok::Pipe: case Tok::Caret: case Tok::Shl: case Tok::Shr:
@@ -122,6 +123,7 @@ FormatResult formatSource(std::string_view src) {
     Tok prevLast = Tok::Eof;
     int blankRun = 0;
     std::vector<std::string> outLines;
+    std::vector<size_t> lineIndent(n + 2, 0); // sangría con la que quedó cada línea (para alinear los cierres)
     outLines.reserve(n);
     for (size_t l = 1; l <= n; l++) {
         auto& lt = byLine[l];
@@ -146,6 +148,9 @@ FormatResult formatSource(std::string_view src) {
                 for (size_t i = 0; i < a; i++) original += text[i] == '\t' ? 4 : 1;
                 bool alignedInside = depth > 0 && openLines[depth - 1].aligned && openLines[depth - 1].line < (int)l;
                 if ((alignedInside || (cont && closers == 0)) && original > indent) indent = original;
+                // Una línea que empieza cerrando ("}", "})", "}, {") se alinea con la línea que abrió ese paréntesis
+                if (closers > 0 && !openLines.empty() && openLines.back().line < (int)l) indent = lineIndent[(size_t)openLines.back().line];
+                lineIndent[l] = indent;
                 std::string_view body = text.substr(a);
                 if (!raw[l]) {
                     size_t b = body.find_last_not_of(" \t");

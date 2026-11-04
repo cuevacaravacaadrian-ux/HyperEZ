@@ -712,7 +712,7 @@ uint8_t CodeGen::binOp(Tok t) {
         case Tok::Star: case Tok::StarEq: return OP_MUL;
         case Tok::Slash: case Tok::SlashEq: return OP_DIV;
         case Tok::Percent: case Tok::PercentEq: return OP_MOD;
-        case Tok::StarStar: return OP_POW;
+        case Tok::StarStar: case Tok::StarStarEq: return OP_POW;
         case Tok::EqEq: return OP_EQ;
         case Tok::NotEq: return OP_NE;
         case Tok::Less: return OP_LT;

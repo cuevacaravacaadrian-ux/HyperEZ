@@ -3,6 +3,8 @@
 //   import markdown
 //   var html = markdown.toHtml("# Hola\n\nTexto con **negrita**, *cursiva* y `código`.")
 //   File.write("pagina.html", markdown.page("Mi página", "# Hola\n\n- uno\n- dos"))
+//
+// Los bloques ```hz se colorean con { highlight: true } (clases hz-k, hz-s, hz-n, hz-c, hz-t, hz-f; ver HZ_CSS).
 
 function esc(t: text): text { return t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;") }
 
@@ -43,8 +45,90 @@ function cells(l: text): list {
     return t.substring(1, t.length - 1).split("|").map(c => c.trim())
 }
 
-/// Convierte un documento Markdown en HTML.
-function toHtml(md: text): text {
+// ---------------------------------------------------------------------------
+// Colores para el código HyperEZ de los bloques ```hz
+// ---------------------------------------------------------------------------
+
+const HZ_KEYWORDS = set("var", "let", "const", "function", "return", "if", "else", "for", "foreach", "in", "while", "repeat", "break",
+                        "continue", "class", "struct", "constructor", "this", "super", "extends", "implements", "interface", "enum",
+                        "import", "from", "as", "public", "private", "protected", "static", "new", "try", "catch", "finally", "throw",
+                        "async", "await", "match", "event", "on", "once", "emit", "step", "and", "or", "not", "is", "true", "false", "null")
+const HZ_TYPES = set("number", "int", "text", "bool", "list", "map", "any", "void")
+
+/// Estilo para los colores del código (el mismo que HyperEZ Editor).
+const HZ_CSS = ".hz-k{color:#0000dc}.hz-s{color:#a31515}.hz-n{color:#098658}.hz-c{color:#008000;font-style:italic}" +
+               ".hz-t{color:#267f99}.hz-f{color:#795e26}"
+
+function span(clase: text, texto: text): text { return "<span class=\"hz-${clase}\">" + esc(texto) + "</span>" }
+
+function isIdStart(c: text): bool { return (c >= "a" and c <= "z") or (c >= "A" and c <= "Z") or c == "_" or c > "~" }
+function isDigit(c: text): bool { return c >= "0" and c <= "9" }
+
+/// HTML con colores para un fragmento de código HyperEZ.
+function highlightHz(codigo: text): text {
+    var cs = codigo.chars()
+    var n = cs.length
+    var out = []
+    var i = 0
+    while i < n {
+        var c = cs[i]
+        var sig = i + 1 < n ? cs[i + 1] : ""
+        if c == "/" and sig == "/" {
+            var j = i
+            while j < n and cs[j] != "\n" { j += 1 }
+            out.add(span("c", cs.slice(i, j).join("")))
+            i = j
+        } else if c == "/" and sig == "*" {
+            var j = i + 2
+            while j + 1 < n and not (cs[j] == "*" and cs[j + 1] == "/") { j += 1 }
+            j = min(n, j + 2)
+            out.add(span("c", cs.slice(i, j).join("")))
+            i = j
+        } else if c == "\"" or c == "'" or (c == "r" and (sig == "\"" or sig == "'")) {
+            var raw = c == "r"
+            var q = raw ? sig : c
+            var j = raw ? i + 2 : i + 1
+            var triple = not raw and j + 1 < n and cs[j] == q and cs[j + 1] == q
+            if triple {
+                j += 2
+                while j + 2 < n and not (cs[j] == q and cs[j + 1] == q and cs[j + 2] == q) { j += 1 }
+                j = min(n, j + 3)
+            } else {
+                while j < n and cs[j] != q and cs[j] != "\n" {
+                    if cs[j] == "\\" and not raw { j += 1 }
+                    j += 1
+                }
+                j = min(n, j + 1)
+            }
+            out.add(span("s", cs.slice(i, j).join("")))
+            i = j
+        } else if isDigit(c) {
+            var j = i
+            while j < n and (isDigit(cs[j]) or cs[j] == "_" or cs[j] == "." and j + 1 < n and isDigit(cs[j + 1]) or
+                             (cs[j] >= "a" and cs[j] <= "f") or (cs[j] >= "A" and cs[j] <= "F") or cs[j] == "x" or cs[j] == "b") { j += 1 }
+            out.add(span("n", cs.slice(i, j).join("")))
+            i = j
+        } else if isIdStart(c) {
+            var j = i
+            while j < n and (isIdStart(cs[j]) or isDigit(cs[j])) { j += 1 }
+            var palabra = cs.slice(i, j).join("")
+            var k = j
+            while k < n and cs[k] == " " { k += 1 }
+            if HZ_KEYWORDS.has(palabra) { out.add(span("k", palabra)) }
+            else if HZ_TYPES.has(palabra) or palabra[0] >= "A" and palabra[0] <= "Z" { out.add(span("t", palabra)) }
+            else if k < n and cs[k] == "(" { out.add(span("f", palabra)) }
+            else { out.add(esc(palabra)) }
+            i = j
+        } else {
+            out.add(esc(c))
+            i += 1
+        }
+    }
+    return out.join("")
+}
+
+/// Convierte un documento Markdown en HTML. opciones: highlight (true: colorea los bloques ```hz).
+function toHtml(md: text, opciones: map = {}): text {
     var lines = md.replace("\r\n", "\n").split("\n")
     var out = []
     var i = 0
@@ -72,7 +156,8 @@ function toHtml(md: text): text {
             }
             i += 1
             var clase = lang == "" ? "" : " class=\"language-${esc(lang)}\""
-            out.add("<pre><code${clase}>" + esc(codigo.join("\n")) + "</code></pre>")
+            var colorear = opciones.get("highlight", false) and (lang == "hz" or lang == "hez" or lang == "hyperez")
+            out.add("<pre><code${clase}>" + (colorear ? highlightHz(codigo.join("\n")) : esc(codigo.join("\n"))) + "</code></pre>")
         } else if t.matches(r"^#{1,6} .*") {
             cerrarParrafo()
             var n = t.indexOf(" ")
@@ -91,7 +176,7 @@ function toHtml(md: text): text {
                 cita.add(lines[i].trim().substring(1).trimStart())
                 i += 1
             }
-            out.add("<blockquote>" + toHtml(cita.join("\n")) + "</blockquote>")
+            out.add("<blockquote>" + toHtml(cita.join("\n"), opciones) + "</blockquote>")
         } else if isListItem(l) {
             cerrarParrafo()
             var ordenada = l.trimStart().matches(r"^\d+[.)] .*")

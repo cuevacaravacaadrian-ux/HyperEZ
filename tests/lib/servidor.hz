@@ -1,6 +1,20 @@
 // Http.serve y Process.start: se lanza un servidor de verdad en otro proceso y se le hacen peticiones.
 
+// Un puerto libre: si ya responde alguien en el elegido (otro programa del equipo), se prueba otro
+function libre(p: number): bool {
+    try {
+        Http.get("http://127.0.0.1:${p}/", { timeout: 0.5 })
+        return false
+    } catch e {
+        return true
+    }
+}
 var puerto = 20000 + Process.pid % 20000
+var intento = 0
+while not libre(puerto) and intento < 20 {
+    intento += 1
+    puerto = 20000 + (Process.pid * 7 + intento * 911) % 20000
+}
 var carpeta = Path.join(Path.temp, "hz_servidor_" + str(Process.pid))
 File.write(Path.join(carpeta, "public/index.html"), "<h1>Inicio</h1>")
 File.write(Path.join(carpeta, "public/estilo.css"), "body { color: red }")

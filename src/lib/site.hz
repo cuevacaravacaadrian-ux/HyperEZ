@@ -1,0 +1,158 @@
+// site — páginas web completas a partir de archivos Markdown: blogs, documentación, portfolios...
+// Sin escribir HTML: cada .md es una página, con menú, estilo y diseño adaptable al móvil.
+//
+//   import site
+//   site.build("contenido", "web", { title: "Mi web" })   // contenido/*.md → web/*.html
+//   // y para verla mientras la escribes:  hyper serve web
+//
+// Cada página puede empezar con datos entre líneas ---:
+//   ---
+//   titulo: Sobre mí
+//   orden: 2
+//   ---
+//   # Sobre mí
+//   Texto en **Markdown**...
+//
+// Las imágenes y demás archivos de la carpeta se copian tal cual. Los enlaces a otras páginas
+// (otra.md) pasan a ser otra.html. index.md es la página de inicio.
+
+import markdown
+import template
+
+const LAYOUT = """<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{titulo}} · {{sitio}}</title>
+<meta name="generator" content="HyperEZ">
+<style>
+:root{--fondo:#ffffff;--texto:#1f2328;--suave:#59636e;--borde:#d0d7de;--acento:{{color}};--panel:#f6f8fa}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,"Segoe UI",Roboto,sans-serif;color:var(--texto);background:var(--fondo);line-height:1.65}
+header{background:var(--acento);color:#fff;padding:1rem 1.5rem}header a{color:#fff;text-decoration:none;font-weight:700;font-size:1.2rem}
+.contenedor{display:flex;max-width:64rem;margin:0 auto;gap:2rem;padding:1.5rem}
+nav{flex:0 0 13rem}nav ul{list-style:none;margin:0;padding:0;position:sticky;top:1rem}
+nav a{display:block;padding:.35rem .7rem;border-radius:6px;color:var(--texto);text-decoration:none}
+nav a:hover{background:var(--panel)}nav a.actual{background:var(--acento);color:#fff}
+main{flex:1;min-width:0}h1,h2,h3{line-height:1.25}h1{margin-top:0}a{color:var(--acento)}
+code{background:var(--panel);padding:.1em .35em;border-radius:4px;font-size:.92em}
+code,pre{font-family:"Cascadia Mono",Consolas,"DejaVu Sans Mono",Menlo,monospace}
+pre{background:var(--panel);padding:1rem;border-radius:8px;overflow:auto;font-size:.95rem;line-height:1.5}pre code{padding:0;background:none;font-size:inherit}
+table{border-collapse:collapse}td,th{border:1px solid var(--borde);padding:.35rem .7rem}th{background:var(--panel)}
+blockquote{margin:0;padding:.2rem 1rem;border-left:4px solid var(--acento);color:var(--suave)}img{max-width:100%}
+.hz-k{color:#0000dc}.hz-s{color:#a31515}.hz-n{color:#098658}.hz-c{color:#008000;font-style:italic}.hz-t{color:#267f99}.hz-f{color:#795e26}
+nav li.grupo{font-weight:700;color:var(--suave);font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;margin:1rem 0 .2rem .7rem}
+footer{text-align:center;color:var(--suave);font-size:.85rem;padding:2rem 1rem;border-top:1px solid var(--borde);margin-top:2rem}
+@media(max-width:720px){.contenedor{flex-direction:column}nav{flex:none}nav ul{position:static;display:flex;flex-wrap:wrap;gap:.3rem}}
+</style>
+</head>
+<body>
+<header><a href="{{raiz}}index.html">{{sitio}}</a></header>
+<div class="contenedor">
+<nav><ul>
+{{#each menu}}
+{{#if grupo}}<li class="grupo">{{grupo}}</li>{{else}}<li><a href="{{url}}"{{#if actual}} class="actual"{{/if}}>{{titulo}}</a></li>{{/if}}
+{{/each}}
+</ul></nav>
+<main>
+{{{contenido}}}
+</main>
+</div>
+<footer>{{pie}}</footer>
+</body>
+</html>
+"""
+
+/// Separa los datos del principio (--- clave: valor ---) del texto Markdown.
+function frontMatter(texto: text): map {
+    var t = texto.replace("\r\n", "\n")
+    if not t.startsWith("---\n") { return { data: {}, body: t } }
+    var fin = t.indexOf("\n---", 4)
+    if fin < 0 { return { data: {}, body: t } }
+    var datos = {}
+    foreach linea in t.substring(4, fin).split("\n") {
+        var i = linea.indexOf(":")
+        if i > 0 {
+            var v = linea.substring(i + 1).trim()
+            datos[linea.substring(0, i).trim()] = v.isNumeric() ? toNumber(v) : v
+        }
+    }
+    var resto = t.substring(fin + 4)
+    if resto.startsWith("\n") { resto = resto.substring(1) }
+    return { data: datos, body: resto }
+}
+
+/// Título de una página: el de los datos, el primer "# Título" o el nombre del archivo.
+function titleOf(datos: map, cuerpo: text, archivo: text): text {
+    var t = datos.get("titulo", datos.get("title", ""))
+    if t != "" { return str(t) }
+    foreach linea in cuerpo.split("\n") {
+        if linea.startsWith("# ") { return linea.substring(2).trim() }
+    }
+    return Path.stem(archivo).replace("-", " ").replace("_", " ").capitalize()
+}
+
+/// Cambia los enlaces a .md por .html (también con #ancla).
+function fixLinks(html: text): text {
+    return html.replaceRegex(r'href="([^":]+)\.md(#[^"]*)?"', 'href="$1.html$2"')
+}
+
+/// Prefijo para llegar a la raíz desde una página ("" o "../").
+function rootFrom(relativa: text): text { return "../" * (relativa.split("/").length - 1) }
+
+/// Genera la web. opciones: title (nombre del sitio), color (de la cabecera), footer, layout (plantilla HTML propia
+/// con {{titulo}}, {{{contenido}}}, {{sitio}}, {{raiz}}, {{pie}}, {{color}} y {{#each menu}}),
+/// index (el .md que será la portada si no hay index.md, p. ej. "README.md"), highlight (colorear ```hz; true)
+/// y menu (lista propia [{titulo, url}] o [{grupo: "Sección"}], con las url relativas a la raíz; si no, todas las páginas).
+/// Devuelve la lista de archivos generados.
+function build(origen: text, destino: text, opciones: map = {}): list {
+    if not File.isDir(origen) { throw Error("site.build: no existe la carpeta " + origen) }
+    var sitio = opciones.get("title", Path.name(Path.absolute(origen)).capitalize())
+    var plantilla = opciones.has("layout") ? File.read(opciones.layout) : LAYOUT
+    var paginas = []
+    var otros = []
+    foreach rel in File.listAll(origen).sort() {
+        var r = rel.replace("\\", "/")
+        if File.isDir(Path.join(origen, r)) { continue }
+        if r.lower().endsWith(".md") {
+            var fm = frontMatter(File.read(Path.join(origen, r)))
+            var salida = r.substring(0, r.length - 3) + ".html"
+            if opciones.has("index") and r == opciones.index and not File.exists(Path.join(origen, "index.md")) { salida = "index.html" }
+            var orden = fm.data.get("orden", fm.data.get("order", Path.stem(r) == "index" ? -1 : 1000))
+            paginas.add({ origen: r, salida: salida, data: fm.data, body: fm.body, titulo: titleOf(fm.data, fm.body, r), orden: orden })
+        } else {
+            otros.add(r)
+        }
+    }
+    paginas = paginas.sortBy(p => str(round(p.orden + 1000000, 3)).padStart(14, "0") + p.titulo) // por orden y luego por título
+    var hechos = []
+    File.makeDir(destino)
+    foreach p in paginas {
+        var raiz = rootFrom(p.salida)
+        var menu = opciones.has("menu")
+            ? opciones.menu.map(m => m.has("grupo") ? m : { url: raiz + m.url, titulo: m.titulo, actual: m.url == p.salida })
+            : paginas.filter(q => not q.data.get("oculta", false)).map(q => ({ url: raiz + q.salida, titulo: q.titulo, actual: q.salida == p.salida }))
+        var cuerpo = fixLinks(markdown.toHtml(p.body, { highlight: opciones.get("highlight", true) }))
+        if opciones.has("index") {
+            var indice = opciones.index.substring(0, opciones.index.length - 3) + ".html" // enlaces a README.md → index.html
+            cuerpo = cuerpo.replace("href=\"" + indice, "href=\"index.html").replace("/" + indice + "\"", "/index.html\"")
+        }
+        var html = template.renderHtml(plantilla, {
+            titulo: p.titulo, sitio: sitio, raiz: raiz, menu: menu,
+            color: opciones.get("color", "#2f81f7"),
+            pie: opciones.get("footer", "Hecho con HyperEZ"),
+            contenido: cuerpo
+        })
+        var ruta = Path.join(destino, p.salida)
+        File.makeDir(Path.dir(ruta))
+        File.write(ruta, html)
+        hechos.add(ruta)
+    }
+    foreach r in otros {
+        var ruta = Path.join(destino, r)
+        File.makeDir(Path.dir(ruta))
+        File.copy(Path.join(origen, r), ruta)
+        hechos.add(ruta)
+    }
+    return hechos
+}

@@ -23,6 +23,8 @@ nombre ??= "anónimo" // asigna solo si es null
 print(x, nombre)
 ```
 
+`**=` eleva y guarda: `p **= 2` es `p = p ** 2`.
+
 ## Comparación
 
 `==`, `!=`, `<`, `<=`, `>`, `>=`. Los textos se comparan en orden alfabético; las listas y mapas, por contenido; los `struct`, por sus campos; los objetos de clases, por identidad (salvo que definan `equals`).
@@ -77,6 +79,24 @@ print(2 in [1, 2, 3], "vida" in { vida: 3 }, "mun" in "mundo", 5 in 1..10)
 print((0..5).toList(), (1..=3).toList(), (5..0).toList())
 ```
 
+## Tubería `|>`
+
+`valor |> f` es lo mismo que `f(valor)`: sirve para encadenar pasos de izquierda a derecha en lugar de anidar paréntesis. Si a la derecha hay una llamada, el valor entra como **primer argumento**.
+
+```hz
+function doble(x: number): number { return x * 2 }
+function sumar(a: number, b: number): number { return a + b }
+
+print(5 |> doble)                 // 10        (doble(5))
+print(5 |> doble |> sumar(1))     // 11        (sumar(doble(5), 1))
+var pares = [1, 2, 3, 4, 5, 6]
+    |> (l => l.filter(n => n % 2 == 0))
+    |> (l => l.map(n => n * 10))
+print(pares)                      // [20, 40, 60]
+```
+
+Una línea que empieza por `|>` continúa la anterior. La tubería va después de todo lo demás: `2 + 3 |> doble` es `doble(2 + 3)`.
+
 ## Condicional en una expresión
 
 ```hz
@@ -107,7 +127,8 @@ De mayor a menor (los de arriba se calculan primero). Usa paréntesis cuando dud
 | `or` | |
 | `??` | |
 | `? :` | condicional |
-| `=` `+=` `-=` `*=` `/=` `%=` `??=` | asignación |
+| `\|>` | tubería |
+| `=` `+=` `-=` `*=` `/=` `%=` `**=` `??=` | asignación |
 
 ## Operadores en tus propias clases
 

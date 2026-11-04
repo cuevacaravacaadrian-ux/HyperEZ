@@ -2,6 +2,53 @@
 
 Todas las versiones de HyperEZ. El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.8.0] - 2026-11-04
+
+Descargas que funcionan, webs con el lenguaje, sintaxis nueva y un editor todavía más clásico.
+
+### Arreglado
+- **Las versiones de GitHub ya se publican**: las pruebas fallaban en GitHub Actions (en Windows, los `✓` de los scripts de Python con la consola en `cp1252`; en Linux y macOS, el orden en que `os.walk` recorre las carpetas al generar `docs/errores.md`), así que nunca se llegaba a crear la versión con el instalador. Ahora pasan en Windows, Linux y macOS.
+- `texto[2..]` devolvía un texto vacío en Windows (el final "infinito" no cabía en un `long` de 32 bits).
+- El formateador alinea las líneas que empiezan cerrando (`}, {`, `})`) con la línea que abrió el paréntesis.
+- La prueba del servidor web busca un puerto libre en lugar de fallar si el elegido estaba ocupado.
+- Lo que escribe un programa con `print` mientras atiende un servidor web se ve al momento (antes, al pararlo).
+
+### Añadido
+
+**Lenguaje**
+- Tubería `|>`: `x |> f` es `f(x)` y `x |> f(a)` es `f(x, a)`; una línea que empieza por `|>` continúa la anterior.
+- Comprensiones de lista y de mapa: `[x * x for x in 1..=5 if x % 2 == 1]`, `[i + x for i, x in lista]`, `{n: n * n for n in 1..=3}` (también con `step`).
+- Propagación en mapas: `{...base, color: "rojo"}` (las claves de la derecha ganan).
+- `**=` y rangos abiertos en los índices: `lista[2..]`, `lista[..3]`, `texto[-3..]`, `lista[..]`.
+
+**Webs**
+- `hyper serve [carpeta]`: servidor para desarrollar que sirve una carpeta y **recarga el navegador al guardar** (`--puerto`, `--abrir`, `--red`, `--sin-recarga`).
+- `hyper new mi-web --tipo web` (plantillas HTML, formulario, API JSON y CSS, con pruebas) y `hyper new mi-blog --tipo sitio` (páginas desde Markdown).
+- `import web`: `app.staticDir`, `app.patch`, `app.all`, `listen(..., { open: true })`, `web.view` (plantillas con base común), `web.form`, `web.cookies`, `web.withCookie`, `web.json`, `web.html`, `web.text`, `web.file`, `web.error`, `web.logger`, `web.decode`, páginas 404 con estilo y `web.devServer`.
+- `import site`: webs completas a partir de archivos Markdown, con menú (también con grupos), diseño adaptable al móvil, datos `---` por página, enlaces `.md` → `.html` y código coloreado.
+- `import markdown`: `highlightHz` y la opción `{ highlight: true }` para colorear los bloques de código HyperEZ.
+
+**HyperEZ Editor, más clásico**
+- Barra de herramientas con los iconos de Windows y *tooltips*; **pestañas** para varios archivos (Ctrl+N, Ctrl+W, Ctrl+Tab, botón central para cerrar).
+- **Panel de salida** (Mayús+F5): el programa se ejecuta dentro del editor y su salida aparece abajo, con el tiempo y el resultado; doble clic en `archivo.hez:12` va a esa línea; ■ lo detiene.
+- **Imprimir** (Ctrl+P) con colores y número de página, *Ver → Fuente…*, indicador INS/SOB, mostrar u ocultar las barras, *Cerrar las demás pestañas* y abrir varios archivos a la vez.
+
+**Instalador**
+- Dos apartados: **Componentes** (el lenguaje, obligatorio; HyperEZ Editor y la extensión de VS Code, opcionales) e **Integración con Windows**. Opción `/NOEDITOR`.
+- *App Paths*: `Win+R → hyper` (y `hyperez-editor`) funciona al momento.
+- La **documentación en HTML** (`docs-html/`), generada con el propio HyperEZ, para leerla en el navegador sin conexión; la abren la Ayuda del editor y el menú Inicio.
+- Los colores para otros editores en `editors/`.
+
+**Otros editores y GitHub**
+- Colores para **Notepad++**, **Sublime Text/TextMate**, **Vim/Neovim** y **highlight.js**, generados desde la gramática de VS Code (`tools/gen_editors.py`); guía para usar `hyper lsp` en Neovim y Helix.
+- Kit para proponer HyperEZ a **GitHub Linguist** (`editors/linguist/`) y colores en GitHub mientras tanto (`.gitattributes`).
+
+**Extensión de VS Code**
+- Colores para `|>`, `**=` y las comprensiones; 4 fragmentos nuevos (52 en total).
+
+**Pruebas**
+- `ctest -R proyectos`: crea un proyecto de cada uno de los 6 tipos y pasa sus pruebas. Pruebas nuevas de la sintaxis y de las webs.
+
 ## [0.7.0] - 2026-11-04
 
 Un editor propio, mucha más biblioteca y un compilador más rápido.

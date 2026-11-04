@@ -76,6 +76,10 @@ const cases = [
   ['this.vida = null', 'this', 'variable.language.this'],
   ['this.vida = null', 'null', 'constant.language.null'],
   ['var a = PI * 2', 'PI', 'support.constant.math'],
+  ['var r = datos |> doble', '|>', 'keyword.operator.pipe'],
+  ['p **= 2', '**=', 'keyword.operator.assignment.compound'],
+  ['var c = [x * 2 for x in lista if x > 0]', 'for', 'keyword.control'],
+  ['var copia = {...base, b: 2}', '...', 'keyword.operator.range'],
 ];
 
 (async () => {

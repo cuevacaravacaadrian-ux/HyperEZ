@@ -10,6 +10,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest"><img src="https://img.shields.io/badge/%E2%AC%87%20Descargar%20HyperEZ%20para%20Windows-2f81f7?style=for-the-badge" alt="Descargar HyperEZ para Windows"></a>
+</p>
+
+<p align="center">
   <a href="docs/empezar/instalacion.md"><b>Instalar</b></a> ·
   <a href="docs/empezar/primeros-pasos.md"><b>Primeros pasos</b></a> ·
   <a href="docs/GUIA.md"><b>Guía</b></a> ·
@@ -22,7 +26,7 @@
 
 ## 🚀 Empieza en un minuto
 
-1. Descarga **[HyperEZ-Setup-0.7.0.exe](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest)** y pulsa **Instalar** (no necesita administrador).
+1. Descarga **[HyperEZ-Setup-0.8.0.exe](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest)** y pulsa **Instalar** (no necesita administrador).
 2. Al terminar se abre **HyperEZ Editor** con tu primer programa.
 3. Pulsa **F5**. Ya está.
 
@@ -30,7 +34,9 @@
   <img src="docs/img/editor.png" alt="HyperEZ Editor: fondo blanco, colores, números de línea y panel de errores" width="88%">
 </p>
 
-El editor colorea el código, marca los errores mientras escribes (con la línea y cómo arreglarlo), completa nombres con **Ctrl+Espacio**, formatea con **Ctrl+Mayús+F** y trae plantillas y todos los ejemplos. Los programas se guardan como **`.hez`**, y cualquier `.hez` o `.hz` se ejecuta con doble clic. Todo en [HyperEZ Editor](docs/herramientas/editor.md).
+El editor es clásico y sencillo: barra de herramientas, **pestañas**, colores, errores mientras escribes (con la línea y cómo arreglarlo), **panel de salida** (Mayús+F5) para ver el resultado sin salir, autocompletado con **Ctrl+Espacio**, formato con **Ctrl+Mayús+F**, imprimir, plantillas y todos los ejemplos. Los programas se guardan como **`.hez`**, y cualquier `.hez` o `.hz` se ejecuta con doble clic. Todo en [HyperEZ Editor](docs/herramientas/editor.md).
+
+> El lenguaje se instala integrado en Windows (archivos, `PATH`, menú Inicio, *Win+R → hyper*); HyperEZ Editor y la extensión de VS Code son complementos que puedes desmarcar.
 
 ```hz
 class Jugador {
@@ -58,9 +64,9 @@ error[E0205]: No existe nada llamado 'pirnt'
 
 | Sistema | Cómo |
 |---|---|
-| **Windows** | **`HyperEZ-Setup-0.7.0.exe`** de la [última versión](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest): HyperEZ, HyperEZ Editor, ejemplos, documentación y la extensión de VS Code. |
-| **Linux / macOS** | `HyperEZ-0.7.0-linux-x64.tar.gz` (o `macos-arm64`): descomprímelo y ejecuta `sh install.sh`. |
-| **VS Code** | Lo instala el instalador de Windows; también `code --install-extension hyperez-0.7.0.vsix`. |
+| **Windows** | **`HyperEZ-Setup-0.8.0.exe`** de la [última versión](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest): HyperEZ, HyperEZ Editor, ejemplos, documentación y la extensión de VS Code. |
+| **Linux / macOS** | `HyperEZ-0.8.0-linux-x64.tar.gz` (o `macos-arm64`): descomprímelo y ejecuta `sh install.sh`. |
+| **VS Code** | Lo instala el instalador de Windows; también `code --install-extension hyperez-0.8.0.vsix`. |
 
 En Windows, los `.hez` y `.hz` se abren **siempre** con HyperEZ (doble clic = ejecutar) y el clic derecho ofrece *Editar con HyperEZ Editor*, *Editar con VS Code*, *Comprobar errores* y *Ejecutar y repetir al guardar*; en cualquier carpeta, *Nuevo → Programa HyperEZ* y *Abrir HyperEZ aquí*. Detalles en la [guía de instalación](docs/empezar/instalacion.md).
 
@@ -81,6 +87,26 @@ hz> precios.map(p => round(p * 1.21, 2))
 ```
 
 Y además `hyper watch juego.hez` (vuelve a ejecutar cada vez que guardas) y `hyper new mi-juego --tipo juego|app|ia|script` (un proyecto ordenado que funciona desde el primer momento).
+
+## 🌐 Hacer webs
+
+```text
+hyper new mi-web --tipo web       una aplicación: plantillas HTML, formulario, API JSON y CSS
+hyper new mi-blog --tipo sitio    un sitio escrito en Markdown (blog, documentación, portfolio)
+hyper serve web --abrir           sirve una carpeta y recarga el navegador cada vez que guardas
+```
+
+```hz
+import web
+var app = web.App()
+app.get("/", req => web.html("<h1>¡Hola desde HyperEZ!</h1>"))
+app.get("/api/saludo/:nombre", req => ({ saludo: "Hola, " + req.params.nombre }))
+app.post("/contacto", req => web.html("Gracias, " + web.form(req).get("nombre", "anónimo")))
+print(app.handle(web.request("GET", "/api/saludo/Ana")))
+// app.listen(8080, { open: true }) la sirve de verdad y abre el navegador
+```
+
+Rutas con parámetros, archivos estáticos, plantillas con `{{variables}}`, formularios, cookies, JSON y sitios enteros desde Markdown con menú y estilo. Todo en [hacer webs](docs/biblioteca/web.md).
 
 ## 🧰 Qué se puede hacer
 
@@ -201,10 +227,11 @@ Y también: archivos y rutas, fechas en español, JSON, base de datos de documen
 - **Clases, structs, interfaces y enums**, herencia, propiedades `get`/`set`, sobrecarga de operadores.
 - **`match`** con valores, rangos, guardas y bloques.
 - **Funciones** con valores por defecto, argumentos con nombre, `...resto`, lambdas y clausuras.
-- **Desestructuración**: `var [a, b] = lista`, `var {nombre, vida} = jugador`.
+- **Desestructuración**: `var [a, b] = lista`, `var {nombre, vida} = jugador`; **propagación**: `[...a, ...b]`, `{...base, color: "rojo"}`.
+- **Comprensiones**: `[x * x for x in 1..=10 if x % 2 == 0]`, `{n: n * n for n in 1..=3}`; **tubería**: `datos |> limpiar |> ordenar`; **trozos**: `lista[2..]`, `texto[..3]`.
 - **Errores** con `try`/`catch`/`finally` y tipos de error propios.
 - **Eventos** (`event`, `on`, `emit`) y **tareas asíncronas** (`async`, `await`, `spawn`).
-- **Módulos** con `import` y 17 bibliotecas incluidas.
+- **Módulos** con `import` y 18 bibliotecas incluidas.
 
 Toda la sintaxis está en la [referencia del lenguaje](docs/lenguaje/README.md), con su [gramática](docs/lenguaje/gramatica.md).
 
@@ -215,15 +242,18 @@ Toda la sintaxis está en la [referencia del lenguaje](docs/lenguaje/README.md),
 | `hyper` | consola interactiva |
 | `hyper archivo.hez` | ejecuta un programa |
 | `hyper watch [archivo]` | ejecuta y repite al guardar |
+| `hyper serve [carpeta]` | sirve una web y recarga el navegador al guardar |
 | `hyper check` | busca errores sin ejecutar |
 | `hyper test` | ejecuta las pruebas (`test(...)` y salidas esperadas `.out`) |
 | `hyper fmt` | ordena la sangría y los espacios sin cambiar lo que hace el código |
-| `hyper new <nombre> --tipo T` | crea un proyecto |
+| `hyper new <nombre> --tipo T` | crea un proyecto: juego, app, ia, script, web o sitio |
 | `hyper bytecode archivo` | enseña las instrucciones que genera el compilador |
 | `hyper docs` | genera la referencia de la API |
 | `hyper lsp` | servidor de lenguaje para cualquier editor |
 
-La **extensión de VS Code** trae errores en vivo, autocompletado según el tipo, documentación al pasar el ratón, ir a la definición, renombrar, arreglos rápidos, formato, botones de ejecutar encima del código, 48 fragmentos, el tema *HyperEZ Noche* y un tutorial de bienvenida. Ver [VS Code](docs/herramientas/vscode.md).
+La **extensión de VS Code** trae errores en vivo, autocompletado según el tipo, documentación al pasar el ratón, ir a la definición, renombrar, arreglos rápidos, formato, botones de ejecutar encima del código, 52 fragmentos, el tema *HyperEZ Noche* y un tutorial de bienvenida. Ver [VS Code](docs/herramientas/vscode.md).
+
+También hay colores para **Notepad++, Sublime Text, Vim y highlight.js**, y cualquier editor con LSP (Neovim, Helix, Zed...) puede usar `hyper lsp`: [otros editores](editors/README.md). La documentación completa se instala también **en HTML**, para leerla sin conexión.
 
 ## 🏎️ Rendimiento
 
@@ -248,10 +278,10 @@ Requisitos y detalles en [CONTRIBUTING.md](CONTRIBUTING.md). Cómo está hecho p
 |---|---|
 | [`src/core`](src/core) | utilidades comunes: texto, UTF-8, archivos, consola, procesos |
 | [`src/lang`](src/lang) | el lenguaje: `syntax` (lexer, parser, formateador), `sema` (analizador), `compiler` (bytecode y desensamblador), `vm` (máquina virtual), `stdlib` (biblioteca nativa), `prelude` |
-| [`src/lib`](src/lib) | bibliotecas escritas en HyperEZ: `ai`, `stats`, `csv`, `cli`, `web`, `html`, `db`, `audio`, `x86`, `collections`, `algo`, `template`, `markdown`, `ini`, `log`, `svg`, `zip` |
+| [`src/lib`](src/lib) | bibliotecas escritas en HyperEZ: `ai`, `stats`, `csv`, `cli`, `web`, `html`, `db`, `audio`, `x86`, `collections`, `algo`, `template`, `markdown`, `ini`, `log`, `svg`, `zip`, `site` |
 | [`src/tools`](src/tools) | la orden `hyper`: CLI, consola interactiva, watch, servidor de lenguaje, integración con el sistema |
 | [`src/editor`](src/editor) | HyperEZ Editor (Windows) |
-| [`editors/vscode`](editors/vscode) | extensión de VS Code |
+| [`editors`](editors) | extensión de VS Code, colores para Notepad++, Sublime y Vim, highlight.js y el kit para GitHub Linguist |
 | [`packaging`](packaging) | instalador de Windows, paquetes de Linux y macOS, iconos |
 | [`examples`](examples) | ejemplos por áreas: juegos, algoritmos, IA, datos, web, gráficos, audio, sistema... |
 | [`tests`](tests) | pruebas del lenguaje, las bibliotecas, la consola, el formato y los errores |

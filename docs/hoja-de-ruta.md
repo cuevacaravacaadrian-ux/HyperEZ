@@ -2,18 +2,18 @@
 
 HyperEZ quiere ser un lenguaje **universal y en español**: fácil para aprender y lo bastante potente para cualquier proyecto, desde un juego hasta una IA o las herramientas de un sistema operativo. Esto es lo que ya hay y lo que viene.
 
-## Ya disponible (0.7)
+## Ya disponible (0.8)
 
 | Área | Qué hay |
 |---|---|
-| Lenguaje | tipado gradual, clases, structs, interfaces, enums, `match`, errores, eventos, `async`/`await`, módulos, desestructuración, sobrecarga de operadores, textos `r"..."`, listas repetidas `[0] * n` |
-| Editores | **HyperEZ Editor** (Windows), extensión de VS Code con botones de ejecutar y formato, servidor de lenguaje para cualquier editor |
+| Lenguaje | tipado gradual, clases, structs, interfaces, enums, `match`, errores, eventos, `async`/`await`, módulos, desestructuración, comprensiones, tubería `\|>`, propagación en listas y mapas, trozos `lista[2..]`, sobrecarga de operadores, textos `r"..."` |
+| Editores | **HyperEZ Editor** (Windows, con pestañas y panel de salida), extensión de VS Code, colores para Notepad++, Sublime, Vim y highlight.js, servidor de lenguaje para cualquier editor |
 | Herramientas | consola interactiva, modo watch, pruebas con salidas esperadas, formateador (`hyper fmt`), desensamblador (`hyper bytecode`), instaladores para Windows, Linux y macOS |
 | Sistema | procesos (también en segundo plano), archivos, rutas, fechas (en español, con sumas de días y meses), variables de entorno, `.zip` |
 | Datos | JSON, CSV, INI, base de datos de documentos, estadística, plantillas, Markdown, registro de mensajes |
 | Estructuras y algoritmos | pilas, colas, colas de prioridad, contadores, cachés, grafos (Dijkstra, orden topológico), A* en cuadrículas, combinatoria |
 | IA | matrices en C++ (con inversa, determinante y sistemas de ecuaciones), redes neuronales, regresión, k vecinos, k-medias |
-| Web | cliente HTTP/HTTPS, servidor web, rutas, HTML |
+| Web | cliente HTTP/HTTPS, servidor web, rutas, plantillas, formularios, cookies, sitios desde Markdown, `hyper serve` con recarga automática |
 | Gráficos y sonido | imágenes PNG/JPG con texto, polígonos, degradados y filtros; gráficas SVG; sonidos WAV |
 | Bajo nivel | `Bytes`, bits, hash (SHA-256, SHA-1, MD5, HMAC), compresión, ensamblador x86 para sectores de arranque |
 

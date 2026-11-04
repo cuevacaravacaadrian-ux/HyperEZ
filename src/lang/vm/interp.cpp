@@ -782,11 +782,22 @@ Value VM::getIndex(Value obj, Value idx) {
                 if (isObjType(idx, OT::Range)) {
                     auto* r = static_cast<ObjRange*>(idx.o);
                     ObjList* out = newList();
-                    double n = r->count();
+                    long len = (long)items.size();
+                    if (r->step == 1) {
+                        // lista[a..b], lista[2..], lista[..3], lista[-2..]: como en los textos, se recortan los límites
+                        double sa = r->start, sb = r->end + (r->inclusive ? 1 : 0);
+                        long a = (long)std::clamp(sa < 0 ? sa + len : sa, -1.0, (double)len + 1);
+                        long b = (long)std::clamp(sb < 0 ? sb + len : sb, -1.0, (double)len + 1);
+                        a = std::clamp(a, 0L, len);
+                        b = std::clamp(b, a, len);
+                        out->items.assign(items.begin() + a, items.begin() + b);
+                        return Value::object(out);
+                    }
+                    double n = std::min(r->count(), (double)len * 2 + 2); // con otro paso nunca hacen falta más vueltas
                     for (double k = 0; k < n; k++) {
                         long i = (long)(r->start + k * r->step);
-                        if (i < 0) i += (long)items.size();
-                        if (i >= 0 && i < (long)items.size()) out->items.push_back(items[i]);
+                        if (i < 0) i += len;
+                        if (i >= 0 && i < len) out->items.push_back(items[i]);
                     }
                     return Value::object(out);
                 }
@@ -803,11 +814,10 @@ Value VM::getIndex(Value obj, Value idx) {
                 size_t len = utf8Length(s);
                 if (isObjType(idx, OT::Range)) {
                     auto* r = static_cast<ObjRange*>(idx.o);
-                    long a = (long)r->start, b = (long)r->end + (r->inclusive ? 1 : 0);
-                    if (a < 0) a += (long)len;
-                    if (b < 0) b += (long)len;
-                    a = std::clamp(a, 0L, (long)len);
-                    b = std::clamp(b, a, (long)len);
+                    // en double hasta recortar: texto[2..] usa un final enorme que no cabe en un long de 32 bits
+                    double da = r->start, db = r->end + (r->inclusive ? 1 : 0);
+                    long a = (long)std::clamp(da < 0 ? da + (double)len : da, 0.0, (double)len);
+                    long b = (long)std::clamp(db < 0 ? db + (double)len : db, (double)a, (double)len);
                     size_t sa = utf8Offset(s, a), sb = utf8Offset(s, b);
                     return str(s.substr(sa, sb - sa));
                 }

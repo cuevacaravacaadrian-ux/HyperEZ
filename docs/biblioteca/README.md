@@ -13,7 +13,7 @@ HyperEZ trae de serie todo lo necesario para empezar en cualquier área. La [ref
 | Datos binarios, compresión y .zip | `Bytes`, `Hash`, `Base64`, `compress`, `import zip` | [binario.md](binario.md) |
 | Patrones de texto | `Regex`, textos `r"..."` | [regex.md](regex.md) |
 | Internet (cliente) | `Http` | [red.md](red.md) |
-| Webs, APIs y bases de datos | `Http.serve`, `import web`, `import html`, `import db` | [web.md](web.md) |
+| Webs, APIs y bases de datos | `Http.serve`, `import web`, `import site`, `import html`, `import db`, `hyper serve` | [web.md](web.md) |
 | Gráficos, gráficas y sonido | `Image`, `import svg`, `import audio` | [graficos-sonido.md](graficos-sonido.md) |
 | Inteligencia artificial y ciencia de datos | `Matrix`, `import ai`, `import stats`, `import csv` | [ia-datos.md](ia-datos.md) |
 | Consola, juegos y herramientas | `Console`, `import cli`, `Vec2`, `Vec3`, `Color` | [consola.md](consola.md) |
@@ -25,7 +25,7 @@ HyperEZ trae de serie todo lo necesario para empezar en cualquier área. La [ref
 ## Nativo o escrito en HyperEZ
 
 - Los **módulos nativos** (`File`, `Http`, `Matrix`...) están programados en C++ dentro de `hyper` y se usan sin importar nada.
-- Las **bibliotecas incluidas** (`ai`, `stats`, `csv`, `cli`, `x86`, `web`, `html`, `db`, `audio`, `collections`, `algo`, `template`, `markdown`, `ini`, `log`, `svg`, `zip`) están escritas en el propio HyperEZ (carpeta `src/lib` del repositorio), se cargan con `import` y van incrustadas en `hyper`, así que tampoco hay que instalar nada. Leer su código es una buena forma de aprender.
+- Las **bibliotecas incluidas** (`ai`, `stats`, `csv`, `cli`, `x86`, `web`, `html`, `db`, `audio`, `collections`, `algo`, `template`, `markdown`, `ini`, `log`, `svg`, `zip`, `site`) están escritas en el propio HyperEZ (carpeta `src/lib` del repositorio), se cargan con `import` y van incrustadas en `hyper`, así que tampoco hay que instalar nada. Leer su código es una buena forma de aprender.
 
 ```hz
 import stats

@@ -1,13 +1,19 @@
-// web — aplicaciones web con rutas, sobre Http.serve.
+// web — aplicaciones y páginas web con rutas, plantillas, formularios y archivos estáticos (sobre Http.serve).
 //
 //   import web
 //   var app = web.App()
-//   app.get("/", req => "<h1>Hola</h1>")
-//   app.get("/jugadores/:id", req => ({ id: req.params.id }))
-//   app.post("/puntos", req => ({ status: 201, json: req.json }))
-//   app.listen(8080)
+//   app.use(web.logger())                                   // muestra cada petición (con la hora)
+//   app.staticDir("/publico", "publico")                    // CSS, imágenes, JavaScript...
+//   app.get("/", req => web.view("plantillas/inicio.html", { nombre: "Ana" }))
+//   app.get("/jugadores/:id", req => ({ id: req.params.id }))   // un mapa es una respuesta JSON
+//   app.post("/contacto", req => web.html("Gracias, " + web.form(req).nombre))
+//   app.listen(8080, { open: true })                        // abre el navegador
 //
-// Las rutas pueden tener partes variables (:nombre) que llegan en req.params.
+//   web.devServer("mi-web")    // sirve una carpeta y recarga el navegador al guardar (= hyper serve)
+//
+// Las rutas pueden tener partes variables (:nombre) que llegan en req.params; * al final recoge el resto.
+
+import template
 
 /// Divide una ruta en sus partes: "/a/b/" -> ["a", "b"].
 function parts(ruta: text): list {
@@ -39,7 +45,8 @@ function matchRoute(patron: text, ruta: text): map? {
 class App {
     var routes: list = []
     var middleware: list = []
-    var notFound: function = req => ({ status: 404, body: "No encontrado: " + req.path })
+    var statics: list = []
+    var notFound: function = req => ({ status: 404, body: page404(req.path), type: "text/html; charset=utf-8" })
 
     /// Añade una ruta para un método HTTP ("GET", "POST"... o "*" para todos).
     function route(metodo: text, patron: text, manejador: function): App {
@@ -50,6 +57,17 @@ class App {
     function post(patron: text, manejador: function): App { return route("POST", patron, manejador) }
     function put(patron: text, manejador: function): App { return route("PUT", patron, manejador) }
     function delete(patron: text, manejador: function): App { return route("DELETE", patron, manejador) }
+    function patch(patron: text, manejador: function): App { return route("PATCH", patron, manejador) }
+    /// Para cualquier método.
+    function all(patron: text, manejador: function): App { return route("*", patron, manejador) }
+
+    /// Sirve los archivos de una carpeta bajo un prefijo: app.staticDir("/publico", "publico") hace que
+    /// /publico/estilo.css sea el archivo publico/estilo.css. Las carpetas sirven su index.html.
+    function staticDir(prefijo: text, carpeta: text): App {
+        var p = prefijo.endsWith("/") ? prefijo.substring(0, prefijo.length - 1) : prefijo
+        statics.add({ prefix: p, dir: carpeta })
+        return this
+    }
 
     /// Función que se ejecuta antes de cada ruta. Si devuelve algo distinto de null, esa es la respuesta.
     function use(f: function): App {
@@ -71,12 +89,25 @@ class App {
                 return r.handler(req)
             }
         }
+        if req.method == "GET" or req.method == "HEAD" {
+            foreach st in statics {
+                if req.path != st.prefix and not req.path.startsWith(st.prefix + "/") and st.prefix != "" { continue }
+                var resto = req.path.substring(st.prefix.length)
+                if resto.contains("..") { continue }
+                while resto.startsWith("/") { resto = resto.substring(1) }
+                var archivo = resto == "" ? st.dir : Path.join(st.dir, resto)
+                if File.isDir(archivo) { archivo = Path.join(archivo, "index.html") }
+                if File.isFile(archivo) { return { file: archivo } }
+            }
+        }
         return notFound(req)
     }
 
     /// Arranca el servidor (ver Http.serve para las opciones: host, static, cors, quiet, maxRequests).
+    /// Con { open: true } abre la página en el navegador.
     function listen(puerto: number = 8080, opciones: map = {}): number {
-        return Http.serve(puerto, req => handle(req), opciones)
+        if opciones.get("open", false) { Process.open("http://localhost:${puerto}") }
+        return Http.serve(puerto, req => handle(req), opciones.omit(["open"]))
     }
 }
 
@@ -96,4 +127,158 @@ function request(metodo: text, ruta: text, json: any = null): map {
 /// Redirección a otra dirección.
 function redirect(url: text): map {
     return { status: 302, headers: { Location: url }, body: "" }
+}
+
+// ---------------------------------------------------------------------------
+// Respuestas
+// ---------------------------------------------------------------------------
+
+/// Respuesta JSON con un código de estado: web.json({ error: "no existe" }, 404).
+function json(datos: any, status: number = 200): map { return { status: status, json: datos } }
+
+/// Respuesta HTML.
+function html(codigo: text, status: number = 200): map { return { status: status, body: codigo, type: "text/html; charset=utf-8" } }
+
+/// Respuesta de texto plano.
+function text(contenido: any, status: number = 200): map { return { status: status, body: str(contenido), type: "text/plain; charset=utf-8" } }
+
+/// Un archivo (el tipo se deduce de la extensión).
+function file(ruta: text): map { return { file: ruta } }
+
+/// Página de error con un estilo sencillo.
+function error(status: number, mensaje: text): map {
+    return html("<!DOCTYPE html><meta charset=\"utf-8\"><title>${status}</title>" +
+                "<body style=\"font-family:system-ui,sans-serif;max-width:40rem;margin:4rem auto;color:#1f2328\">" +
+                "<h1 style=\"color:#cf222e\">${status}</h1><p>${template.escapeHtml(mensaje)}</p></body>", status)
+}
+
+function page404(ruta: text): text {
+    return "<!DOCTYPE html><meta charset=\"utf-8\"><title>No encontrado</title>" +
+           "<body style=\"font-family:system-ui,sans-serif;max-width:40rem;margin:4rem auto;color:#1f2328\">" +
+           "<h1>404</h1><p>No existe <code>${template.escapeHtml(ruta)}</code>.</p></body>"
+}
+
+/// Añade una cookie a una respuesta. opciones: maxAge (segundos), path ("/"), httpOnly (true).
+function withCookie(respuesta: any, nombre: text, valor: text, opciones: map = {}): map {
+    var r = typeof(respuesta) == "map" ? respuesta.copy() : html(str(respuesta))
+    var c = "${nombre}=${Http.encode(valor)}; Path=${opciones.get("path", "/")}"
+    if opciones.has("maxAge") { c += "; Max-Age=${opciones.maxAge}" }
+    if opciones.get("httpOnly", true) { c += "; HttpOnly" }
+    c += "; SameSite=Lax"
+    var h = r.get("headers", {}).copy()
+    h["Set-Cookie"] = c
+    r.headers = h
+    return r
+}
+
+/// Página a partir de una plantilla HTML (ver import template) con los valores escapados.
+/// Con base, la página se mete en esa plantilla en {{{contenido}}} (cabecera, menú y pie comunes).
+function view(ruta: text, datos: map = {}, base: text? = null): map {
+    var cuerpo = template.renderHtml(File.read(ruta), datos)
+    if base != null { cuerpo = template.renderHtml(File.read(base), datos.merge({ contenido: cuerpo })) }
+    return html(cuerpo)
+}
+
+// ---------------------------------------------------------------------------
+// Peticiones
+// ---------------------------------------------------------------------------
+
+/// Decodifica %XX y + de una URL o de un formulario.
+function decode(t: text): text {
+    if not t.contains("%") and not t.contains("+") { return t }
+    var b = Bytes(0)
+    var i = 0
+    var s = t.replace("+", " ")
+    while i < s.length {
+        var c = s[i]
+        if c == "%" and i + 2 < s.length + 1 and parseInt(s.substring(i + 1, i + 3), 16) != null {
+            b.push(parseInt(s.substring(i + 1, i + 3), 16))
+            i += 3
+        } else {
+            b = b.concat(c)
+            i += 1
+        }
+    }
+    return b.toText()
+}
+
+/// Campos de un formulario HTML enviado (application/x-www-form-urlencoded): web.form(req).nombre
+function form(req: map): map {
+    var out = {}
+    var cuerpo = str(req.get("body", ""))
+    if cuerpo == "" { return out }
+    foreach par in cuerpo.split("&") {
+        if par == "" { continue }
+        var i = par.indexOf("=")
+        if i < 0 { out[decode(par)] = "" }
+        else { out[decode(par.substring(0, i))] = decode(par.substring(i + 1)) }
+    }
+    return out
+}
+
+/// Cookies que envía el navegador: web.cookies(req).sesion
+function cookies(req: map): map {
+    var out = {}
+    var h = req.get("headers", {}).get("cookie", "")
+    foreach par in h.split(";") {
+        var i = par.indexOf("=")
+        if i > 0 { out[par.substring(0, i).trim()] = decode(par.substring(i + 1).trim()) }
+    }
+    return out
+}
+
+/// Middleware que muestra cada petición: app.use(web.logger())
+function logger(): function {
+    return req => {
+        print("${Time.format(Time.now(), "%H:%M:%S")}  ${req.method.padEnd(6)} ${req.url}")
+        return null
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Servidor para desarrollar (hyper serve)
+// ---------------------------------------------------------------------------
+
+const RELOAD_SCRIPT = "<script>(function(){var v=null;setInterval(function(){fetch('/__hyperez/version').then(function(r){return r.json()})" +
+                      ".then(function(d){if(v===null){v=d.v}else if(d.v!==v){location.reload()}}).catch(function(){})},700)})()</script>"
+
+/// Momento del último cambio en la carpeta (para saber si hay que recargar).
+function lastChange(raiz: text): number {
+    var v = 0
+    foreach f in File.listAll(raiz) {
+        if f.startsWith(".git") or f.contains("node_modules") { continue }
+        v = max(v, File.modified(Path.join(raiz, f)))
+    }
+    return v
+}
+
+/// Sirve una carpeta (index.html, CSS, imágenes...) y, si cambias un archivo, el navegador recarga la página solo.
+/// opciones: port (8080), open (abrir el navegador), reload (true), host ("127.0.0.1"; "0.0.0.0" para verla desde el móvil).
+function devServer(carpeta: text = ".", opciones: map = {}): number {
+    var puerto = opciones.get("port", 8080)
+    var recargar = opciones.get("reload", true)
+    var raiz = Path.absolute(carpeta)
+    if not File.isDir(raiz) { throw Error("web.devServer: no existe la carpeta " + raiz) }
+    var url = "http://localhost:${puerto}"
+    print("HyperEZ sirve ${raiz}")
+    print("  → ${url}" + (recargar ? "  (se recarga sola al guardar)" : "") + "   Ctrl+C para parar")
+    if opciones.get("host", "127.0.0.1") == "0.0.0.0" { print("  (también desde otros equipos de tu red, con la IP de este equipo)") }
+    if opciones.get("open", false) { Process.open(url) }
+    return Http.serve(puerto, req => {
+        if req.path == "/__hyperez/version" { return { json: { v: lastChange(raiz) } } }
+        print("${Time.format(Time.now(), "%H:%M:%S")}  ${req.method.padEnd(6)} ${req.path}")
+        if not recargar { return null }
+        var ruta = req.path
+        if ruta.contains("..") { return null }
+        while ruta.startsWith("/") { ruta = ruta.substring(1) } // Path.join("c:/web", "/x") daría "/x"
+        if ruta == "" or ruta.endsWith("/") { ruta = ruta + "index.html" }
+        else if File.isDir(Path.join(raiz, ruta)) { ruta = ruta + "/index.html" }
+        if not ruta.lower().endsWith(".html") and not ruta.lower().endsWith(".htm") { return null }
+        var archivo = Path.join(raiz, ruta)
+        if not File.isFile(archivo) { return null }
+        var codigo = File.read(archivo)
+        var i = codigo.lower().lastIndexOf("</body>")
+        codigo = i >= 0 ? codigo.substring(0, i) + RELOAD_SCRIPT + codigo.substring(i) : codigo + RELOAD_SCRIPT
+        return { body: codigo, type: "text/html; charset=utf-8" }
+    }, { static: raiz, quiet: true, host: opciones.get("host", "127.0.0.1"), maxRequests: opciones.get("maxRequests", 0) })
 }

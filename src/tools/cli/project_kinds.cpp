@@ -251,15 +251,189 @@ test("cuenta las líneas de cada archivo", () => {
     };
 }
 
-std::vector<std::string> projectKinds() { return {"juego", "app", "ia", "script"}; }
+// ---- aplicación web --------------------------------------------------------
+
+static std::vector<ProjectFile> webProject(const std::string& title) {
+    return {
+        {"main.hz", "// " + title + R"HZ( — aplicación web: páginas con plantillas, un formulario, una API JSON y archivos estáticos.
+// Ejecuta:  hyper main.hz   y abre http://localhost:8080   (Ctrl+C para pararla)
+from "./src/app.hz" import crearApp
+
+crearApp(System.scriptDir).listen(8080, { open: System.args.contains("--abrir") })
+)HZ"},
+        {"src/app.hz", R"HZ(import web
+
+var mensajes: list = []
+
+/// Crea la aplicación con todas sus rutas. carpeta: la del proyecto (donde están plantillas/ y publico/).
+/// Las pruebas la usan sin arrancar el servidor.
+function crearApp(carpeta: text): web.App {
+    var app = web.App()
+    app.staticDir("/publico", Path.join(carpeta, "publico"))
+    var plantillas = Path.join(carpeta, "plantillas")
+
+    app.get("/", req => web.view(Path.join(plantillas, "inicio.html"), {
+        titulo: "Inicio",
+        mensajes: mensajes.reversed(),
+        hay: mensajes.length > 0
+    }, Path.join(plantillas, "base.html")))
+
+    // Formulario: <form method="post" action="/mensajes">
+    app.post("/mensajes", req => {
+        var datos = web.form(req)
+        if datos.get("texto", "").trim() != "" {
+            mensajes.add({ autor: datos.get("autor", "anónimo"), texto: datos.texto.trim(), hora: Time.format(Time.now(), "%H:%M") })
+        }
+        return web.redirect("/")
+    })
+
+    // API JSON
+    app.get("/api/mensajes", req => mensajes)
+    app.get("/api/hora", req => ({ hora: Time.format(Time.now(), "%H:%M:%S") }))
+    return app
+}
+)HZ"},
+        {"plantillas/base.html", R"HTML(<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{titulo}}</title>
+<link rel="stylesheet" href="/publico/estilo.css">
+</head>
+<body>
+<header><strong>)HTML" + title + R"HTML(</strong> · hecho con HyperEZ</header>
+<main>
+{{{contenido}}}
+</main>
+</body>
+</html>
+)HTML"},
+        {"plantillas/inicio.html", R"HTML(<h1>Mensajes</h1>
+<form method="post" action="/mensajes">
+  <input name="autor" placeholder="Tu nombre">
+  <input name="texto" placeholder="Escribe un mensaje" required>
+  <button>Enviar</button>
+</form>
+{{#if hay}}
+<ul>
+{{#each mensajes}}
+  <li><strong>{{autor}}</strong> ({{hora}}): {{texto}}</li>
+{{/each}}
+</ul>
+{{else}}
+<p>Todavía no hay mensajes. ¡Escribe el primero!</p>
+{{/if}}
+<p><a href="/api/mensajes">Ver los mensajes en JSON</a></p>
+)HTML"},
+        {"publico/estilo.css", R"CSS(body { font-family: system-ui, "Segoe UI", sans-serif; margin: 0; color: #1f2328; background: #f6f8fa; }
+header { background: #2f81f7; color: white; padding: 1rem 1.5rem; }
+main { max-width: 42rem; margin: 2rem auto; background: white; padding: 1.5rem 2rem; border-radius: 12px; box-shadow: 0 1px 3px #0002; }
+form { display: flex; gap: .5rem; flex-wrap: wrap; }
+input { flex: 1; padding: .55rem .7rem; border: 1px solid #d0d7de; border-radius: 8px; font: inherit; }
+button { padding: .55rem 1.2rem; border: 0; border-radius: 8px; background: #2f81f7; color: white; font: inherit; cursor: pointer; }
+li { margin: .4rem 0; }
+)CSS"},
+        {"tests/test_app.hz", R"HZ(import web
+from "../src/app.hz" import crearApp
+
+var proyecto = Path.join(System.scriptDir, "..")
+
+test("la página de inicio responde", () => {
+    var r = crearApp(proyecto).handle(web.request("GET", "/"))
+    assertEqual(r.status, 200)
+    assert(r.body.contains("Mensajes"))
+})
+
+test("el formulario guarda el mensaje y la API lo devuelve", () => {
+    var app = crearApp(proyecto)
+    var req = web.request("POST", "/mensajes")
+    req.body = "autor=Ana&texto=Hola+mundo"
+    assertEqual(app.handle(req).status, 302)
+    var lista = app.handle(web.request("GET", "/api/mensajes"))
+    assertEqual(lista.last().texto, "Hola mundo")
+})
+)HZ"},
+        {"README.md", readme(title, "Una aplicación web con plantillas HTML, un formulario, una API JSON y archivos estáticos.",
+                             "| `plantillas/` | Páginas HTML con `{{variables}}` (import template) |\n| `publico/` | CSS, imágenes y JavaScript |\n") +
+                          "\nAbre http://localhost:8080 después de `hyper main.hz` (o `hyper main.hz --abrir`).\n"},
+    };
+}
+
+// ---- sitio web estático ----------------------------------------------------
+
+static std::vector<ProjectFile> siteProject(const std::string& title) {
+    return {
+        {"main.hz", "// " + title + R"HZ( — sitio web hecho con Markdown: cada archivo de contenido/ es una página.
+// Genera la web en la carpeta web/:     hyper main.hz
+// Para verla mientras escribes:         hyper watch main.hz   (regenera al guardar)
+//                                 y en otra terminal:  hyper serve web   (el navegador se recarga solo)
+import site
+
+var hechos = site.build(Path.join(System.scriptDir, "contenido"), Path.join(System.scriptDir, "web"), {
+    title: ")HZ" + title + R"HZ(",
+    color: "#2f81f7",
+    footer: "Hecho con HyperEZ"
+})
+print("✓ ${hechos.length} archivos en web/")
+)HZ"},
+        {"contenido/index.md", "---\norden: 1\n---\n# " + title + R"MD(
+
+¡Bienvenido! Esta web se genera con **HyperEZ** a partir de archivos Markdown.
+
+- Edita los archivos de la carpeta `contenido/`.
+- Ejecuta `hyper main.hz` para generar la web en `web/`.
+- Mírala con `hyper serve web`.
+
+Sigue leyendo en [Sobre mí](sobre-mi.md).
+)MD"},
+        {"contenido/sobre-mi.md", R"MD(---
+titulo: Sobre mí
+orden: 2
+---
+# Sobre mí
+
+Escribe aquí quién eres. Puedes usar *cursiva*, **negrita**, [enlaces](index.md), listas, tablas y código:
+
+```hz
+print("¡Hola desde HyperEZ!")
+```
+
+| Lenguaje | Me gusta |
+|---|---|
+| HyperEZ | mucho |
+)MD"},
+        {"tests/test_web.hz", R"HZ(import site
+
+test("se generan las páginas con su menú", () => {
+    var destino = Path.join(Path.temp, "prueba-sitio-" + Hash.uuid())
+    var hechos = site.build(Path.join(System.scriptDir, "../contenido"), destino, { title: "Prueba" })
+    assertEqual(hechos.length, 2)
+    var inicio = File.read(Path.join(destino, "index.html"))
+    assert(inicio.contains("sobre-mi.html"))
+    File.deleteDir(destino)
+})
+)HZ"},
+        {"README.md", readme(title, "Un sitio web estático escrito en Markdown (blog, documentación, portfolio...).",
+                             "| `contenido/` | Las páginas en Markdown (`index.md` es la de inicio) |\n| `web/` | La web generada (súbela a cualquier hosting) |\n") +
+                          "\nGenera la web con `hyper main.hz` y mírala con `hyper serve web`.\n"},
+        {".gitignore", "web/\n"},
+    };
+}
+
+std::vector<std::string> projectKinds() { return {"juego", "app", "ia", "script", "web", "sitio"}; }
 
 std::vector<ProjectFile> projectFiles(const std::string& kind, const std::string& title) {
     std::vector<ProjectFile> files;
     if (kind == "app") files = appProject(title);
     else if (kind == "ia") files = aiProject(title);
     else if (kind == "script") files = scriptProject(title);
+    else if (kind == "web") files = webProject(title);
+    else if (kind == "sitio") files = siteProject(title);
     else files = gameProject(title);
-    files.push_back({".gitignore", "*.tmp\n"});
+    bool hasIgnore = false;
+    for (auto& f : files) if (f.path == ".gitignore") { f.content = "*.tmp\n" + f.content; hasIgnore = true; }
+    if (!hasIgnore) files.push_back({".gitignore", "*.tmp\n"});
     return files;
 }
 

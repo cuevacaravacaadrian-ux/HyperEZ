@@ -11,7 +11,8 @@ Todo HyperEZ está en un solo ejecutable: `hyper` (`hyper.exe` en Windows).
 | `hyper watch [archivo.hz] [args...]` | Ejecuta y vuelve a ejecutar cada vez que se guarda un `.hz` de la carpeta (o subcarpetas) |
 | `hyper check [archivos o carpetas]` | Busca errores sin ejecutar |
 | `hyper test [carpeta o archivos] [--update]` | Ejecuta las pruebas (por defecto `tests/`); `--update` regraba los `.out` |
-| `hyper new <nombre> [--tipo juego\|app\|ia\|script]` | Crea un proyecto |
+| `hyper new <nombre> [--tipo juego\|app\|ia\|script\|web\|sitio]` | Crea un proyecto |
+| `hyper serve [carpeta] [--puerto N] [--abrir] [--red]` | Sirve una web y recarga el navegador al guardar ([webs](../biblioteca/web.md#hyper-serve-servidor-para-desarrollar)) |
 | `hyper fmt [archivos o carpetas] [--check]` | Ordena la sangría y los espacios (`--check`: solo dice qué archivos lo necesitan) |
 | `hyper docs [salida.md]` | Genera la referencia de toda la API en Markdown |
 | `hyper bytecode <archivo.hz>` | Muestra las instrucciones que genera el compilador |
@@ -81,3 +82,16 @@ Enseña cómo traduce el compilador tu programa a instrucciones de la máquina v
 ```
 
 Cada línea: posición, línea del código fuente, instrucción, operandos (`#` constante, `s` hueco local, `g` variable global, `→`/`↑` destino de un salto) y, tras `;`, lo que significan. Las instrucciones se explican en [bytecode.md](../interno/bytecode.md).
+
+## Tipos de proyecto
+
+| `--tipo` | Qué crea |
+|---|---|
+| `juego` (por defecto) | juego de consola con teclado |
+| `app` | aplicación de consola con menú y datos guardados en JSON |
+| `ia` | red neuronal que aprende de un CSV |
+| `script` | herramienta de línea de órdenes con argumentos |
+| `web` | aplicación web: plantillas HTML, un formulario, una API JSON y CSS |
+| `sitio` | sitio web estático escrito en Markdown (blog, documentación, portfolio) |
+
+Todos tienen `main.hz`, `src/` (o las carpetas de la web), `tests/` con pruebas que pasan desde el primer momento y un `README.md`.

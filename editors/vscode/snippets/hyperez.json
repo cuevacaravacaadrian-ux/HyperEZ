@@ -621,5 +621,54 @@
       "${1:registro}.info(\"${3:Arrancando}\")"
     ],
     "description": "Registro con niveles y colores (import log)"
+  },
+  "Comprensión de lista": {
+    "prefix": [
+      "comprension",
+      "lista por"
+    ],
+    "body": [
+      "[${1:x * 2} for ${2:x} in ${3:lista}${4: if ${5:x > 0}}]"
+    ],
+    "description": "Lista nueva a partir de otra: [x * 2 for x in lista if x > 0]"
+  },
+  "Tubería": {
+    "prefix": [
+      "tuberia",
+      "pipe"
+    ],
+    "body": [
+      "${1:valor}\n    |> ${2:paso1}\n    |> ${3:paso2}"
+    ],
+    "description": "Encadenar pasos: valor |> f es f(valor)"
+  },
+  "Aplicación web con plantillas": {
+    "prefix": [
+      "webapp",
+      "aplicacionweb"
+    ],
+    "body": [
+      "import web",
+      "",
+      "var app = web.App()",
+      "app.staticDir(\"/publico\", \"publico\")",
+      "app.get(\"/\", req => web.view(\"plantillas/inicio.html\", { titulo: \"${1:Inicio}\" }))",
+      "app.post(\"/enviar\", req => web.html(\"Gracias, \" + web.form(req).get(\"nombre\", \"\")))",
+      "app.listen(${2:8080}, { open: true })"
+    ],
+    "description": "Web con archivos estáticos, plantillas y un formulario (import web)"
+  },
+  "Sitio desde Markdown": {
+    "prefix": [
+      "sitio",
+      "site"
+    ],
+    "body": [
+      "import site",
+      "",
+      "site.build(\"${1:contenido}\", \"${2:web}\", { title: \"${3:Mi web}\" })",
+      "// míralo con: hyper serve ${2:web}"
+    ],
+    "description": "Web estática a partir de archivos Markdown (import site)"
   }
 }

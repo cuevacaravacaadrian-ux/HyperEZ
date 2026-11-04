@@ -6,8 +6,10 @@ Programa propio (`packaging/windows/setup.cpp`) con los archivos dentro: no nece
 
 ```text
 bin\hyper.exe          el lenguaje y todas sus herramientas
-bin\hyperez-editor.exe HyperEZ Editor
-docs\                  documentación (incluida la referencia de la API)
+bin\hyperez-editor.exe HyperEZ Editor (componente opcional)
+docs\                  documentación en Markdown (incluida la referencia de la API)
+docs-html\             la misma documentación en HTML, para leerla en el navegador sin conexión
+editors\               colores para Notepad++, Sublime Text, Vim y highlight.js
 examples\              ejemplos
 icons\                 iconos de los archivos .hz
 vscode\*.vsix          la extensión de VS Code
@@ -27,6 +29,7 @@ Todo en `HKEY_CURRENT_USER` (solo afecta a tu usuario):
 | `Software\Classes\Applications\hyper.exe` | HyperEZ en *Abrir con...* |
 | `...\Explorer\FileExts\.hz\UserChoice` | se borra: si antes elegiste otro programa para `.hz`, HyperEZ vuelve a ser el predeterminado |
 | `Environment\Path` | la carpeta `bin` de HyperEZ |
+| `Software\Microsoft\Windows\CurrentVersion\App Paths\hyper.exe` (y `hyperez-editor.exe`) | *Win+R → hyper* funciona al momento, aunque las terminales abiertas aún no vean el PATH nuevo |
 | `Software\Microsoft\Windows\CurrentVersion\Uninstall\HyperEZ` | aparece en *Aplicaciones* |
 
 El doble clic ejecuta `hyper.exe run --pause "archivo"`: la ventana espera una tecla al terminar para que se pueda leer el resultado.
@@ -44,6 +47,7 @@ Además crea `Documentos\HyperEZ` (la carpeta donde HyperEZ Editor guarda los pr
 /NODESKTOP         sin acceso directo en el escritorio
 /NOVSCODE          no instalar la extensión de VS Code
 /OPENEDITOR        abrir HyperEZ Editor al terminar (el asistente lo hace por defecto)
+/NOEDITOR          solo el lenguaje, sin HyperEZ Editor
 ```
 
 ### Crear el instalador
@@ -61,3 +65,7 @@ El paquete `HyperEZ-<versión>-<sistema>-<arquitectura>.tar.gz` (lo crea `packag
 - copia el icono y lo marca como aplicación predeterminada con `xdg-mime`.
 
 `sh install.sh --uninstall` lo deshace todo.
+
+### Componentes
+
+El **lenguaje** (`hyper`, ejemplos y documentación) se instala siempre y se integra en Windows (asociación de archivos, PATH, App Paths, menú Inicio). **HyperEZ Editor** y la **extensión de VS Code** son complementos opcionales: si no se marca el editor, la acción *Editar* de los archivos abre VS Code (o el Bloc de notas).

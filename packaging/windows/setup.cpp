@@ -4,6 +4,7 @@
 //   HyperEZ-Setup.exe /S              Instalación silenciosa
 //   Opciones: /D=<carpeta> /NOASSOC /NOPATH /NOSHORTCUTS /NODESKTOP /NOVSCODE
 //             /OPENEDITOR                (abre HyperEZ Editor al terminar, también en silencioso)
+//             /NOEDITOR                  (solo el lenguaje, sin HyperEZ Editor)
 //             /VSCODE-EXTDIR=<carpeta>   (instala la extensión en otra carpeta de extensiones)
 //             /REGROOT=<clave>           (pruebas: escribe el registro bajo HKCU\<clave>)
 //   uninstall.exe /uninstall [/S]     Desinstalación
@@ -36,6 +37,7 @@ struct Options {
     bool silent = false, uninstall = false;
     bool assoc = true, path = true, shortcuts = true, desktop = true, vscode = true;
     bool openEditor = false; // en el asistente gráfico se marca por defecto
+    bool editor = true;      // HyperEZ Editor es un componente opcional: el lenguaje se instala siempre
     std::wstring dir;
     std::wstring regRoot;      // vacío = ubicaciones reales
     std::wstring vscodeExtDir; // vacío = carpeta normal de extensiones
@@ -49,6 +51,10 @@ static HINSTANCE g_inst;
 static std::wstring classesKey() { return g_opt.regRoot.empty() ? L"Software\\Classes" : g_opt.regRoot + L"\\Classes"; }
 static std::wstring envKey() { return g_opt.regRoot.empty() ? L"Environment" : g_opt.regRoot + L"\\Environment"; }
 static std::wstring appKey() { return g_opt.regRoot.empty() ? L"Software\\HyperEZ" : g_opt.regRoot + L"\\HyperEZ"; }
+static std::wstring appPathsKey(const std::wstring& exe) {
+    std::wstring base = g_opt.regRoot.empty() ? L"Software\\Microsoft\\Windows\\CurrentVersion\\App Paths" : g_opt.regRoot + L"\\App Paths";
+    return base + L"\\" + exe;
+}
 static std::wstring uninstallKey() {
     return g_opt.regRoot.empty() ? L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\HyperEZ" : g_opt.regRoot + L"\\Uninstall\\HyperEZ";
 }
@@ -101,6 +107,7 @@ static void parseArgs() {
         else if (s == L"/NOVSCODE") g_opt.vscode = false;
         else if (s == L"/NODESKTOP") g_opt.desktop = false;
         else if (s == L"/OPENEDITOR") g_opt.openEditor = true;
+        else if (s == L"/NOEDITOR") g_opt.editor = false;
         else if (startsWithI(s, L"/D=")) g_opt.dir = s.substr(3);
         else if (startsWithI(s, L"/REGROOT=")) g_opt.regRoot = s.substr(9);
         else if (startsWithI(s, L"/VSCODE-EXTDIR=")) g_opt.vscodeExtDir = s.substr(15);
@@ -286,9 +293,15 @@ static void createShortcuts(const std::wstring& dir) {
     createShortcut(sm + L"\\HyperEZ (consola interactiva).lnk", hyperExe, L"repl", L"Escribe código HyperEZ y ve el resultado al momento",
                    hyperExe, 0, home);
     createShortcut(sm + L"\\Ejemplos de HyperEZ.lnk", dir + L"\\examples", L"", L"Programas de ejemplo de HyperEZ", hyperExe, 0, dir + L"\\examples");
-    if (fileExists(dir + L"\\docs\\GUIA.md"))
-        createShortcut(sm + L"\\Guía de HyperEZ.lnk", dir + L"\\docs\\GUIA.md", L"", L"Guía del lenguaje HyperEZ", dir + L"\\icons\\hz-file.ico", 0, dir + L"\\docs");
-    createShortcut(sm + L"\\Referencia de la API.lnk", dir + L"\\docs\\API.md", L"", L"Todas las funciones de HyperEZ", dir + L"\\icons\\hz-file.ico", 0, dir + L"\\docs");
+    // La documentación en HTML (se abre en el navegador); si no está, la de Markdown
+    bool html = fileExists(dir + L"\\docs-html\\index.html");
+    std::wstring guia = html ? dir + L"\\docs-html\\GUIA.html" : dir + L"\\docs\\GUIA.md";
+    std::wstring api = html ? dir + L"\\docs-html\\biblioteca\\API.html" : dir + L"\\docs\\API.md";
+    if (fileExists(guia)) createShortcut(sm + L"\\Guía de HyperEZ.lnk", guia, L"", L"Guía del lenguaje HyperEZ", dir + L"\\icons\\hz-file.ico", 0, dir);
+    createShortcut(sm + L"\\Referencia de la API.lnk", api, L"", L"Todas las funciones de HyperEZ", dir + L"\\icons\\hz-file.ico", 0, dir);
+    if (html)
+        createShortcut(sm + L"\\Documentación de HyperEZ.lnk", dir + L"\\docs-html\\index.html", L"", L"Toda la documentación de HyperEZ",
+                       dir + L"\\icons\\hz-file.ico", 0, dir);
     createShortcut(sm + L"\\Desinstalar HyperEZ.lnk", dir + L"\\uninstall.exe", L"/uninstall", L"Desinstalar HyperEZ", dir + L"\\uninstall.exe", 0, dir);
 }
 
@@ -302,7 +315,7 @@ static void createDesktopShortcut(const std::wstring& dir) {
 
 static const wchar_t* kStartMenuLinks[] = {L"HyperEZ Editor.lnk", L"HyperEZ (terminal).lnk", L"HyperEZ (consola interactiva).lnk",
                                            L"Ejemplos de HyperEZ.lnk", L"Guía de HyperEZ.lnk", L"Referencia de la API.lnk",
-                                           L"Desinstalar HyperEZ.lnk"};
+                                           L"Documentación de HyperEZ.lnk", L"Desinstalar HyperEZ.lnk"};
 
 static uint64_t dirSizeKB(const std::vector<PackFile>& files) {
     uint64_t s = 0;
@@ -325,7 +338,10 @@ static bool doInstall() {
     }
     std::wstring manifest;
     size_t i = 0;
+    const std::wstring editorRel = L"bin\\hyperez-editor.exe";
+    if (!g_opt.editor) DeleteFileW((dir + L"\\" + editorRel).c_str()); // de una instalación anterior con el editor
     for (auto& f : files) {
+        if (!g_opt.editor && _wcsicmp(f.path.c_str(), editorRel.c_str()) == 0) { i++; continue; }
         std::wstring dest = dir + L"\\" + f.path;
         g_progress.set(5 + (int)(70 * i++ / files.size()), L"Copiando " + f.path);
         makeDirs(parentDir(dest));
@@ -362,9 +378,19 @@ static bool doInstall() {
         createShortcuts(dir);
     }
     if (g_opt.desktop) createDesktopShortcut(dir);
+    // Win+R → "hyper" o "hyperez-editor" funciona aunque el PATH aún no se haya refrescado
+    setValue(HKEY_CURRENT_USER, appPathsKey(L"hyper.exe"), L"", hyperExe);
+    setValue(HKEY_CURRENT_USER, appPathsKey(L"hyper.exe"), L"Path", dir + L"\\bin");
+    if (g_opt.editor) {
+        setValue(HKEY_CURRENT_USER, appPathsKey(L"hyperez-editor.exe"), L"", editorExe(dir));
+        setValue(HKEY_CURRENT_USER, appPathsKey(L"hyperez-editor.exe"), L"Path", dir + L"\\bin");
+    } else {
+        deleteTree(HKEY_CURRENT_USER, appPathsKey(L"hyperez-editor.exe"));
+    }
     // Registro de la aplicación
     g_progress.set(90, L"Registrando HyperEZ");
     setValue(HKEY_CURRENT_USER, appKey(), L"InstallDir", dir);
+    setDword(HKEY_CURRENT_USER, appKey(), L"Editor", g_opt.editor ? 1 : 0);
     setValue(HKEY_CURRENT_USER, appKey(), L"Version", widen(HYPEREZ_VERSION));
     std::wstring uk = uninstallKey();
     setValue(HKEY_CURRENT_USER, uk, L"DisplayName", L"HyperEZ " + widen(HYPEREZ_VERSION));
@@ -444,6 +470,8 @@ static bool doUninstall() {
     removeEmptyDirs(dir);
     g_progress.set(90, L"Borrando el registro");
     deleteTree(HKEY_CURRENT_USER, uninstallKey());
+    deleteTree(HKEY_CURRENT_USER, appPathsKey(L"hyper.exe"));
+    deleteTree(HKEY_CURRENT_USER, appPathsKey(L"hyperez-editor.exe"));
     deleteTree(HKEY_CURRENT_USER, appKey());
     g_progress.set(100, L"HyperEZ se ha desinstalado.");
     return true;
@@ -497,7 +525,7 @@ static void scheduleSelfDelete() {
 // ---------------------------------------------------------------------------
 
 enum { ID_DIR = 100, ID_BROWSE, ID_PROGRESS, ID_STATUS, ID_INSTALL, ID_CANCEL, ID_REPL, ID_CHECK0 = 120 };
-enum { CHK_ASSOC, CHK_PATH, CHK_SHORTCUTS, CHK_DESKTOP, CHK_VSCODE, CHK_OPENEDITOR, CHK_COUNT };
+enum { CHK_EDITOR, CHK_VSCODE, CHK_ASSOC, CHK_PATH, CHK_SHORTCUTS, CHK_DESKTOP, CHK_OPENEDITOR, CHK_COUNT };
 
 static HWND g_wnd, g_dirEdit, g_progressBar, g_statusText, g_installBtn, g_cancelBtn, g_replBtn;
 static HWND g_checks[CHK_COUNT];
@@ -560,6 +588,8 @@ static void startInstall() {
     g_opt.desktop = checked(CHK_DESKTOP);
     g_opt.vscode = checked(CHK_VSCODE);
     g_opt.openEditor = checked(CHK_OPENEDITOR);
+    g_opt.editor = checked(CHK_EDITOR);
+    if (!g_opt.editor) { g_opt.openEditor = false; g_opt.desktop = false; }
     g_busy = true;
     for (HWND h : {g_dirEdit, g_installBtn, g_cancelBtn, GetDlgItem(g_wnd, ID_BROWSE)}) EnableWindow(h, FALSE);
     for (HWND h : g_checks) EnableWindow(h, FALSE);
@@ -577,32 +607,40 @@ static LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     switch (msg) {
         case WM_CREATE: {
             g_wnd = h;
-            control(L"STATIC", L"Incluye HyperEZ Editor, ejemplos y documentación. No necesita administrador.",
+            control(L"STATIC", L"El lenguaje se integra en Windows; HyperEZ Editor es un complemento opcional.",
                     SS_ENDELLIPSIS, 24, 102, 514, 20, 0);
-            control(L"STATIC", L"Carpeta de instalación:", 0, 24, 130, 300, 20, 0);
-            g_dirEdit = control(L"EDIT", g_opt.dir.c_str(), WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL, 24, 152, 416, 25, ID_DIR);
-            control(L"BUTTON", L"Examinar...", WS_TABSTOP | BS_PUSHBUTTON, 448, 151, 90, 27, ID_BROWSE);
+            control(L"STATIC", L"Carpeta de instalación:", 0, 24, 128, 300, 20, 0);
+            g_dirEdit = control(L"EDIT", g_opt.dir.c_str(), WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL, 24, 150, 416, 25, ID_DIR);
+            control(L"BUTTON", L"Examinar...", WS_TABSTOP | BS_PUSHBUTTON, 448, 149, 90, 27, ID_BROWSE);
             bool hasCode = !findVSCodeCli().empty();
+            // Componentes
+            control(L"BUTTON", L"Componentes", BS_GROUPBOX, 16, 184, 530, 100, 0);
+            HWND lang = control(L"BUTTON", L"HyperEZ: el lenguaje, la orden hyper, ejemplos y documentación (obligatorio)", BS_AUTOCHECKBOX, 30, 204, 506, 22, 0);
+            SendMessageW(lang, BM_SETCHECK, BST_CHECKED, 0);
+            EnableWindow(lang, FALSE);
             const wchar_t* labels[CHK_COUNT] = {
-                L"Asociar los archivos .hz y .hez (icono, doble clic para ejecutar, Editar)",
+                L"HyperEZ Editor: editor de código clásico, con colores, errores y F5 (opcional)",
+                hasCode ? L"Extensión para Visual Studio Code" : L"Extensión para Visual Studio Code (no se encontró VS Code)",
+                L"Asociar los archivos .hez y .hz (icono, doble clic para ejecutar, Editar)",
                 L"Añadir HyperEZ al PATH (usar \"hyper\" desde cualquier terminal)",
-                L"Crear accesos directos en el menú Inicio",
-                L"Crear un acceso directo a HyperEZ Editor en el escritorio",
-                hasCode ? L"Instalar la extensión para Visual Studio Code" : L"Instalar la extensión para Visual Studio Code (no se encontró VS Code)",
+                L"Accesos directos en el menú Inicio",
+                L"Acceso directo a HyperEZ Editor en el escritorio",
                 L"Abrir HyperEZ Editor al terminar"};
+            const int ys[CHK_COUNT] = {228, 252, 316, 340, 364, 388, 412};
             for (int i = 0; i < CHK_COUNT; i++) {
-                g_checks[i] = control(L"BUTTON", labels[i], WS_TABSTOP | BS_AUTOCHECKBOX, 24, 190 + 26 * i, 514, 24, ID_CHECK0 + i);
+                g_checks[i] = control(L"BUTTON", labels[i], WS_TABSTOP | BS_AUTOCHECKBOX, 30, ys[i], 506, 22, ID_CHECK0 + i);
                 SendMessageW(g_checks[i], BM_SETCHECK, BST_CHECKED, 0);
             }
+            control(L"BUTTON", L"Integración con Windows", BS_GROUPBOX, 16, 294, 530, 146, 0);
             if (!hasCode) { SendMessageW(g_checks[CHK_VSCODE], BM_SETCHECK, BST_UNCHECKED, 0); EnableWindow(g_checks[CHK_VSCODE], FALSE); }
-            g_progressBar = control(PROGRESS_CLASSW, L"", 0, 24, 354, 514, 16, ID_PROGRESS);
+            g_progressBar = control(PROGRESS_CLASSW, L"", 0, 24, 452, 514, 16, ID_PROGRESS);
             SendMessageW(g_progressBar, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
             ShowWindow(g_progressBar, SW_HIDE);
-            g_statusText = control(L"STATIC", L"", SS_ENDELLIPSIS, 24, 376, 514, 20, ID_STATUS);
-            g_replBtn = control(L"BUTTON", L"Abrir la consola", WS_TABSTOP | BS_PUSHBUTTON, 176, 410, 124, 30, ID_REPL);
+            g_statusText = control(L"STATIC", L"", SS_ENDELLIPSIS, 24, 472, 514, 20, ID_STATUS);
+            g_replBtn = control(L"BUTTON", L"Abrir la consola", WS_TABSTOP | BS_PUSHBUTTON, 176, 502, 124, 30, ID_REPL);
             ShowWindow(g_replBtn, SW_HIDE);
-            g_installBtn = control(L"BUTTON", L"Instalar", WS_TABSTOP | BS_DEFPUSHBUTTON, 306, 410, 136, 30, ID_INSTALL);
-            g_cancelBtn = control(L"BUTTON", L"Cancelar", WS_TABSTOP | BS_PUSHBUTTON, 448, 410, 90, 30, ID_CANCEL);
+            g_installBtn = control(L"BUTTON", L"Instalar", WS_TABSTOP | BS_DEFPUSHBUTTON, 306, 502, 136, 30, ID_INSTALL);
+            g_cancelBtn = control(L"BUTTON", L"Cancelar", WS_TABSTOP | BS_PUSHBUTTON, 448, 502, 90, 30, ID_CANCEL);
             SetFocus(g_installBtn);
             return 0;
         }
@@ -646,6 +684,14 @@ static LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_COMMAND:
             switch (LOWORD(wp)) {
                 case ID_BROWSE: browseFolder(); return 0;
+                case (int)ID_CHECK0 + (int)CHK_EDITOR: {
+                    bool on = SendMessageW(g_checks[CHK_EDITOR], BM_GETCHECK, 0, 0) == BST_CHECKED;
+                    for (int k : {CHK_DESKTOP, CHK_OPENEDITOR}) {
+                        EnableWindow(g_checks[k], on);
+                        SendMessageW(g_checks[k], BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
+                    }
+                    return 0;
+                }
                 case ID_REPL: {
                     // consola interactiva en una ventana nueva, en la carpeta del usuario
                     std::wstring exe = g_opt.dir + L"\\bin\\hyper.exe";
@@ -732,7 +778,7 @@ static int runGui() {
     wc.lpszClassName = L"HyperEZSetup";
     RegisterClassExW(&wc);
     DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
-    RECT r = {0, 0, S(562), S(458)};
+    RECT r = {0, 0, S(562), S(546)};
     AdjustWindowRect(&r, style, FALSE);
     int w = r.right - r.left, hgt = r.bottom - r.top;
     HWND wnd = CreateWindowExW(0, wc.lpszClassName, (L"Instalar HyperEZ " + widen(HYPEREZ_VERSION)).c_str(), style,

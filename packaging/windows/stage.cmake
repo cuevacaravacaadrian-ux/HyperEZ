@@ -17,6 +17,13 @@ foreach(f README.md LICENSE CHANGELOG.md THIRD-PARTY-NOTICES.md assets/fonts/LIC
   endif()
 endforeach()
 file(COPY "${SRC}/docs/" DESTINATION "${STAGE}/docs" FILES_MATCHING PATTERN "*.md" PATTERN "*.png" PATTERN "*.svg")
+# La documentación en HTML (para leerla sin conexión; la abre la Ayuda de HyperEZ Editor), hecha con el propio HyperEZ
+execute_process(COMMAND "${HYPER}" "${SRC}/tools/docs_html.hz" "${STAGE}/docs" "${STAGE}/docs-html"
+                RESULT_VARIABLE rc OUTPUT_QUIET ERROR_VARIABLE err)
+if(rc)
+  message(FATAL_ERROR "No se pudo generar la documentación HTML (${rc}):\n${err}")
+endif()
+file(COPY "${SRC}/editors/" DESTINATION "${STAGE}/editors" PATTERN "vscode" EXCLUDE) # colores para Notepad++, Sublime, Vim...
 file(COPY "${SRC}/assets/icons/hz-file.ico" "${SRC}/assets/icons/hyperez.ico" DESTINATION "${STAGE}/icons")
 file(GLOB vsix "${SRC}/editors/vscode/*.vsix")
 if(vsix)

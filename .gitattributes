@@ -19,4 +19,9 @@
 
 # Estadísticas de lenguajes de GitHub: sin contar las bibliotecas de terceros
 third_party/** linguist-vendored
+
+# HyperEZ aún no está en GitHub Linguist (ver editors/linguist): mientras tanto GitHub colorea los
+# programas con un lenguaje de sintaxis parecida y sin contarlos como si fueran de ese lenguaje.
+*.hez linguist-language=TypeScript linguist-detectable=false
+*.hz linguist-language=TypeScript linguist-detectable=false
 *.sh text eol=lf

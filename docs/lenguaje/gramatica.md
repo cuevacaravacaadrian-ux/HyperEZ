@@ -75,7 +75,8 @@ on            = ( "on" | "once" ) expresion [ "priority" expresion ] [ "as" NOMB
 
 ```ebnf
 expresion     = asignacion ;
-asignacion    = condicional [ ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "??=" ) asignacion ] ;
+asignacion    = tuberia [ ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "**=" | "??=" ) asignacion ] ;
+tuberia       = condicional { "|>" condicional } ;      (* a |> f(x) es f(a, x) *)
 condicional   = nulo [ "?" expresion ":" expresion ] ;
 nulo          = o { "??" o } ;
 o             = y { "or" y } ;
@@ -92,15 +93,20 @@ suma          = producto { ( "+" | "-" ) producto } ;
 producto      = unario { ( "*" | "/" | "%" ) unario } ;
 unario        = ( "-" | "+" | "!" | "~" | "++" | "--" | "await" ) unario | potencia ;
 potencia      = postfijo [ "**" unario ] ;
-postfijo      = primario { "." NOMBRE | "?." NOMBRE | "[" expresion "]" | "?.[" expresion "]"
+postfijo      = primario { "." NOMBRE | "?." NOMBRE | "[" indice "]" | "?.[" indice "]"
                          | argumentos | "++" | "--" } ;
 argumentos    = "(" [ argumento { "," argumento } ] ")" ;
 argumento     = [ NOMBRE ":" ] expresion | "..." expresion ;
+indice        = expresion | [ expresion ] ( ".." | "..=" ) [ expresion ] ;   (* lista[2..], texto[..3] *)
 
 primario      = NUMERO | TEXTO | "true" | "false" | "null" | "this" | "super" "." NOMBRE
               | NOMBRE | "(" expresion ")" | lista | mapa | lambda | match ;
-lista         = "[" [ [ "..." ] expresion { "," [ "..." ] expresion } [ "," ] ] "]" ;
-mapa          = "{" [ clave ":" expresion { "," clave ":" expresion } [ "," ] ] "}" ;
+lista         = "[" [ [ "..." ] expresion { "," [ "..." ] expresion } [ "," ] ] "]"
+              | "[" expresion comprension "]" ;
+mapa          = "{" [ entrada { "," entrada } [ "," ] ] "}"
+              | "{" clave ":" expresion comprension "}" ;
+entrada       = clave ":" expresion | "..." expresion ;
+comprension   = "for" NOMBRE [ "," NOMBRE ] "in" expresion [ "step" expresion ] [ "if" expresion ] ;
 clave         = NOMBRE | TEXTO | "[" expresion "]" ;
 lambda        = [ "async" ] ( NOMBRE | parametros [ ":" tipo ] ) "=>" ( expresion | bloque ) ;
 ```

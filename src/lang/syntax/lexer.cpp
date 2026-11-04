@@ -61,6 +61,8 @@ const char* tokName(Tok t) {
         case Tok::PlusEq: return "'+='";
         case Tok::MinusEq: return "'-='";
         case Tok::StarEq: return "'*='";
+        case Tok::StarStarEq: return "'**='";
+        case Tok::PipeGreater: return "'|>'";
         case Tok::SlashEq: return "'/='";
         case Tok::PercentEq: return "'%='";
         case Tok::QuestionQuestionEq: return "'?\?='";
@@ -336,7 +338,7 @@ std::vector<Token> Lexer::tokenize() {
                 break;
             case '+': k = match('+') ? Tok::PlusPlus : match('=') ? Tok::PlusEq : Tok::Plus; break;
             case '-': k = match('-') ? Tok::MinusMinus : match('=') ? Tok::MinusEq : match('>') ? Tok::ThinArrow : Tok::Minus; break;
-            case '*': k = match('*') ? Tok::StarStar : match('=') ? Tok::StarEq : Tok::Star; break;
+            case '*': k = match('*') ? (match('=') ? Tok::StarStarEq : Tok::StarStar) : match('=') ? Tok::StarEq : Tok::Star; break;
             case '/': k = match('=') ? Tok::SlashEq : Tok::Slash; break;
             case '%': k = match('=') ? Tok::PercentEq : Tok::Percent; break;
             case '=': k = match('=') ? Tok::EqEq : match('>') ? Tok::Arrow : Tok::Eq; break;
@@ -344,7 +346,7 @@ std::vector<Token> Lexer::tokenize() {
             case '<': k = match('=') ? Tok::LessEq : match('<') ? Tok::Shl : Tok::Less; break;
             case '>': k = match('=') ? Tok::GreaterEq : match('>') ? Tok::Shr : Tok::Greater; break;
             case '&': k = match('&') ? Tok::AmpAmp : Tok::Amp; break;
-            case '|': k = match('|') ? Tok::PipePipe : Tok::Pipe; break;
+            case '|': k = match('|') ? Tok::PipePipe : match('>') ? Tok::PipeGreater : Tok::Pipe; break;
             default: break;
         }
         if (k == Tok::Error) {

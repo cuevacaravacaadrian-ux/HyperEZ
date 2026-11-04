@@ -309,10 +309,8 @@ NATIVE(http_serve) {
         sendAll(c, head + (req.method == "HEAD" ? std::string() : resp.body));
         closeSock(c);
         served++;
-        if (!quiet) {
-            vm.print(req.method + " " + req.target + " -> " + std::to_string(resp.status) + "\n");
-            vm.flushOutput();
-        }
+        if (!quiet) vm.print(req.method + " " + req.target + " -> " + std::to_string(resp.status) + "\n");
+        vm.flushOutput(); // lo que escriba el manejador (print) se ve al momento, no al parar el servidor
     }
     closeSock(s);
     g_interrupt = false;

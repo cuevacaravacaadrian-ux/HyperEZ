@@ -1,5 +1,11 @@
 # Cambios
 
+## 0.8.0
+
+- Colores para la sintaxis nueva del lenguaje: tubería `|>`, `**=`, comprensiones `[x for x in lista if ...]` y propagación `{...mapa}`.
+- Fragmentos nuevos: comprensión, tubería, aplicación web con plantillas y sitio desde Markdown (52 en total).
+- El servidor de lenguaje entiende todo lo nuevo de HyperEZ 0.8 (webs con `import web` y `import site`, `hyper serve`).
+
 ## 0.7.0
 
 - Botones encima del código (CodeLens): **▶ Ejecutar · ⟳ Repetir al guardar · ✓ Comprobar**, y **▶ Probar** sobre cada `test(...)` (ajuste `hyperez.codeLens`).

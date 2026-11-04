@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 # macOS: std::to_chars con decimales necesita macOS 13.3 o posterior
 set(CMAKE_OSX_DEPLOYMENT_TARGET "13.3" CACHE STRING "Versión mínima de macOS")
-project(HyperEZ VERSION 0.7.0 LANGUAGES C CXX)
+project(HyperEZ VERSION 0.8.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -111,7 +111,8 @@ endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # Falso positivo conocido de GCC con LTO dentro de stb_image_write (third_party)
   set_source_files_properties(src/lang/stdlib/image.cpp PROPERTIES COMPILE_OPTIONS "-Wno-stringop-overflow")
-  target_link_options(hyper PRIVATE -Wno-stringop-overflow)
+  # (y -Wstringop-overread: falsos positivos de GCC con LTO al copiar textos anchos en las cabeceras de MinGW)
+  target_link_options(hyper PRIVATE -Wno-stringop-overflow -Wno-stringop-overread)
 endif()
 if(MINGW)
   # Ejecutables autónomos: sin DLLs de MinGW
@@ -137,7 +138,7 @@ if(WIN32 AND HYPEREZ_EDITOR)
     target_link_options(hyperez-editor PRIVATE -municode)
   endif()
   if(MINGW)
-    target_link_options(hyperez-editor PRIVATE -static -static-libgcc -static-libstdc++ -s -Wno-stringop-overflow)
+    target_link_options(hyperez-editor PRIVATE -static -static-libgcc -static-libstdc++ -s -Wno-stringop-overflow -Wno-stringop-overread)
   endif()
   if(HZ_IPO)
     set_property(TARGET hyperez-editor PROPERTY INTERPROCEDURAL_OPTIMIZATION ON)
@@ -168,6 +169,8 @@ add_test(NAME formato COMMAND ${CMAKE_COMMAND} -DHYPER=$<TARGET_FILE:hyper> -DRA
          -DTMP=${CMAKE_BINARY_DIR}/prueba-formato -P ${CMAKE_SOURCE_DIR}/tests/fmt/check_fmt.cmake)
 add_test(NAME bytecode COMMAND ${CMAKE_COMMAND} -DHYPER=$<TARGET_FILE:hyper> -DRAIZ=${CMAKE_SOURCE_DIR}
          -P ${CMAKE_SOURCE_DIR}/tests/fmt/check_bytecode.cmake)
+add_test(NAME proyectos COMMAND ${CMAKE_COMMAND} -DHYPER=$<TARGET_FILE:hyper> -DTMP=${CMAKE_BINARY_DIR}/prueba-proyectos
+         -P ${CMAKE_SOURCE_DIR}/tests/fmt/check_projects.cmake)
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_FOUND)
   # Cada bloque ```hz de la documentación se ejecuta y debe funcionar

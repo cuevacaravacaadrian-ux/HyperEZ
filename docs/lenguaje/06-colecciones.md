@@ -96,3 +96,44 @@ print(tablero)
 ```
 
 Como `"ab" * 3` con los textos. Ojo: `[[0] * 3] * 3` repetiría *la misma* fila tres veces; para una cuadrícula crea cada fila por separado, como arriba.
+
+## Comprensiones
+
+Una lista (o un mapa) a partir de otra colección, en una sola línea: `[expresión for x in colección if condición]`.
+
+```hz
+print([x * x for x in 1..=5])                  // [1, 4, 9, 16, 25]
+print([x for x in [5, 1, 8, 3] if x > 2])      // [5, 8, 3]
+print([i * 10 + x for i, x in [1, 2, 3]])      // con la posición: [1, 12, 23]
+print([x for x in 0..10 step 4])               // [0, 4, 8]
+print([[y * x for y in 1..=3] for x in 1..=2]) // anidadas: [[1, 2, 3], [2, 4, 6]]
+
+print({n: n * n for n in 1..=3})               // mapa: {1: 1, 2: 4, 3: 9}
+print({k: v * 10 for k, v in {a: 1, b: 2}})    // {a: 10, b: 20}
+```
+
+Es lo mismo que un bucle que va añadiendo a una lista, pero más corto. En una comprensión de mapa la clave es una expresión (como si llevara corchetes). Dentro no se puede usar `await`.
+
+## Propagación en mapas
+
+`...otro` copia las entradas de otro mapa dentro de uno nuevo; las claves que van después ganan:
+
+```hz
+var base = {color: "azul", tamano: 2}
+print({...base, tamano: 5})        // {color: azul, tamano: 5}
+print({id: 1, ...base})            // {id: 1, color: azul, tamano: 2}
+var copia = {...base}              // copia independiente
+copia.color = "rojo"
+print(base.color)                  // azul
+```
+
+## Trozos con rangos
+
+Un rango dentro de los corchetes devuelve un trozo (de una lista o de un texto). Los extremos se pueden omitir y los negativos cuentan desde el final:
+
+```hz
+var l = [1, 2, 3, 4, 5, 6]
+print(l[1..3], l[2..], l[..2], l[..=2], l[-2..])   // [2, 3] [3, 4, 5, 6] [1, 2] [1, 2, 3] [5, 6]
+print("Programar"[3..], "Programar"[..3])          // gramar Pro
+print(l[..])                                         // copia de toda la lista
+```

@@ -58,6 +58,7 @@ def main():
         sub(doc, r"HyperEZ-[\d.]+-(linux|macos)", r"HyperEZ-%s-\1" % v, count=0)
         sub(doc, r"hyperez-[\d.]+\.vsix", "hyperez-%s.vsix" % v, count=0)
     sub("editors/vscode/PUBLICAR.md", r"hyperez-[\d.]+\.vsix", "hyperez-%s.vsix" % v, count=0)
+    sub("docs/herramientas/consola-interactiva.md", r"HyperEZ [\d.]+ · consola interactiva", "HyperEZ %s · consola interactiva" % v)
     print("Recuerda añadir la sección " + v + " a CHANGELOG.md.")
     return 0
 

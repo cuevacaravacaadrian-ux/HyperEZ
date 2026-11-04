@@ -1,0 +1,70 @@
+// Novedades web en 0.8: archivos estáticos, vistas con plantillas, formularios, cookies, respuestas y site
+import web
+import site
+
+var carpeta = Path.join(Path.temp, "hz-web08-" + Hash.uuid())
+File.write(Path.join(carpeta, "publico", "estilo.css"), "body { color: red }")
+File.write(Path.join(carpeta, "publico", "docs", "index.html"), "<h1>Docs</h1>")
+File.write(Path.join(carpeta, "base.html"), "<html><body>{{{contenido}}}</body></html>")
+File.write(Path.join(carpeta, "hola.html"), "<p>Hola, {{nombre}}</p>")
+
+test("archivos estáticos", () => {
+    var app = web.App().staticDir("/publico", Path.join(carpeta, "publico"))
+    assert(app.handle(web.request("GET", "/publico/estilo.css")).file.endsWith("estilo.css"))
+    assert(app.handle(web.request("GET", "/publico/docs")).file.endsWith("index.html"))
+    assertEqual(app.handle(web.request("GET", "/publico/../secreto.txt")).status, 404)
+    assertEqual(app.handle(web.request("GET", "/publico/no-existe.css")).status, 404)
+})
+
+test("vistas con plantilla y base", () => {
+    var r = web.view(Path.join(carpeta, "hola.html"), { nombre: "<Ana>" }, Path.join(carpeta, "base.html"))
+    assertEqual(r.body, "<html><body><p>Hola, &lt;Ana&gt;</p></body></html>")
+    assertEqual(r.type, "text/html; charset=utf-8")
+})
+
+test("formularios y cookies", () => {
+    var req = web.request("POST", "/enviar")
+    req.body = "nombre=Ana+L%C3%B3pez&edad=30&vacio="
+    assertEqual(web.form(req), { nombre: "Ana López", edad: "30", vacio: "" })
+    assertEqual(web.decode("a%20b+c"), "a b c")
+    var conCookie = web.request("GET", "/")
+    conCookie.headers = { cookie: "sesion=abc123; tema=oscuro" }
+    assertEqual(web.cookies(conCookie), { sesion: "abc123", tema: "oscuro" })
+    var r = web.withCookie(web.html("ok"), "sesion", "xyz", { maxAge: 3600 })
+    assert(r.headers["Set-Cookie"].startsWith("sesion=xyz; Path=/; Max-Age=3600"))
+})
+
+test("respuestas", () => {
+    assertEqual(web.json({ ok: true }, 201), { status: 201, json: { ok: true } })
+    assertEqual(web.text(42).body, "42")
+    assertEqual(web.error(500, "<fallo>").status, 500)
+    assert(web.error(500, "<fallo>").body.contains("&lt;fallo&gt;"))
+    assertEqual(web.redirect("/x").headers.Location, "/x")
+    var app = web.App()
+    app.patch("/item", req => "parcheado")
+    app.all("/todo", req => req.method)
+    assertEqual(app.handle(web.request("PATCH", "/item")), "parcheado")
+    assertEqual(app.handle(web.request("DELETE", "/todo")), "DELETE")
+    assert(app.handle(web.request("GET", "/nada")).body.contains("404"))
+})
+
+test("site: web desde Markdown", () => {
+    var origen = Path.join(carpeta, "contenido")
+    File.write(Path.join(origen, "index.md"), "# Inicio\n\nVe a [la otra](otra.md#arriba).")
+    File.write(Path.join(origen, "otra.md"), "---\ntitulo: La otra\norden: 2\n---\n# Otra página\n\nTexto.")
+    File.write(Path.join(origen, "img", "foto.txt"), "no es una foto")
+    var destino = Path.join(carpeta, "web")
+    var hechos = site.build(origen, destino, { title: "Mi web", color: "#ff0000" })
+    assertEqual(hechos.length, 3)
+    var inicio = File.read(Path.join(destino, "index.html"))
+    assert(inicio.contains("<title>Inicio · Mi web</title>"))
+    assert(inicio.contains("href=\"otra.html#arriba\""))
+    assert(inicio.contains("La otra"))
+    assert(inicio.contains("#ff0000"))
+    assert(File.exists(Path.join(destino, "img", "foto.txt")))
+    var fm = site.frontMatter("---\na: 1\nb: texto\n---\ncuerpo")
+    assertEqual(fm.data, { a: 1, b: "texto" })
+    assertEqual(fm.body, "cuerpo")
+})
+
+File.deleteDir(carpeta)
