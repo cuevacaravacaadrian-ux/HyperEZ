@@ -37,6 +37,7 @@ Los programas nuevos se guardan como **`.hez`** en `Documentos\HyperEZ` (puedes 
 | **Fuente** | *Ver → Fuente…* elige cualquier fuente de ancho fijo (Consolas, Cascadia Mono, Courier New...). |
 | **INS / SOB** | la tecla Insert cambia entre insertar y sobrescribir; la barra de estado lo indica. |
 | **Barras** | *Ver* muestra u oculta la barra de herramientas, la de estado y el panel de problemas y salida. |
+| **Separador** | la franja entre el código y el panel de abajo se arrastra con el ratón para hacer el panel más alto o más bajo; el editor recuerda el alto. |
 | **Comentar (Ctrl+/)** y **duplicar línea (Ctrl+D)** | |
 | **Zoom** | Ctrl+rueda, Ctrl++ y Ctrl+-; Ctrl+0 vuelve al tamaño normal. Se recuerda para la próxima vez. |
 | **Plantillas** | *Archivo → Nuevo desde plantilla*: juego de consola, clase con pruebas, inteligencia artificial, servidor web, dibujar una imagen, leer un CSV. |
@@ -83,4 +84,4 @@ Es un programa de Windows nativo (`bin\hyperez-editor.exe`, en `src/editor/edito
 - *Ejecutar en el panel* lanza `hyper run` con la salida redirigida (sin colores, con `NO_COLOR=1`) y la va mostrando mientras llega.
 - La Ayuda abre la documentación en HTML que instala el instalador (`docs-html/`), en el navegador.
 
-Los ajustes (fuente, tamaño de letra, ajuste de línea, barras, paneles, archivos recientes y posición de la ventana) se guardan en `HKEY_CURRENT_USER\Software\HyperEZ\Editor`; el desinstalador los borra.
+Los ajustes (fuente, tamaño de letra, ajuste de línea, barras, paneles y su alto, archivos recientes y posición de la ventana) se guardan en `HKEY_CURRENT_USER\Software\HyperEZ\Editor`; el desinstalador los borra.

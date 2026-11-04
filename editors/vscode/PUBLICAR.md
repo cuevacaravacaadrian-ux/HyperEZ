@@ -37,5 +37,5 @@ npx ovsx publish hyperez-0.8.0.vsix -p <token>
 ## Antes de publicar
 
 - Cambia `"publisher"` en `package.json` si tu ID no es `hyperez`. El identificador de la extensión pasa a ser `<publisher>.hyperez`: si tenías instalada la anterior, desinstálala para que no haya dos.
-- Las imágenes y enlaces del README deben ser accesibles públicamente: si el repositorio de GitHub es privado, los enlaces a él no se podrán abrir desde el Marketplace.
+- Las imágenes y enlaces del README deben ser accesibles públicamente (el repositorio de GitHub lo es): si algún día pasa a ser privado, los enlaces a él no se podrán abrir desde el Marketplace.
 - Comprueba el paquete: `npx vsce ls` lista los archivos que incluye.

@@ -76,6 +76,9 @@ ITextDocument* g_doc = nullptr;
 int g_dpi = 96;
 int g_fontPt = 11;
 bool g_wrap = false, g_showPanel = true, g_showNumbers = true;
+int g_panelHeight = 170;            // alto del panel de abajo (en píxeles a 96 ppp)
+int g_splitTop = -1, g_splitBottom = -1; // franja del separador arrastrable (en la ventana)
+bool g_splitDrag = false;
 std::wstring g_file;   // vacío = sin título
 bool g_dirty = false;
 std::wstring g_savedText; // texto tal como está guardado (para saber si hay cambios)
@@ -204,6 +207,7 @@ void loadSettings() {
     g_showNumbers = readDword(L"LineNumbers", 1) != 0;
     g_showToolbar = readDword(L"Toolbar", 1) != 0;
     g_showStatus = readDword(L"StatusBar", 1) != 0;
+    g_panelHeight = (int)std::clamp<DWORD>(readDword(L"PanelHeight", 170), 60, 2000);
     {
         wchar_t face[LF_FACESIZE];
         DWORD fsz = sizeof face;
@@ -224,6 +228,7 @@ void saveSettings() {
     writeDword(L"LineNumbers", g_showNumbers);
     writeDword(L"Toolbar", g_showToolbar);
     writeDword(L"StatusBar", g_showStatus);
+    writeDword(L"PanelHeight", (DWORD)g_panelHeight);
     HKEY k;
     if (RegCreateKeyExW(HKEY_CURRENT_USER, kKey, 0, nullptr, 0, KEY_WRITE, nullptr, &k, nullptr) == ERROR_SUCCESS) {
         for (int i = 0; i < 10; i++) {
@@ -617,12 +622,19 @@ void layout() {
         MoveWindow(g_tabs, 0, top, rc.right, th, TRUE);
         top += th;
     }
-    int panelH = g_showPanel ? S(170) : 0;
+    // El panel de abajo se puede agrandar arrastrando el separador; el código conserva al menos S(80)
+    int gap = g_showPanel ? S(5) : 0;
+    int panelH = 0;
+    if (g_showPanel) panelH = std::max(S(60), std::min(S(g_panelHeight), (int)rc.bottom - statusH - top - gap - S(80)));
     int bottom = rc.bottom - statusH - panelH;
+    int editBottom = std::max(top, bottom - gap);
+    g_splitTop = g_showPanel ? editBottom : -1;
+    g_splitBottom = g_showPanel ? bottom : -1;
     int gw = gutterWidth();
-    MoveWindow(g_gutter, 0, top, gw, bottom - top, TRUE);
+    MoveWindow(g_gutter, 0, top, gw, editBottom - top, TRUE);
     ShowWindow(g_gutter, g_showNumbers ? SW_SHOW : SW_HIDE);
-    if (g_edit) MoveWindow(g_edit, gw, top, rc.right - gw, bottom - top, TRUE);
+    if (g_edit) MoveWindow(g_edit, gw, top, rc.right - gw, editBottom - top, TRUE);
+    if (g_showPanel) { RECT gr{0, editBottom, rc.right, bottom}; InvalidateRect(g_wnd, &gr, TRUE); } // la franja del separador
     if (g_bottomTabs) {
         ShowWindow(g_bottomTabs, g_showPanel ? SW_SHOW : SW_HIDE);
         int bh = tabStripHeight(g_bottomTabs, rc.right);
@@ -2096,6 +2108,51 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         }
         case WM_SIZE: layout(); return 0;
         case WM_SETFOCUS: SetFocus(g_edit); return 0;
+        // Separador entre el código y el panel de abajo: se arrastra para cambiar el alto del panel
+        case WM_SETCURSOR:
+            if ((HWND)wp == h && LOWORD(lp) == HTCLIENT && g_splitTop >= 0) {
+                POINT pt;
+                GetCursorPos(&pt);
+                ScreenToClient(h, &pt);
+                if (pt.y >= g_splitTop && pt.y < g_splitBottom) { SetCursor(LoadCursorW(nullptr, IDC_SIZENS)); return TRUE; }
+            }
+            break;
+        case WM_LBUTTONDOWN:
+            if (g_splitTop >= 0 && GET_Y_LPARAM(lp) >= g_splitTop && GET_Y_LPARAM(lp) < g_splitBottom) {
+                g_splitDrag = true;
+                SetCapture(h);
+                return 0;
+            }
+            break;
+        case WM_MOUSEMOVE:
+            if (g_splitDrag) {
+                RECT rc;
+                GetClientRect(h, &rc);
+                int statusH = 0;
+                if (g_status && g_showStatus) { RECT sr; GetWindowRect(g_status, &sr); statusH = sr.bottom - sr.top; }
+                int px = (int)rc.bottom - statusH - GET_Y_LPARAM(lp) - S(2); // el ratón queda en medio de la franja
+                g_panelHeight = std::clamp(MulDiv(px, 96, g_dpi), 60, 2000);
+                layout();
+                UpdateWindow(h);
+                return 0;
+            }
+            break;
+        case WM_LBUTTONUP:
+            if (g_splitDrag) { ReleaseCapture(); return 0; }
+            break;
+        case WM_CAPTURECHANGED:
+            if (g_splitDrag) {
+                g_splitDrag = false;
+                // si el separador se soltó más allá del límite, guardar el alto que se ve de verdad
+                if (g_splitBottom >= 0) {
+                    RECT rc;
+                    GetClientRect(h, &rc);
+                    int statusH = 0;
+                    if (g_status && g_showStatus) { RECT sr; GetWindowRect(g_status, &sr); statusH = sr.bottom - sr.top; }
+                    g_panelHeight = std::clamp(MulDiv((int)rc.bottom - statusH - g_splitBottom, 96, g_dpi), 60, 2000);
+                }
+            }
+            return 0;
         case WM_TIMER:
             if (wp == TIMER_HIGHLIGHT) { KillTimer(h, TIMER_HIGHLIGHT); highlight(); }
             else if (wp == TIMER_CHECK) { KillTimer(h, TIMER_CHECK); checkProgram(); }

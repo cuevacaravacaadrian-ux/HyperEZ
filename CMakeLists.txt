@@ -75,7 +75,18 @@ if(HYPEREZ_LTO AND CMAKE_BUILD_TYPE STREQUAL "Release")
   if(HZ_IPO)
     set_property(TARGET hzlang hyper PROPERTY INTERPROCEDURAL_OPTIMIZATION ON)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-      target_link_options(hyper PRIVATE -flto=auto) # enlace LTO en paralelo
+      if(WIN32 AND HYPEREZ_PGO STREQUAL "generate")
+        # El ejecutable instrumentado de PGO solo sirve para entrenar: todo en un paso, sin particiones
+        # (GCC 16 falla al enlazarlo con -flto-partition=one).
+        set(HZ_LTO_LINK -flto=auto -flto-partition=none)
+      elseif(WIN32)
+        # En Windows GCC necesita make para repartir el enlace LTO en trabajos paralelos; sin él avisa de
+        # que lo hace en serie. Con una sola partición no hay nada que repartir (y optimiza igual o mejor).
+        set(HZ_LTO_LINK -flto=auto -flto-partition=one)
+      else()
+        set(HZ_LTO_LINK -flto=auto) # enlace LTO en paralelo
+      endif()
+      target_link_options(hyper PRIVATE ${HZ_LTO_LINK})
     endif()
   endif()
 endif()
@@ -142,6 +153,9 @@ if(WIN32 AND HYPEREZ_EDITOR)
   endif()
   if(HZ_IPO)
     set_property(TARGET hyperez-editor PROPERTY INTERPROCEDURAL_OPTIMIZATION ON)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND HZ_LTO_LINK)
+      target_link_options(hyperez-editor PRIVATE ${HZ_LTO_LINK})
+    endif()
   endif()
   if(HYPEREZ_PGO STREQUAL "generate" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_link_options(hyperez-editor PRIVATE "-fprofile-generate=${HYPEREZ_PGO_DIR}") # hzlang va instrumentada

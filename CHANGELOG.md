@@ -2,6 +2,18 @@
 
 Todas las versiones de HyperEZ. El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [Sin publicar]
+
+### Añadido
+- HyperEZ Editor: el panel de abajo (*Problemas* y *Salida*) cambia de alto arrastrando el separador que lo une al código, y se recuerda.
+
+### Cambiado
+- Capturas del editor y del instalador de la 0.8.0 en el README y la documentación.
+- El repositorio ya es público: la documentación lo indica (kit de Linguist, publicar la extensión).
+
+### Arreglado
+- La compilación para Windows con `build.ps1` ya no avisa de "serial compilation of LTRANS jobs" al enlazar con LTO.
+
 ## [0.8.0] - 2026-11-04
 
 Descargas que funcionan, webs con el lenguaje, sintaxis nueva y un editor todavía más clásico.

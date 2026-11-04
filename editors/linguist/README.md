@@ -8,7 +8,7 @@ Linguist solo acepta lenguajes que ya se usan en GitHub: piden que la extensión
 
 Cómo acercarse a esa cifra:
 
-- Publicar el repositorio de HyperEZ (ahora es privado) y los proyectos hechos con HyperEZ como repositorios públicos, con archivos `.hez`.
+- Publicar los proyectos hechos con HyperEZ como repositorios públicos, con archivos `.hez` (el repositorio de HyperEZ ya es público).
 - Animar a quienes lo usen a subir sus programas a GitHub.
 - Comprobar el número con la búsqueda de GitHub: `extension:hez NOT is:fork` y `extension:hz NOT is:fork`.
 
@@ -25,7 +25,7 @@ La gramática de colores es la de la extensión de VS Code: [`editors/vscode/syn
 
 ## Los pasos (cuando se cumpla el requisito)
 
-1. Haz público el repositorio de HyperEZ (Linguist necesita acceder a la gramática).
+1. Comprueba que el repositorio de HyperEZ sigue siendo público (Linguist necesita acceder a la gramática).
 2. Haz un *fork* de [github-linguist/linguist](https://github.com/github-linguist/linguist) y sigue su guía [CONTRIBUTING.md](https://github.com/github-linguist/linguist/blob/main/CONTRIBUTING.md#adding-a-language).
 3. Añade la gramática: `script/add-grammar https://github.com/cuevacaravacaadrian-ux/HyperEZ`.
 4. Copia la entrada de `languages.yml` en orden alfabético y ejecuta `script/update-ids`.
