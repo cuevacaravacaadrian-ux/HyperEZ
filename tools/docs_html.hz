@@ -4,7 +4,7 @@
 //   hyper tools/docs_html.hz docs carpeta-de-salida
 import site
 
-const REPO = "https://github.com/cuevacaravacaadrian-ux/HyperEZ/blob/main/"
+const REPO = "https://github.com/cuevacaravacaadrian/HyperEZ/blob/main/"
 
 if System.args.length < 2 {
     print("Uso: hyper tools/docs_html.hz <carpeta docs> <carpeta de salida>")

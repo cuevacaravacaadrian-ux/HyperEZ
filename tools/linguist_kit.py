@@ -24,9 +24,9 @@ for _s in (sys.stdout, sys.stderr):
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KIT = os.path.join(ROOT, "editors", "linguist")
-REPO = "cuevacaravacaadrian-ux/HyperEZ"
-GRAMMAR_REPO = "cuevacaravacaadrian-ux/hyperez-grammar"   # repositorio solo con la gramática (ver README.md)
-AUTHORS = {"cuevacaravacaadrian-ux", "cuevacaravacaadrian"}  # Linguist no cuenta los repositorios del autor
+REPO = "cuevacaravacaadrian/HyperEZ"
+GRAMMAR_REPO = "cuevacaravacaadrian/hyperez-grammar"   # repositorio solo con la gramática (ver README.md)
+AUTHORS = {"cuevacaravacaadrian"}  # Linguist no cuenta los repositorios del autor (antes "cuevacaravacaadrian-ux")
 
 # La entrada de lib/linguist/languages.yml. Solo .hez: .hz ya lo usan miles de archivos que no son HyperEZ
 # (configuración de Hertz para Go, firmware...), así que GitHub nunca se lo daría a HyperEZ.
@@ -120,7 +120,7 @@ def pull_request():
     L = LANGUAGE
     blob = "https://github.com/%s/blob/main/" % REPO
     sources = "\n".join("      - %s%s" % (blob, src) for src, _, _ in SAMPLES)
-    search = "https://github.com/search?type=code&q=NOT+is%3Afork+path%3A*.hez+-user%3Acuevacaravacaadrian-ux"
+    search = "https://github.com/search?type=code&q=NOT+is%3Afork+path%3A*.hez+-user%3Acuevacaravacaadrian"
     return """Add HyperEZ
 
 <!-- Texto preparado para la pull request a github-linguist/linguist (en inglés, como pide Linguist).

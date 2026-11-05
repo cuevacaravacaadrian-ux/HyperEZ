@@ -34,7 +34,7 @@ Vuelve a ejecutar el instalador (o `hyper register`): borra la elección anterio
 El instalador aún no está firmado digitalmente. Pulsa *Más información → Ejecutar de todas formas*.
 
 **¿Cómo informo de un error?**
-En las [incidencias de GitHub](https://github.com/cuevacaravacaadrian-ux/HyperEZ/issues/new/choose), con el programa más pequeño que lo reproduzca y la salida de `hyper version`.
+En las [incidencias de GitHub](https://github.com/cuevacaravacaadrian/HyperEZ/issues/new/choose), con el programa más pequeño que lo reproduzca y la salida de `hyper version`.
 
 ## ¿Por qué GitHub no muestra HyperEZ en la barra de lenguajes?
 

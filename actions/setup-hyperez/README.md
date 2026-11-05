@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest        # o windows-latest, macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: cuevacaravacaadrian-ux/HyperEZ/actions/setup-hyperez@main
+      - uses: cuevacaravacaadrian/HyperEZ/actions/setup-hyperez@main
         with:
           version: latest           # o una versión concreta: 0.8.1
       - run: hyper check main.hez
@@ -24,4 +24,4 @@ Los proyectos que crea `hyper new` ya traen este archivo. La versión instalada 
 |---|---|---|
 | `version` | `latest` | la versión de HyperEZ: `latest` o un número (`0.8.1`) |
 
-Descarga los archivos de la [página de versiones](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases): `hyper.exe` en Windows y `HyperEZ-<versión>-<sistema>-<arquitectura>.tar.gz` en Linux y macOS.
+Descarga los archivos de la [página de versiones](https://github.com/cuevacaravacaadrian/HyperEZ/releases): `hyper.exe` en Windows y `HyperEZ-<versión>-<sistema>-<arquitectura>.tar.gz` en Linux y macOS.

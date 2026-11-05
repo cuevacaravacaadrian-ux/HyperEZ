@@ -4,5 +4,5 @@
 #define HYPEREZ_VERSION_MAJOR 0
 #define HYPEREZ_VERSION_MINOR 8
 #define HYPEREZ_VERSION_PATCH 1
-// Repositorio del proyecto (tools/github_usuario.py cambia cuevacaravacaadrian-ux por el usuario real)
-#define HYPEREZ_REPO_URL "https://github.com/cuevacaravacaadrian-ux/HyperEZ"
+// Repositorio del proyecto (tools/github_usuario.py cambia cuevacaravacaadrian por el usuario real)
+#define HYPEREZ_REPO_URL "https://github.com/cuevacaravacaadrian/HyperEZ"

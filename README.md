@@ -3,14 +3,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/cuevacaravacaadrian-ux/HyperEZ/actions/workflows/ci.yml"><img src="https://github.com/cuevacaravacaadrian-ux/HyperEZ/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest"><img src="https://img.shields.io/github/v/release/cuevacaravacaadrian-ux/HyperEZ?label=descargar&color=2f81f7" alt="Última versión"></a>
+  <a href="https://github.com/cuevacaravacaadrian/HyperEZ/actions/workflows/ci.yml"><img src="https://github.com/cuevacaravacaadrian/HyperEZ/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest"><img src="https://img.shields.io/github/v/release/cuevacaravacaadrian/HyperEZ?label=descargar&color=2f81f7" alt="Última versión"></a>
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20Linux%20%C2%B7%20macOS-0f1424" alt="Windows, Linux y macOS">
   <a href="LICENSE"><img src="https://img.shields.io/badge/licencia-MIT-7ee787" alt="Licencia MIT"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest"><img src="https://img.shields.io/badge/%E2%AC%87%20Descargar%20HyperEZ%20para%20Windows-2f81f7?style=for-the-badge" alt="Descargar HyperEZ para Windows"></a>
+  <a href="https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest"><img src="https://img.shields.io/badge/%E2%AC%87%20Descargar%20HyperEZ%20para%20Windows-2f81f7?style=for-the-badge" alt="Descargar HyperEZ para Windows"></a>
 </p>
 
 <p align="center">
@@ -26,7 +26,7 @@
 
 ## 🚀 Empieza en un minuto
 
-1. Descarga **[HyperEZ-Setup-0.8.1.exe](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest)** y pulsa **Instalar** (no necesita administrador).
+1. Descarga **[HyperEZ-Setup-0.8.1.exe](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest)** y pulsa **Instalar** (no necesita administrador).
 2. Al terminar se abre **HyperEZ Editor** con tu primer programa.
 3. Pulsa **F5**. Ya está.
 
@@ -64,7 +64,7 @@ error[E0205]: No existe nada llamado 'pirnt'
 
 | Sistema | Cómo |
 |---|---|
-| **Windows** | **`HyperEZ-Setup-0.8.1.exe`** de la [última versión](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest): HyperEZ, HyperEZ Editor, ejemplos, documentación y la extensión de VS Code. |
+| **Windows** | **`HyperEZ-Setup-0.8.1.exe`** de la [última versión](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest): HyperEZ, HyperEZ Editor, ejemplos, documentación y la extensión de VS Code. |
 | **Linux / macOS** | `HyperEZ-0.8.1-linux-x64.tar.gz` (o `macos-arm64`): descomprímelo y ejecuta `sh install.sh`. |
 | **VS Code** | Lo instala el instalador de Windows; también `code --install-extension hyperez-0.8.1.vsix`. |
 

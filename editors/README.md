@@ -2,7 +2,7 @@
 
 | Editor | Qué tiene | Cómo instalarlo |
 |---|---|---|
-| **HyperEZ Editor** (Windows) | todo: colores, errores en vivo, F5, pestañas, panel de salida, autocompletado, formato | viene con [HyperEZ-Setup.exe](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest) · [guía](../docs/herramientas/editor.md) |
+| **HyperEZ Editor** (Windows) | todo: colores, errores en vivo, F5, pestañas, panel de salida, autocompletado, formato | viene con [HyperEZ-Setup.exe](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest) · [guía](../docs/herramientas/editor.md) |
 | **Visual Studio Code** | todo: colores, errores en vivo, autocompletado, F12, F2, formato, botones ▶ | [`vscode/`](vscode) · se instala con el instalador o con el `.vsix` · [guía](../docs/herramientas/vscode.md) |
 | **Cualquier editor con LSP** (Neovim, Helix, Zed, Emacs, Sublime con LSP…) | errores, autocompletado, hover, ir a la definición, renombrar, formato | configura el servidor de lenguaje `hyper lsp` para los archivos `.hez` y `.hz` |
 | **Sublime Text / TextMate** | colores | copia [`sublime/HyperEZ.tmLanguage`](sublime/HyperEZ.tmLanguage) en tu carpeta `Packages/User` |

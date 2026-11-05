@@ -1,13 +1,13 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/cuevacaravacaadrian-ux/HyperEZ/main/assets/branding/banner.png" alt="HyperEZ: programa en español. Juegos, IA, web, datos y más." width="100%">
+  <img src="https://raw.githubusercontent.com/cuevacaravacaadrian/HyperEZ/main/assets/branding/banner.png" alt="HyperEZ: programa en español. Juegos, IA, web, datos y más." width="100%">
 </p>
 
 <p align="center">
-  <a href="https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest"><img src="https://img.shields.io/github/v/release/cuevacaravacaadrian-ux/HyperEZ?label=HyperEZ&color=e8572a" alt="Última versión"></a>
+  <a href="https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest"><img src="https://img.shields.io/github/v/release/cuevacaravacaadrian/HyperEZ?label=HyperEZ&color=e8572a" alt="Última versión"></a>
   <img src="https://img.shields.io/badge/idioma-espa%C3%B1ol-c8102e" alt="En español">
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20Linux%20%C2%B7%20macOS-0f1424" alt="Windows, Linux y macOS">
-  <a href="https://github.com/cuevacaravacaadrian-ux/HyperEZ/blob/main/LICENSE"><img src="https://img.shields.io/badge/licencia-MIT-2e7dd7" alt="Licencia MIT"></a>
-  <a href="https://github.com/cuevacaravacaadrian-ux/HyperEZ"><img src="https://img.shields.io/github/stars/cuevacaravacaadrian-ux/HyperEZ?style=flat&label=estrellas" alt="Estrellas en GitHub"></a>
+  <a href="https://github.com/cuevacaravacaadrian/HyperEZ/blob/main/LICENSE"><img src="https://img.shields.io/badge/licencia-MIT-2e7dd7" alt="Licencia MIT"></a>
+  <a href="https://github.com/cuevacaravacaadrian/HyperEZ"><img src="https://img.shields.io/github/stars/cuevacaravacaadrian/HyperEZ?style=flat&label=estrellas" alt="Estrellas en GitHub"></a>
 </p>
 
 # HyperEZ para Visual Studio Code
@@ -17,12 +17,12 @@
 > En Windows no necesitas instalar nada más: la extensión trae `hyper.exe`. Abre o crea un archivo `.hez` y pulsa **F5**.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/cuevacaravacaadrian-ux/HyperEZ/main/docs/img/vscode-ejecutar.png" alt="Un programa de HyperEZ en VS Code con el tema HyperEZ Noche, los botones Ejecutar, Repetir al guardar y Comprobar, y su resultado en la terminal" width="92%">
+  <img src="https://raw.githubusercontent.com/cuevacaravacaadrian/HyperEZ/main/docs/img/vscode-ejecutar.png" alt="Un programa de HyperEZ en VS Code con el tema HyperEZ Noche, los botones Ejecutar, Repetir al guardar y Comprobar, y su resultado en la terminal" width="92%">
 </p>
 
 ## 🚀 Empieza en un minuto
 
-1. **Instala** esta extensión (en Windows ya incluye el lenguaje; en Linux y macOS instala HyperEZ desde la [página de descargas](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest)).
+1. **Instala** esta extensión (en Windows ya incluye el lenguaje; en Linux y macOS instala HyperEZ desde la [página de descargas](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest)).
 2. **Crea un archivo**: `Ctrl+N` → *HyperEZ: Nuevo archivo HyperEZ*, o guarda cualquier archivo como `hola.hez`.
 3. Escribe `print("¡Hola, mundo!")` y pulsa **F5**. El resultado aparece en la terminal.
 4. ¿Primera vez? Abre *Ayuda → Introducción* → **Empezar con HyperEZ**: un tutorial en cinco pasos.
@@ -51,8 +51,8 @@
 
 <table>
   <tr>
-    <td width="50%"><img src="https://raw.githubusercontent.com/cuevacaravacaadrian-ux/HyperEZ/main/docs/img/vscode-errores.png" alt="Un error en vivo: No existe nada llamado prnt, ¿quisiste decir print?, con el arreglo rápido Cambiar por print"></td>
-    <td width="50%"><img src="https://raw.githubusercontent.com/cuevacaravacaadrian-ux/HyperEZ/main/docs/img/vscode-autocompletado.png" alt="Autocompletado de los campos de una clase: caro, nombre, precio y tipo"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/cuevacaravacaadrian/HyperEZ/main/docs/img/vscode-errores.png" alt="Un error en vivo: No existe nada llamado prnt, ¿quisiste decir print?, con el arreglo rápido Cambiar por print"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/cuevacaravacaadrian/HyperEZ/main/docs/img/vscode-autocompletado.png" alt="Autocompletado de los campos de una clase: caro, nombre, precio y tipo"></td>
   </tr>
   <tr>
     <td align="center"><b>Errores en español</b>, con arreglo rápido</td>
@@ -125,18 +125,18 @@ print(red.predict([1, 0]).get(0, 0))           // ≈ 1
 
 ## 💻 Más allá de VS Code
 
-- **Instalador para Windows** con el lenguaje, **HyperEZ Editor** (un editor clásico con pestañas, panel de salida e impresión), ejemplos y la documentación en HTML: [descargar](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest).
+- **Instalador para Windows** con el lenguaje, **HyperEZ Editor** (un editor clásico con pestañas, panel de salida e impresión), ejemplos y la documentación en HTML: [descargar](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest).
 - **Linux y macOS**: un paquete con `sh install.sh`.
 - **Otros editores**: colores para Notepad++, Sublime Text, Vim/Neovim y highlight.js, y `hyper lsp` para cualquier editor con servidor de lenguaje.
 
 ## 📚 Aprende
 
-- [Guía del lenguaje](https://github.com/cuevacaravacaadrian-ux/HyperEZ/blob/main/docs/GUIA.md) · [Tutorial: tu primer juego](https://github.com/cuevacaravacaadrian-ux/HyperEZ/blob/main/docs/empezar/tutorial-juego.md) · [Referencia de la API](https://github.com/cuevacaravacaadrian-ux/HyperEZ/blob/main/docs/biblioteca/API.md)
-- [Ejemplos](https://github.com/cuevacaravacaadrian-ux/HyperEZ/tree/main/examples): juegos, IA, webs, datos, gráficos, sonido y sistema
-- [Preguntas frecuentes](https://github.com/cuevacaravacaadrian-ux/HyperEZ/blob/main/docs/preguntas.md) · [Novedades](https://github.com/cuevacaravacaadrian-ux/HyperEZ/blob/main/CHANGELOG.md)
+- [Guía del lenguaje](https://github.com/cuevacaravacaadrian/HyperEZ/blob/main/docs/GUIA.md) · [Tutorial: tu primer juego](https://github.com/cuevacaravacaadrian/HyperEZ/blob/main/docs/empezar/tutorial-juego.md) · [Referencia de la API](https://github.com/cuevacaravacaadrian/HyperEZ/blob/main/docs/biblioteca/API.md)
+- [Ejemplos](https://github.com/cuevacaravacaadrian/HyperEZ/tree/main/examples): juegos, IA, webs, datos, gráficos, sonido y sistema
+- [Preguntas frecuentes](https://github.com/cuevacaravacaadrian/HyperEZ/blob/main/docs/preguntas.md) · [Novedades](https://github.com/cuevacaravacaadrian/HyperEZ/blob/main/CHANGELOG.md)
 
 ## 🤝 Participa
 
-¿Has encontrado un error o tienes una idea? [Ábrela en GitHub](https://github.com/cuevacaravacaadrian-ux/HyperEZ/issues). Si haces algo con HyperEZ, **súbelo a GitHub con archivos `.hez`**: así ayudas a que GitHub reconozca HyperEZ como lenguaje.
+¿Has encontrado un error o tienes una idea? [Ábrela en GitHub](https://github.com/cuevacaravacaadrian/HyperEZ/issues). Si haces algo con HyperEZ, **súbelo a GitHub con archivos `.hez`**: así ayudas a que GitHub reconozca HyperEZ como lenguaje.
 
 Licencia MIT © 2026 Adrián Cueva Caravaca.

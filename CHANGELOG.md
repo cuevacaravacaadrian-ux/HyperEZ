@@ -30,7 +30,7 @@ La extensión de VS Code, lista para el Marketplace; textos con formato, `do`-`w
 
 **GitHub**
 - **Kit para GitHub Linguist** completo (`editors/linguist/`): la entrada (`.hez`, color `#62d962`, intérprete `hyper`), 7 muestras reales, el repositorio de la gramática, el texto de la *pull request* y los [objetivos por fases](editors/linguist/OBJETIVOS.md) para llegar al requisito de uso. `tools/linguist_kit.py` lo genera, `--progress` mide los `.hez` de GitHub y `ctest -R linguist` lo comprueba.
-- **Acción `setup-hyperez`** para GitHub Actions: `uses: cuevacaravacaadrian-ux/HyperEZ/actions/setup-hyperez@main` instala `hyper` en Windows, Linux o macOS.
+- **Acción `setup-hyperez`** para GitHub Actions: `uses: cuevacaravacaadrian/HyperEZ/actions/setup-hyperez@main` instala `hyper` en Windows, Linux o macOS.
 
 **Herramientas**
 - `hyper test --pause` (y `--pause` en la ayuda para `check` y `test`).

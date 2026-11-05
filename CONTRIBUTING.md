@@ -4,7 +4,7 @@ Gracias por ayudar. Esta guía explica cómo compilar HyperEZ, probar tus cambio
 
 ## Avisar de un error o proponer una idea
 
-Abre una [incidencia](https://github.com/cuevacaravacaadrian-ux/HyperEZ/issues/new/choose). Para un error, incluye el programa `.hz` más pequeño que lo reproduzca, lo que esperabas y lo que pasó (copia el mensaje completo), y la salida de `hyper version`.
+Abre una [incidencia](https://github.com/cuevacaravacaadrian/HyperEZ/issues/new/choose). Para un error, incluye el programa `.hz` más pequeño que lo reproduzca, lo que esperabas y lo que pasó (copia el mensaje completo), y la salida de `hyper version`.
 
 ## Preparar el entorno
 

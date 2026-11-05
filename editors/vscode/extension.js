@@ -328,7 +328,7 @@ function installDir(context) {
   return fs.existsSync(path.join(dir, 'docs')) ? dir : null;
 }
 
-const REPO = 'https://github.com/cuevacaravacaadrian-ux/HyperEZ';
+const REPO = 'https://github.com/cuevacaravacaadrian/HyperEZ';
 
 async function cmdOpenGuide(context) {
   const dir = installDir(context);

@@ -45,7 +45,7 @@ Linguist añade cada gramática como submódulo y rechaza los alcances repetidos
 2. Copia en él lo que hay en `editors/linguist/grammar/` y súbelo:
 
 ```text
-git clone https://github.com/cuevacaravacaadrian-ux/hyperez-grammar.git
+git clone https://github.com/cuevacaravacaadrian/hyperez-grammar.git
 copy editors\linguist\grammar\* hyperez-grammar\
 cd hyperez-grammar
 git add .
@@ -60,7 +60,7 @@ Cada vez que cambie la gramática, `python tools/linguist_kit.py` actualiza `gra
 1. Comprueba la cifra con `python tools/linguist_kit.py --progress` y con la búsqueda de GitHub `NOT is:fork path:*.hez`.
 2. Haz un *fork* de [github-linguist/linguist](https://github.com/github-linguist/linguist) y sigue su [CONTRIBUTING.md](https://github.com/github-linguist/linguist/blob/main/CONTRIBUTING.md#adding-a-language).
 3. Copia la entrada de `languages.yml` en orden alfabético (sin `language_id`).
-4. Añade la gramática: `script/add-grammar https://github.com/cuevacaravacaadrian-ux/hyperez-grammar`.
+4. Añade la gramática: `script/add-grammar https://github.com/cuevacaravacaadrian/hyperez-grammar`.
 5. Copia los archivos de `samples/` en `samples/HyperEZ/`.
 6. Ejecuta `script/update-ids` (pone el `language_id`) y las pruebas: `bundle exec rake test`.
 7. Abre la *pull request* con el texto de [`PULL_REQUEST.md`](PULL_REQUEST.md), con las cifras del día.

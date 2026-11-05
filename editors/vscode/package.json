@@ -10,13 +10,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/cuevacaravacaadrian-ux/HyperEZ.git",
+    "url": "https://github.com/cuevacaravacaadrian/HyperEZ.git",
     "directory": "editors/vscode"
   },
   "bugs": {
-    "url": "https://github.com/cuevacaravacaadrian-ux/HyperEZ/issues"
+    "url": "https://github.com/cuevacaravacaadrian/HyperEZ/issues"
   },
-  "homepage": "https://github.com/cuevacaravacaadrian-ux/HyperEZ#readme",
+  "homepage": "https://github.com/cuevacaravacaadrian/HyperEZ#readme",
   "icon": "icons/hyperez-128.png",
   "galleryBanner": {
     "color": "#0f1424",
@@ -62,23 +62,23 @@
   ],
   "badges": [
     {
-      "url": "https://img.shields.io/github/v/release/cuevacaravacaadrian-ux/HyperEZ?label=HyperEZ&color=e8572a",
-      "href": "https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest",
+      "url": "https://img.shields.io/github/v/release/cuevacaravacaadrian/HyperEZ?label=HyperEZ&color=e8572a",
+      "href": "https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest",
       "description": "Última versión de HyperEZ"
     },
     {
       "url": "https://img.shields.io/badge/licencia-MIT-2e7dd7",
-      "href": "https://github.com/cuevacaravacaadrian-ux/HyperEZ/blob/main/LICENSE",
+      "href": "https://github.com/cuevacaravacaadrian/HyperEZ/blob/main/LICENSE",
       "description": "Licencia MIT"
     },
     {
       "url": "https://img.shields.io/badge/idioma-espa%C3%B1ol-c8102e",
-      "href": "https://github.com/cuevacaravacaadrian-ux/HyperEZ/blob/main/docs/GUIA.md",
+      "href": "https://github.com/cuevacaravacaadrian/HyperEZ/blob/main/docs/GUIA.md",
       "description": "Programa en español"
     },
     {
-      "url": "https://img.shields.io/github/stars/cuevacaravacaadrian-ux/HyperEZ?style=flat&label=estrellas",
-      "href": "https://github.com/cuevacaravacaadrian-ux/HyperEZ",
+      "url": "https://img.shields.io/github/stars/cuevacaravacaadrian/HyperEZ?style=flat&label=estrellas",
+      "href": "https://github.com/cuevacaravacaadrian/HyperEZ",
       "description": "Estrellas en GitHub"
     }
   ],
@@ -553,5 +553,5 @@
     "vscode-textmate": "^9.1.0"
   },
   "pricing": "Free",
-  "qna": "https://github.com/cuevacaravacaadrian-ux/HyperEZ/issues"
+  "qna": "https://github.com/cuevacaravacaadrian/HyperEZ/issues"
 }

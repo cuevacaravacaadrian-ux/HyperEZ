@@ -45,4 +45,4 @@ HyperEZ quiere ser un lenguaje **universal y en español**: fácil para aprender
 - HyperEZ Editor también en Linux y macOS, con pestañas y depurador paso a paso.
 - Documentación en línea con un área de pruebas en el navegador (HyperEZ compilado a WebAssembly).
 
-¿Echas algo en falta? Propónlo en las [incidencias](https://github.com/cuevacaravacaadrian-ux/HyperEZ/issues/new/choose).
+¿Echas algo en falta? Propónlo en las [incidencias](https://github.com/cuevacaravacaadrian/HyperEZ/issues/new/choose).

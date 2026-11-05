@@ -2,7 +2,7 @@
 
 ## Windows
 
-1. Descarga `HyperEZ-Setup-<versión>.exe` de la [página de versiones](https://github.com/cuevacaravacaadrian-ux/HyperEZ/releases/latest).
+1. Descarga `HyperEZ-Setup-<versión>.exe` de la [página de versiones](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest).
 2. Ejecútalo y pulsa **Instalar**. No necesita permisos de administrador. Si aparece "Windows protegió su PC" (el instalador no está firmado), pulsa *Más información → Ejecutar de todas formas*.
 3. Al terminar se abre **HyperEZ Editor** con un programa de ejemplo: pulsa **F5** y ya estás programando.
 

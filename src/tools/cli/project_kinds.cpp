@@ -454,7 +454,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: cuevacaravacaadrian-ux/HyperEZ/actions/setup-hyperez@main
+      - uses: cuevacaravacaadrian/HyperEZ/actions/setup-hyperez@main
         with:
           version: latest
       - run: hyper check main.hez
