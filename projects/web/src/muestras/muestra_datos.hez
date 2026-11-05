@@ -1,0 +1,11 @@
+// Datos: ventas por mes con comprensiones, tubería |> y formato
+var ventas = { enero: 1250.5, febrero: 980, marzo: 1610.25, abril: 1430 }
+
+var total = ventas.values().sum()
+var mejor = ventas.keys().sortBy(m => -ventas[m])[0]
+
+foreach mes, euros in ventas {
+    var barra = "█" * round(euros / 100)
+    print("${mes:<8} ${euros:>9,.2f} €  ${barra}")
+}
+print("Total: ${total:,.2f} € · mejor mes: ${mejor |> (t => t.capitalize())}")

@@ -1,0 +1,131 @@
+<section class="portada">
+  <div class="envoltura">
+    <div>
+      <a class="etiqueta" href="versiones.html"><b>Nuevo</b> HyperEZ {{version}}: editor en el navegador, textos con formato y mucho más →</a>
+      <h1>Programa en <span class="verde">español</span>.<br>Haz de todo.</h1>
+      <p class="lema">HyperEZ es un lenguaje de programación sencillo y rápido para aprender y para crear juegos, webs, inteligencia artificial, análisis de datos, gráficos y herramientas. Con errores que se entienden y todo incluido.</p>
+      <div class="acciones">
+        <a class="btn btn-verde" href="descargar.html" data-descarga-principal>
+          <svg viewBox="0 0 16 16"><path d="M8 1.5v9M4 7l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2 12.5v2h12v-2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+          <span>Descargar para <span data-so>Windows</span><small>Gratis · versión <span data-ultima-version>{{version}}</span></small></span></a>
+        <a class="btn btn-oscuro" href="editor/index.html">▶ Pruébalo en el navegador</a>
+      </div>
+      <p class="detalle">Windows, Linux y macOS · Instalador con <strong>HyperEZ Editor</strong> · Extensión para <a href="https://marketplace.visualstudio.com/items?itemName=hyperez.hyperezprogramminglanguagevscodeextension">VS Code</a> · Software libre (MIT)</p>
+    </div>
+    <div class="ventana">
+      <div class="ventana-barra"><i></i><i></i><i></i><span>main.hez — HyperEZ</span></div>
+      <pre>{{{portada.codigo}}}</pre>
+      <pre class="salida">{{portada.salida}}</pre>
+    </div>
+  </div>
+</section>
+
+<div class="envoltura">
+  <div class="cifras">
+    <div><b>{{cifras.bibliotecas}}</b><span>bibliotecas incluidas</span></div>
+    <div><b>{{cifras.funciones}}</b><span>funciones y métodos</span></div>
+    <div><b>{{cifras.ejemplos}}</b><span>ejemplos listos</span></div>
+    <div><b>{{cifras.paginas}}</b><span>páginas de documentación</span></div>
+    <div><b>3</b><span>sistemas: Windows, Linux, macOS</span></div>
+  </div>
+</div>
+
+<section class="seccion">
+  <div class="envoltura">
+    <h2>Un solo lenguaje para todo lo que quieras hacer</h2>
+    <p class="sub">Sin instalar paquetes ni configurar nada: la biblioteca de HyperEZ trae lo necesario para cada área, y el lenguaje te explica cada error en español.</p>
+    <div class="rejilla">
+      <div class="tarjeta"><div class="emoji">🎮</div><h3>Juegos</h3><p>Juegos de consola con teclado en tiempo real, colores, A* para los caminos y vectores. El tutorial te guía en tu primer juego.</p></div>
+      <div class="tarjeta"><div class="emoji">🌐</div><h3>Webs y APIs</h3><p>Servidor web, rutas, plantillas, formularios, cookies y sitios desde Markdown. <code>hyper serve</code> recarga el navegador al guardar.</p></div>
+      <div class="tarjeta"><div class="emoji">🧠</div><h3>Inteligencia artificial</h3><p>Redes neuronales, regresión y matrices rápidas (escritas en C++), con estadística y datos CSV.</p></div>
+      <div class="tarjeta"><div class="emoji">📊</div><h3>Datos</h3><p>CSV, JSON, base de datos, gráficas SVG, comprensiones y la tubería <code>|&gt;</code> para transformar datos con claridad.</p></div>
+      <div class="tarjeta"><div class="emoji">🎨</div><h3>Gráficos y sonido</h3><p>Imágenes PNG y JPG, dibujo, fractales, gráficas y sonido WAV, sin bibliotecas externas.</p></div>
+      <div class="tarjeta"><div class="emoji">🛠️</div><h3>Herramientas y sistema</h3><p>Archivos, procesos, compresión .zip, expresiones regulares, órdenes de consola y hasta código máquina x86.</p></div>
+      <div class="tarjeta"><div class="emoji">💬</div><h3>Errores en español</h3><p>«No existe nada llamado 'prnt'. ¿Quisiste decir 'print'?» Cada error dice dónde está y cómo arreglarlo.</p></div>
+      <div class="tarjeta"><div class="emoji">📝</div><h3>Editor incluido</h3><p>HyperEZ Editor: pestañas, explorador, errores en vivo, autocompletado y F5 para ejecutar. También en el navegador.</p></div>
+      <div class="tarjeta"><div class="emoji">⚡</div><h3>Rápido de verdad</h3><p>Compilador a bytecode y máquina virtual en C++20, optimizados con LTO y PGO. Tipos opcionales cuando ayudan.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="seccion oscura">
+  <div class="envoltura">
+    <h2>Así se escribe HyperEZ</h2>
+    <p class="sub">Código claro, palabras de siempre y la potencia de un lenguaje moderno: clases, comprensiones, <code>match</code>, <code>async</code>, tubería y textos con formato.</p>
+    <div class="pestanas-codigo">
+{{#each muestras}}
+      <button data-muestra="{{id}}"{{#if primera}} class="activa"{{/if}}>{{titulo}}</button>
+{{/each}}
+    </div>
+{{#each muestras}}
+    <div class="muestra" data-muestra="{{id}}"{{#if primera}}{{else}} hidden{{/if}}>
+      <div class="ventana">
+        <div class="ventana-barra"><i></i><i></i><i></i><span>{{archivo}}</span></div>
+        <pre>{{{codigo}}}</pre>
+        <pre class="salida">{{salida}}</pre>
+      </div>
+      <p><a class="btn btn-oscuro" href="editor/index.html#c={{enlace}}&amp;n={{archivo}}">▶ Abrir este código en el editor</a></p>
+    </div>
+{{/each}}
+  </div>
+</section>
+
+<section class="seccion">
+  <div class="envoltura dos">
+    <div>
+      <h2>HyperEZ Editor: el editor clásico, incluido</h2>
+      <p class="sub">Viene con el instalador de Windows y también funciona aquí, en el navegador.</p>
+      <ul class="lista-check">
+        <li>Colores, números de línea y <strong>errores mientras escribes</strong>, marcados en rojo</li>
+        <li><strong>Autocompletado</strong> que conoce tus clases y la biblioteca, y cierre automático de paréntesis y comillas</li>
+        <li><strong>Explorador</strong> de archivos y carpetas, pestañas y panel de salida</li>
+        <li><strong>F5 ejecuta sin guardar</strong>; ■ detiene el programa</li>
+        <li>Imprimir, buscar y reemplazar, ir a la línea, tema clásico o HyperEZ Noche</li>
+      </ul>
+      <div class="acciones"><a class="btn btn-verde" href="editor/index.html">▶ Abrir el editor en el navegador</a><a class="btn btn-claro" href="docs/herramientas/editor.html">Cómo se usa</a></div>
+    </div>
+    <img class="captura" src="img/editor.png" alt="HyperEZ Editor con un programa y su salida en el panel de abajo" loading="lazy">
+  </div>
+</section>
+
+<section class="seccion gris">
+  <div class="envoltura dos">
+    <img class="captura" src="img/vscode-errores.png" alt="Un error en vivo en VS Code: ¿quisiste decir print?" loading="lazy">
+    <div>
+      <h2>¿Usas Visual Studio Code?</h2>
+      <p class="sub">La extensión de HyperEZ lo convierte en un entorno completo.</p>
+      <ul class="lista-check">
+        <li>Errores en vivo en español con arreglos rápidos</li>
+        <li>Autocompletado, ayuda al pasar el ratón, ir a la definición y renombrar</li>
+        <li>▶ Ejecutar, ⟳ Repetir al guardar y ✓ Comprobar encima del código</li>
+        <li>Formato, pruebas, consola interactiva, 54 fragmentos y el tema HyperEZ Noche</li>
+      </ul>
+      <div class="acciones"><a class="btn btn-oscuro" href="https://marketplace.visualstudio.com/items?itemName=hyperez.hyperezprogramminglanguagevscodeextension">Instalar desde el Marketplace</a><a class="btn btn-claro" href="docs/herramientas/vscode.html">Más información</a></div>
+    </div>
+  </div>
+</section>
+
+<section class="seccion">
+  <div class="envoltura centrado">
+    <h2>Empieza en tres pasos</h2>
+    <p class="sub">En Windows, el instalador lo deja todo listo: el lenguaje, HyperEZ Editor, los ejemplos y la documentación.</p>
+    <div class="pasos" style="text-align:left">
+      <div class="paso"><h3>Descarga</h3><p>El instalador para Windows (no necesita administrador) o el paquete para Linux y macOS.</p></div>
+      <div class="paso"><h3>Escribe</h3><p>Abre HyperEZ Editor y escribe <code>print("¡Hola, mundo!")</code>. O empieza por un ejemplo.</p></div>
+      <div class="paso"><h3>Pulsa F5</h3><p>Tu programa se ejecuta. Si hay un error, te dice cuál, dónde y cómo arreglarlo.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="seccion" style="padding-top:0">
+  <div class="envoltura">
+    <div class="llamada">
+      <h2>¿Listo para programar en español?</h2>
+      <p>Gratis, de código abierto y para siempre. Hecho con mimo en España.</p>
+      <div class="acciones">
+        <a class="btn btn-verde" href="descargar.html" data-descarga-principal>Descargar HyperEZ para <span data-so>Windows</span></a>
+        <a class="btn btn-oscuro" href="docs/GUIA.html">Leer la guía</a>
+      </div>
+    </div>
+  </div>
+</section>

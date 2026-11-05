@@ -1475,10 +1475,19 @@ ExprP Parser::matchExpr() {
                 arm.isElse = true;
             } else {
                 nlStack.push_back(false);
+                size_t saved = noLambdaLevel;
+                noLambdaLevel = nlStack.size(); // "valor => ..." es el caso, no una lambda
                 do { arm.patterns.push_back(expression()); } while (match(Tok::Comma));
+                noLambdaLevel = saved;
                 nlStack.pop_back();
             }
-            if (check(Tok::KwIf)) { advance(); arm.guard = expression(); }
+            if (check(Tok::KwIf)) {
+                advance();
+                size_t saved = noLambdaLevel;
+                noLambdaLevel = nlStack.size(); // "_ if n < limite => ...": limite no es una lambda
+                arm.guard = expression();
+                noLambdaLevel = saved;
+            }
             expect(Tok::Arrow, "'=>' en el caso del match");
             if (check(Tok::LBrace)) {
                 auto b = block();
@@ -1566,7 +1575,7 @@ ExprP Parser::primary() {
             return s;
         }
         case Tok::Ident: {
-            if (ahead(1).kind == Tok::Arrow) return lambda(false);
+            if (ahead(1).kind == Tok::Arrow && nlStack.size() != noLambdaLevel) return lambda(false);
             if ((t.text == "on" || t.text == "once") && ahead(1).kind == Tok::Ident && !ahead(1).newlineBefore) return onExpr(t.text == "once");
             Token id = advance();
             return std::make_unique<IdentExpr>(id.loc, id.text);
@@ -1589,7 +1598,7 @@ ExprP Parser::primary() {
             return l;
         }
         case Tok::LParen: {
-            if (looksLikeLambda()) return lambda(false);
+            if (nlStack.size() != noLambdaLevel && looksLikeLambda()) return lambda(false);
             advance();
             nlStack.push_back(false);
             ExprP e = assignment();

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HyperEZ Editor en el navegador</title>
+<meta name="description" content="Escribe y ejecuta HyperEZ en el navegador: el editor clásico de HyperEZ con explorador de archivos, errores en vivo, autocompletado y consola. Sin instalar nada.">
+<link rel="icon" href="../img/hyperez-256.png">
+<link rel="stylesheet" href="editor.css">
+</head>
+<body class="tema-clasico">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-nuevo" viewBox="0 0 16 16"><path d="M3.5 1.5h6l3 3v10h-9z" fill="#fff" stroke="currentColor"/><path d="M9.5 1.5v3h3" fill="none" stroke="currentColor"/></symbol>
+    <symbol id="i-carpeta-nueva" viewBox="0 0 16 16"><path d="M1.5 3.5h5l1.5 1.5h6.5v8.5h-13z" fill="#ffd866" stroke="#b08900"/><path d="M11 7v5M8.5 9.5h5" stroke="#1a7f37" stroke-width="1.6"/></symbol>
+    <symbol id="i-abrir" viewBox="0 0 16 16"><path d="M1.5 3.5h5l1.5 1.5h6v2h-10l-2.5 6.5z" fill="#ffd866" stroke="#b08900"/><path d="M4 7.5h11l-2.5 6h-11z" fill="#ffe8a3" stroke="#b08900"/></symbol>
+    <symbol id="i-guardar" viewBox="0 0 16 16"><path d="M2 2h10l2 2v10H2z" fill="#4a7fd6" stroke="#22427a"/><rect x="4" y="2.5" width="7" height="4" fill="#fff"/><rect x="4" y="9" width="8" height="5" fill="#dfe8f7"/></symbol>
+    <symbol id="i-cortar" viewBox="0 0 16 16"><circle cx="4.5" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="11.5" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M5.8 10.5 11 2M10.2 10.5 5 2" stroke="currentColor" stroke-width="1.3"/></symbol>
+    <symbol id="i-copiar" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8" height="9" fill="#fff" stroke="currentColor"/><path d="M3.5 11.5h-1v-10h8v1" fill="none" stroke="currentColor"/></symbol>
+    <symbol id="i-pegar" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="9" height="12" rx="1" fill="#e0b46a" stroke="#8a6420"/><rect x="5" y="1.5" width="4" height="2.5" fill="#888"/><rect x="6.5" y="6.5" width="8" height="8" fill="#fff" stroke="currentColor"/></symbol>
+    <symbol id="i-deshacer" viewBox="0 0 16 16"><path d="M5 4 2 7l3 3" fill="none" stroke="#2f6fd6" stroke-width="1.6"/><path d="M2.5 7h7a4 4 0 0 1 0 8h-2" fill="none" stroke="#2f6fd6" stroke-width="1.6"/></symbol>
+    <symbol id="i-rehacer" viewBox="0 0 16 16"><path d="m11 4 3 3-3 3" fill="none" stroke="#2f6fd6" stroke-width="1.6"/><path d="M13.5 7h-7a4 4 0 0 0 0 8h2" fill="none" stroke="#2f6fd6" stroke-width="1.6"/></symbol>
+    <symbol id="i-buscar" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5" fill="#e8f1ff" stroke="currentColor" stroke-width="1.4"/><path d="m10 10 4.5 4.5" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-ejecutar" viewBox="0 0 16 16"><path d="M4 2.5v11l9.5-5.5z" fill="#1a9e3c" stroke="#106b28"/></symbol>
+    <symbol id="i-detener" viewBox="0 0 16 16"><rect x="3.5" y="3.5" width="9" height="9" fill="#d6362f" stroke="#8f1d18"/></symbol>
+    <symbol id="i-comprobar" viewBox="0 0 16 16"><path d="m2.5 8.5 3.5 3.5 7.5-8" fill="none" stroke="#1a7f37" stroke-width="2"/></symbol>
+    <symbol id="i-formato" viewBox="0 0 16 16"><path d="M2 3h12M5 6.5h9M5 10h9M2 13.5h12" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="i-compartir" viewBox="0 0 16 16"><circle cx="12" cy="3.5" r="2" fill="#2f81f7"/><circle cx="4" cy="8" r="2" fill="#2f81f7"/><circle cx="12" cy="12.5" r="2" fill="#2f81f7"/><path d="M10.3 4.5 5.7 7M5.7 9l4.6 2.5" stroke="currentColor"/></symbol>
+    <symbol id="i-descargar" viewBox="0 0 16 16"><path d="M8 1.5v9M4 7l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2 12.5v2h12v-2" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-ejemplos" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1" fill="#fff" stroke="currentColor"/><path d="M4 6h8M4 8.5h6M4 11h7" stroke="#1a9e3c"/></symbol>
+    <symbol id="i-ayuda" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="#2f6fd6"/><path d="M6 6.2a2 2 0 1 1 2.6 1.9c-.6.2-.6.6-.6 1.4" fill="none" stroke="#fff" stroke-width="1.5"/><circle cx="8" cy="11.8" r=".9" fill="#fff"/></symbol>
+    <symbol id="i-carpeta" viewBox="0 0 16 16"><path d="M1.5 3h5l1.5 1.5h6.5v9h-13z" fill="#ffd866" stroke="#c79a00"/></symbol>
+    <symbol id="i-carpeta-abierta" viewBox="0 0 16 16"><path d="M1.5 3h5l1.5 1.5h5v2H4.5l-3 6.5z" fill="#ffd866" stroke="#c79a00"/><path d="M4.5 6.5h11l-3 6.5h-11z" fill="#ffe39a" stroke="#c79a00"/></symbol>
+    <symbol id="i-hez" viewBox="0 0 16 16"><rect x="1" y="1" width="14" height="14" rx="3" fill="#111"/><path d="M4.4 4h2v3.1h3.2V4h2v8h-2V8.9H6.4V12h-2z" fill="#62d962"/></symbol>
+    <symbol id="i-md" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="1.5" fill="none" stroke="#2f81f7" stroke-width="1.3"/><path d="M3.5 10.5v-5l2 2.5 2-2.5v5M10.5 5.5v4M9 8.5l1.5 2 1.5-2" fill="none" stroke="#2f81f7" stroke-width="1.2"/></symbol>
+    <symbol id="i-json" viewBox="0 0 16 16"><path d="M5.5 2.5c-2 0-1.5 2-1.5 3.5S2.5 8 2.5 8 4 8.5 4 10s-.5 3.5 1.5 3.5M10.5 2.5c2 0 1.5 2 1.5 3.5s1.5 2 1.5 2-1.5.5-1.5 2 .5 3.5-1.5 3.5" fill="none" stroke="#c99a06" stroke-width="1.3"/></symbol>
+    <symbol id="i-imagen" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" fill="#e8f4ff" stroke="#2f81f7"/><circle cx="5.5" cy="6" r="1.5" fill="#f2b600"/><path d="m2 13 4.5-5 3 3 2-2 3 4" fill="#5cb85c"/></symbol>
+    <symbol id="i-archivo" viewBox="0 0 16 16"><path d="M3.5 1.5h6l3 3v10h-9z" fill="#fff" stroke="#6e7781"/><path d="M9.5 1.5v3h3" fill="none" stroke="#6e7781"/></symbol>
+    <symbol id="i-plegar" viewBox="0 0 16 16"><path d="M3 3h10v10H3z" fill="none" stroke="currentColor"/><path d="M5.5 8h5" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="i-flecha" viewBox="0 0 16 16"><path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+  </defs>
+</svg>
+
+<div id="app">
+  <header class="titulo">
+    <a class="marca" href="../index.html" title="Volver a la web de HyperEZ"><svg class="ico"><use href="#i-hez"/></svg>HyperEZ Editor</a>
+    <span id="titulo-archivo">main.hez</span>
+    <span class="titulo-der"><a href="../docs/index.html">Documentación</a><a href="../index.html">Web de HyperEZ</a></span>
+  </header>
+
+  <nav class="menu" id="menu" aria-label="Menú">
+    <div class="menu-item" data-menu="archivo">Archivo
+      <div class="desplegable">
+        <button data-cmd="nuevo">Nuevo archivo<kbd>Ctrl+N</kbd></button>
+        <button data-cmd="nueva-carpeta">Nueva carpeta</button>
+        <hr>
+        <button data-cmd="abrir">Abrir archivos del equipo…<kbd>Ctrl+O</kbd></button>
+        <button data-cmd="guardar">Descargar el archivo<kbd>Ctrl+S</kbd></button>
+        <button data-cmd="zip">Descargar el proyecto (.zip)</button>
+        <hr>
+        <button data-cmd="compartir">Copiar enlace para compartir</button>
+        <button data-cmd="cerrar-pestana">Cerrar la pestaña<kbd>Ctrl+W</kbd></button>
+        <hr>
+        <button data-cmd="reiniciar">Empezar de cero…</button>
+      </div>
+    </div>
+    <div class="menu-item" data-menu="editar">Editar
+      <div class="desplegable">
+        <button data-cmd="deshacer">Deshacer<kbd>Ctrl+Z</kbd></button>
+        <button data-cmd="rehacer">Rehacer<kbd>Ctrl+Y</kbd></button>
+        <hr>
+        <button data-cmd="buscar">Buscar<kbd>Ctrl+F</kbd></button>
+        <button data-cmd="reemplazar">Reemplazar<kbd>Ctrl+H</kbd></button>
+        <button data-cmd="ir-linea">Ir a la línea…<kbd>Ctrl+G</kbd></button>
+        <hr>
+        <button data-cmd="comentar">Comentar o descomentar<kbd>Ctrl+/</kbd></button>
+        <button data-cmd="duplicar">Duplicar la línea<kbd>Ctrl+D</kbd></button>
+        <button data-cmd="autocompletar">Autocompletar<kbd>Ctrl+Espacio</kbd></button>
+        <button data-cmd="formato">Dar formato<kbd>Mayús+Alt+F</kbd></button>
+        <hr>
+        <button data-cmd="seleccionar-todo">Seleccionar todo<kbd>Ctrl+A</kbd></button>
+      </div>
+    </div>
+    <div class="menu-item" data-menu="ejecutar">Ejecutar
+      <div class="desplegable">
+        <button data-cmd="ejecutar">Ejecutar<kbd>F5</kbd></button>
+        <button data-cmd="detener">Detener<kbd>Mayús+F5</kbd></button>
+        <button data-cmd="comprobar">Comprobar errores<kbd>Ctrl+Mayús+F5</kbd></button>
+        <hr>
+        <button data-cmd="entrada">Escribir la entrada del programa…</button>
+        <button data-cmd="limpiar-salida">Limpiar la salida</button>
+      </div>
+    </div>
+    <div class="menu-item" data-menu="ver">Ver
+      <div class="desplegable">
+        <button data-cmd="ver-explorador" data-check>Explorador<kbd>Ctrl+Mayús+E</kbd></button>
+        <button data-cmd="ver-panel" data-check>Panel de problemas y salida<kbd>Ctrl+J</kbd></button>
+        <button data-cmd="ver-numeros" data-check>Números de línea</button>
+        <hr>
+        <button data-cmd="tema-clasico" data-radio="tema">Tema clásico</button>
+        <button data-cmd="tema-noche" data-radio="tema">Tema HyperEZ Noche</button>
+        <hr>
+        <button data-cmd="zoom-mas">Aumentar la letra<kbd>Ctrl++</kbd></button>
+        <button data-cmd="zoom-menos">Reducir la letra<kbd>Ctrl+-</kbd></button>
+        <button data-cmd="zoom-normal">Tamaño normal<kbd>Ctrl+0</kbd></button>
+      </div>
+    </div>
+    <div class="menu-item" data-menu="ejemplos">Ejemplos
+      <div class="desplegable" id="menu-ejemplos"><span class="vacio">Cargando…</span></div>
+    </div>
+    <div class="menu-item" data-menu="ayuda">Ayuda
+      <div class="desplegable">
+        <button data-cmd="ayuda-guia">Guía del lenguaje</button>
+        <button data-cmd="ayuda-api">Referencia de la API</button>
+        <button data-cmd="ayuda-atajos">Atajos de teclado</button>
+        <hr>
+        <button data-cmd="ayuda-descargar">Descargar HyperEZ para tu equipo</button>
+        <button data-cmd="acerca">Acerca de HyperEZ Editor</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="herramientas" role="toolbar">
+    <button data-cmd="nuevo" title="Nuevo archivo (Ctrl+N)"><svg class="ico"><use href="#i-nuevo"/></svg></button>
+    <button data-cmd="abrir" title="Abrir archivos del equipo (Ctrl+O)"><svg class="ico"><use href="#i-abrir"/></svg></button>
+    <button data-cmd="guardar" title="Descargar el archivo (Ctrl+S)"><svg class="ico"><use href="#i-guardar"/></svg></button>
+    <span class="sep"></span>
+    <button data-cmd="cortar" title="Cortar (Ctrl+X)"><svg class="ico"><use href="#i-cortar"/></svg></button>
+    <button data-cmd="copiar" title="Copiar (Ctrl+C)"><svg class="ico"><use href="#i-copiar"/></svg></button>
+    <button data-cmd="pegar" title="Pegar (Ctrl+V)"><svg class="ico"><use href="#i-pegar"/></svg></button>
+    <span class="sep"></span>
+    <button data-cmd="deshacer" title="Deshacer (Ctrl+Z)"><svg class="ico"><use href="#i-deshacer"/></svg></button>
+    <button data-cmd="rehacer" title="Rehacer (Ctrl+Y)"><svg class="ico"><use href="#i-rehacer"/></svg></button>
+    <span class="sep"></span>
+    <button data-cmd="buscar" title="Buscar (Ctrl+F)"><svg class="ico"><use href="#i-buscar"/></svg></button>
+    <span class="sep"></span>
+    <button data-cmd="ejecutar" class="con-texto" title="Ejecutar sin guardar (F5)"><svg class="ico"><use href="#i-ejecutar"/></svg>Ejecutar</button>
+    <button data-cmd="detener" class="con-texto" id="btn-detener" title="Detener (Mayús+F5)" disabled><svg class="ico"><use href="#i-detener"/></svg></button>
+    <button data-cmd="comprobar" class="con-texto" title="Comprobar errores (Ctrl+Mayús+F5)"><svg class="ico"><use href="#i-comprobar"/></svg>Comprobar</button>
+    <button data-cmd="formato" class="con-texto" title="Dar formato (Mayús+Alt+F)"><svg class="ico"><use href="#i-formato"/></svg>Formato</button>
+    <span class="sep"></span>
+    <button data-cmd="menu-ejemplos" class="con-texto" title="Abrir un ejemplo"><svg class="ico"><use href="#i-ejemplos"/></svg>Ejemplos ▾</button>
+    <button data-cmd="compartir" class="con-texto" title="Copiar un enlace con este código"><svg class="ico"><use href="#i-compartir"/></svg>Compartir</button>
+    <span class="relleno"></span>
+    <a class="boton-descargar" id="boton-descargar" href="../descargar.html" title="Descarga HyperEZ para tu equipo: el lenguaje, HyperEZ Editor y la extensión de VS Code">
+      <svg class="ico"><use href="#i-descargar"/></svg><span>Descargar HyperEZ</span></a>
+  </div>
+
+  <main class="cuerpo" id="cuerpo">
+    <aside class="explorador" id="explorador" aria-label="Explorador">
+      <div class="exp-cabecera">
+        <span>EXPLORADOR</span>
+        <span class="exp-botones">
+          <button data-cmd="nuevo" title="Nuevo archivo"><svg class="ico"><use href="#i-nuevo"/></svg></button>
+          <button data-cmd="nueva-carpeta" title="Nueva carpeta"><svg class="ico"><use href="#i-carpeta-nueva"/></svg></button>
+          <button data-cmd="plegar" title="Plegar las carpetas"><svg class="ico"><use href="#i-plegar"/></svg></button>
+        </span>
+      </div>
+      <div class="exp-proyecto" id="exp-proyecto" title="Tu proyecto se guarda en este navegador">MI PROYECTO</div>
+      <div class="arbol" id="arbol" tabindex="0" role="tree"></div>
+      <div class="exp-pie">Se guarda en este navegador · arrastra archivos aquí</div>
+    </aside>
+    <div class="separador-v" id="sep-explorador" title="Arrastra para cambiar el ancho"></div>
+
+    <section class="centro">
+      <div class="pestanas" id="pestanas" role="tablist"></div>
+      <div class="buscar-barra" id="buscar-barra" hidden>
+        <input id="buscar-texto" placeholder="Buscar" spellcheck="false">
+        <input id="reemplazar-texto" placeholder="Reemplazar por" spellcheck="false">
+        <button id="buscar-ant" title="Anterior (Mayús+Intro)">↑</button>
+        <button id="buscar-sig" title="Siguiente (Intro)">↓</button>
+        <button id="reemplazar-uno">Reemplazar</button>
+        <button id="reemplazar-todo">Todo</button>
+        <span id="buscar-cuenta"></span>
+        <button id="buscar-cerrar" title="Cerrar (Esc)">✕</button>
+      </div>
+      <div class="editor" id="editor">
+        <div class="medianil" id="medianil"><div id="numeros"></div></div>
+        <div class="codigo" id="codigo">
+          <div class="linea-actual" id="linea-actual"></div>
+          <pre class="resaltado" id="resaltado" aria-hidden="true"></pre>
+          <textarea id="fuente" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-label="Código"></textarea>
+          <div class="sugerencias" id="sugerencias" hidden role="listbox"></div>
+          <div class="firma" id="firma" hidden></div>
+          <div class="info" id="info" hidden></div>
+        </div>
+        <div class="vista-imagen" id="vista-imagen" hidden><img id="imagen" alt=""></div>
+      </div>
+      <div class="separador-h" id="sep-panel" title="Arrastra para cambiar el alto"></div>
+      <div class="panel" id="panel">
+        <div class="panel-pestanas">
+          <button data-pagina="problemas" class="activa">Problemas <span id="cuenta-problemas" class="insignia">0</span></button>
+          <button data-pagina="salida">Salida</button>
+          <button data-pagina="entrada">Entrada del programa</button>
+          <span class="relleno"></span>
+          <button data-cmd="limpiar-salida" class="mini" title="Limpiar la salida">Limpiar</button>
+        </div>
+        <div class="pagina" id="pagina-problemas"><ul id="problemas"></ul></div>
+        <div class="pagina" id="pagina-salida" hidden><pre id="salida"></pre></div>
+        <div class="pagina" id="pagina-entrada" hidden>
+          <textarea id="entrada" spellcheck="false" placeholder="Lo que escribas aquí es lo que leerá input(), línea a línea, cuando ejecutes el programa."></textarea>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="estado" id="estado">
+    <span id="estado-pos">Línea 1, columna 1</span>
+    <span id="estado-errores">✓ Sin errores</span>
+    <span id="estado-tipo">UTF-8 · .hez</span>
+    <span id="estado-modo">INS</span>
+    <span id="estado-motor">Cargando HyperEZ…</span>
+  </footer>
+</div>
+
+<div class="menu-contextual" id="contextual" hidden></div>
+<div class="dialogo-fondo" id="dialogo" hidden><div class="dialogo" role="dialog" aria-modal="true"></div></div>
+<input type="file" id="abrir-archivos" multiple hidden>
+
+<script src="nucleo.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>

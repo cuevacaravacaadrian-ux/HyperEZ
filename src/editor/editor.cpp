@@ -27,6 +27,8 @@
 #include <shellapi.h>
 #include <shlobj.h>
 #include <tom.h>
+#include <shobjidl.h>
+#include <uxtheme.h>
 
 #include "lang/vm/vm.h"
 #include "lang/sema/analyzer.h"
@@ -51,7 +53,7 @@ namespace {
 // ---------------------------------------------------------------------------
 
 enum : int {
-    ID_EDIT = 100, ID_GUTTER, ID_PANEL, ID_STATUS, ID_COMPLETE, ID_TABS, ID_TOOLBAR, ID_BOTTOMTABS, ID_OUTPUT,
+    ID_EDIT = 100, ID_GUTTER, ID_PANEL, ID_STATUS, ID_COMPLETE, ID_TABS, ID_TOOLBAR, ID_BOTTOMTABS, ID_OUTPUT, ID_TREE, ID_TREEHEADER,
     ID_TB_NEW = 200, ID_TB_OPEN, ID_TB_SAVE, ID_TB_RUN, ID_TB_CHECK, ID_TB_WATCH, ID_TB_REPL, ID_TB_EXAMPLES, ID_TB_HELP,
     // Menú
     CMD_NEW = 1000, CMD_OPEN, CMD_SAVE, CMD_SAVEAS, CMD_EXIT, CMD_OPEN_FOLDER,
@@ -62,6 +64,8 @@ enum : int {
     CMD_HELP_GUIDE, CMD_HELP_API, CMD_HELP_DOCS, CMD_HELP_KEYS, CMD_ABOUT,
     CMD_CLOSETAB, CMD_NEXTTAB, CMD_PREVTAB, CMD_PRINT, CMD_FONT, CMD_RUNPANEL, CMD_STOP, CMD_TOOLBAR, CMD_STATUSBAR,
     CMD_CLEAROUTPUT, CMD_EXAMPLESMENU, CMD_CLOSEOTHERS,
+    CMD_EXPLORER, CMD_OPENDIR, CMD_TREE_OPEN, CMD_TREE_NEWFILE, CMD_TREE_NEWDIR, CMD_TREE_RENAME, CMD_TREE_DELETE,
+    CMD_TREE_REVEAL, CMD_TREE_COPYPATH, CMD_TREE_REFRESH,
     CMD_RECENT = 2000,  // 2000..2009
     CMD_EXAMPLE = 3000, // 3000..3999
     CMD_TEMPLATE = 4000 // 4000..4099
@@ -78,6 +82,14 @@ int g_fontPt = 11;
 bool g_wrap = false, g_showPanel = true, g_showNumbers = true;
 int g_panelHeight = 170;            // alto del panel de abajo (en píxeles a 96 ppp)
 int g_splitTop = -1, g_splitBottom = -1; // franja del separador arrastrable (en la ventana)
+// Explorador de la izquierda: visible, ancho (a 96 ppp), carpeta y la franja del separador vertical
+HWND g_tree = nullptr, g_treeHeader = nullptr;
+HIMAGELIST g_treeImages = nullptr;
+bool g_showExplorer = true;
+int g_explorerWidth = 230;
+std::wstring g_explorerRoot;
+int g_vsplitLeft = -1, g_vsplitRight = -1, g_vsplitTop = 0, g_vsplitBottom = 0;
+bool g_vsplitDrag = false;
 bool g_splitDrag = false;
 std::wstring g_file;   // vacío = sin título
 bool g_dirty = false;
@@ -208,6 +220,13 @@ void loadSettings() {
     g_showToolbar = readDword(L"Toolbar", 1) != 0;
     g_showStatus = readDword(L"StatusBar", 1) != 0;
     g_panelHeight = (int)std::clamp<DWORD>(readDword(L"PanelHeight", 170), 60, 2000);
+    g_showExplorer = readDword(L"Explorer", 1) != 0;
+    g_explorerWidth = (int)std::clamp<DWORD>(readDword(L"ExplorerWidth", 230), 120, 800);
+    {
+        wchar_t dir[MAX_PATH * 2];
+        DWORD dsz = sizeof dir;
+        if (RegGetValueW(HKEY_CURRENT_USER, kKey, L"ExplorerFolder", RRF_RT_REG_SZ, nullptr, dir, &dsz) == ERROR_SUCCESS && fs::is_directory(dir)) g_explorerRoot = dir;
+    }
     {
         wchar_t face[LF_FACESIZE];
         DWORD fsz = sizeof face;
@@ -229,6 +248,8 @@ void saveSettings() {
     writeDword(L"Toolbar", g_showToolbar);
     writeDword(L"StatusBar", g_showStatus);
     writeDword(L"PanelHeight", (DWORD)g_panelHeight);
+    writeDword(L"Explorer", g_showExplorer);
+    writeDword(L"ExplorerWidth", (DWORD)g_explorerWidth);
     HKEY k;
     if (RegCreateKeyExW(HKEY_CURRENT_USER, kKey, 0, nullptr, 0, KEY_WRITE, nullptr, &k, nullptr) == ERROR_SUCCESS) {
         for (int i = 0; i < 10; i++) {
@@ -239,6 +260,7 @@ void saveSettings() {
             else RegDeleteValueW(k, name);
         }
         RegSetValueExW(k, L"FontFace", 0, REG_SZ, (const BYTE*)g_fontFace.c_str(), (DWORD)((g_fontFace.size() + 1) * sizeof(wchar_t)));
+        RegSetValueExW(k, L"ExplorerFolder", 0, REG_SZ, (const BYTE*)g_explorerRoot.c_str(), (DWORD)((g_explorerRoot.size() + 1) * sizeof(wchar_t)));
         WINDOWPLACEMENT wp{sizeof wp};
         GetWindowPlacement(g_wnd, &wp);
         RegSetValueExW(k, L"Placement", 0, REG_BINARY, (const BYTE*)&wp, sizeof wp);
@@ -623,9 +645,30 @@ void layout() {
             top = th;
         }
     }
+    // Explorador a la izquierda, con su separador; lo demás empieza en x0 y mide w de ancho
+    int x0 = 0;
+    g_vsplitLeft = g_vsplitRight = -1;
+    if (g_tree) {
+        ShowWindow(g_tree, g_showExplorer ? SW_SHOW : SW_HIDE);
+        ShowWindow(g_treeHeader, g_showExplorer ? SW_SHOW : SW_HIDE);
+        if (g_showExplorer) {
+            int ew = std::max(S(120), std::min(S(g_explorerWidth), (int)rc.right / 2));
+            int hh = S(24);
+            MoveWindow(g_treeHeader, 0, top, ew, hh, TRUE);
+            MoveWindow(g_tree, 0, top + hh, ew, std::max(0, (int)rc.bottom - statusH - top - hh), TRUE);
+            g_vsplitLeft = ew;
+            g_vsplitRight = ew + S(5);
+            g_vsplitTop = top;
+            g_vsplitBottom = rc.bottom - statusH;
+            RECT vr{ew, top, ew + S(5), rc.bottom - statusH};
+            InvalidateRect(g_wnd, &vr, TRUE);
+            x0 = ew + S(5);
+        }
+    }
+    int w = std::max(0, (int)rc.right - x0);
     if (g_tabs) {
-        int th = tabStripHeight(g_tabs, rc.right);
-        MoveWindow(g_tabs, 0, top, rc.right, th, TRUE);
+        int th = tabStripHeight(g_tabs, w);
+        MoveWindow(g_tabs, x0, top, w, th, TRUE);
         top += th;
     }
     // El panel de abajo se puede agrandar arrastrando el separador; el código conserva al menos S(80)
@@ -637,17 +680,17 @@ void layout() {
     g_splitTop = g_showPanel ? editBottom : -1;
     g_splitBottom = g_showPanel ? bottom : -1;
     int gw = gutterWidth();
-    MoveWindow(g_gutter, 0, top, gw, editBottom - top, TRUE);
+    MoveWindow(g_gutter, x0, top, gw, editBottom - top, TRUE);
     ShowWindow(g_gutter, g_showNumbers ? SW_SHOW : SW_HIDE);
-    if (g_edit) MoveWindow(g_edit, gw, top, rc.right - gw, editBottom - top, TRUE);
-    if (g_showPanel) { RECT gr{0, editBottom, rc.right, bottom}; InvalidateRect(g_wnd, &gr, TRUE); } // la franja del separador
+    if (g_edit) MoveWindow(g_edit, x0 + gw, top, w - gw, editBottom - top, TRUE);
+    if (g_showPanel) { RECT gr{x0, editBottom, rc.right, bottom}; InvalidateRect(g_wnd, &gr, TRUE); } // la franja del separador
     if (g_bottomTabs) {
         ShowWindow(g_bottomTabs, g_showPanel ? SW_SHOW : SW_HIDE);
-        int bh = tabStripHeight(g_bottomTabs, rc.right);
-        MoveWindow(g_bottomTabs, 0, bottom, rc.right, bh, TRUE);
+        int bh = tabStripHeight(g_bottomTabs, w);
+        MoveWindow(g_bottomTabs, x0, bottom, w, bh, TRUE);
         int ch = std::max(0, panelH - bh);
-        MoveWindow(g_panel, 0, bottom + bh, rc.right, ch, TRUE);
-        MoveWindow(g_output, 0, bottom + bh, rc.right, ch, TRUE);
+        MoveWindow(g_panel, x0, bottom + bh, w, ch, TRUE);
+        MoveWindow(g_output, x0, bottom + bh, w, ch, TRUE);
         ShowWindow(g_panel, g_showPanel && g_bottomPage == 0 ? SW_SHOW : SW_HIDE);
         ShowWindow(g_output, g_showPanel && g_bottomPage == 1 ? SW_SHOW : SW_HIDE);
     }
@@ -727,6 +770,7 @@ int addTab();
 void activate(int i);
 void storeCurrent();
 
+void explorerFollow(const std::wstring& file);
 bool openFile(const std::wstring& path) {
     std::wstring abs = fs::absolute(path).wstring();
     storeCurrent();
@@ -754,6 +798,7 @@ bool openFile(const std::wstring& path) {
     addRecent(g_file);
     rebuildMenus();
     SetCurrentDirectoryW(fs::path(g_file).parent_path().c_str());
+    explorerFollow(g_file);
     return true;
 }
 
@@ -905,8 +950,40 @@ bool ensureSaved() {
     return !g_dirty || save();
 }
 
+
+// Ejecutar sin guardar: el texto del editor va a un archivo temporal y hyper lo ejecuta como si fuera el
+// archivo de verdad (hyper run --as): así funcionan sus importaciones, System.scriptDir y los errores.
+std::wstring runTempDir() {
+    wchar_t t[MAX_PATH];
+    GetTempPathW(MAX_PATH, t);
+    return std::wstring(t) + L"HyperEZ\\ejecutar";
+}
+// Los argumentos de "hyper run" para el texto de ahora (y la carpeta en la que se ejecuta); vacío si falla
+std::wstring runTarget(std::wstring& cwd) {
+    std::wstring docs = projectsDir();
+    std::wstring real = !g_file.empty() ? g_file : (docs.empty() ? (fs::current_path() / L"sin-titulo.hez").wstring() : docs + L"\\sin-titulo.hez");
+    cwd = fs::path(real).parent_path().wstring();
+    if (!g_file.empty() && !g_dirty) return L"\"" + g_file + L"\"";
+    std::error_code ec;
+    fs::create_directories(runTempDir(), ec);
+    static int n = 0;
+    std::wstring tmp = runTempDir() + L"\\" + std::to_wstring(GetCurrentProcessId()) + L"-" + std::to_wstring(++n) + L"-" + fs::path(real).filename().wstring();
+    std::wstring w = editorText(), out;
+    out.reserve(w.size() + w.size() / 20);
+    for (wchar_t c : w) { if (c == L'\r') out += L"\r\n"; else out += c; }
+    if (!writeFileAtomic(narrow(tmp), narrow(out))) return L"";
+    return L"--as \"" + real + L"\" \"" + tmp + L"\"";
+}
+void cleanRunTemps() {
+    std::wstring prefix = std::to_wstring(GetCurrentProcessId()) + L"-";
+    std::error_code ec;
+    for (auto it = fs::directory_iterator(runTempDir(), ec); !ec && it != fs::directory_iterator(); it.increment(ec)) {
+        std::wstring n = it->path().filename().wstring();
+        if (n.compare(0, prefix.size(), prefix) == 0) { std::error_code e2; fs::remove(it->path(), e2); }
+    }
+}
+
 void runProgram() {
-    if (!ensureSaved()) return;
     checkProgram();
     int errors = (int)std::count_if(g_problems.begin(), g_problems.end(), [](const Problem& p) { return p.error; });
     if (errors) {
@@ -915,7 +992,9 @@ void runProgram() {
         SendMessageW(g_status, SB_SETTEXTW, 1, (LPARAM)L"  ✗ Corrige los errores para ejecutar");
         return;
     }
-    launch(L"run --pause \"" + g_file + L"\"", fs::path(g_file).parent_path().wstring());
+    std::wstring cwd, target = runTarget(cwd);
+    if (target.empty()) { MessageBoxW(g_wnd, L"No se pudo preparar el programa para ejecutarlo.", L"HyperEZ Editor", MB_ICONERROR); return; }
+    launch(L"run --pause " + target, cwd);
 }
 
 // ---------------------------------------------------------------------------
@@ -934,6 +1013,19 @@ std::wstring lineText(LONG line) {
 }
 
 void replaceSel(const std::wstring& s) { SendMessageW(g_edit, EM_REPLACESEL, TRUE, (LPARAM)s.c_str()); }
+
+// El carácter en una posición del editor (0 si no hay)
+wchar_t charAt(LONG pos) {
+    if (pos < 0) return 0;
+    wchar_t buf[4] = {};
+    TEXTRANGEW tr{{pos, pos + 1}, buf};
+    SendMessageW(g_edit, EM_GETTEXTRANGE, 0, (LPARAM)&tr);
+    return buf[0];
+}
+bool isWordChar(wchar_t c) { return c && (iswalnum((wint_t)c) || c == L'_'); }
+wchar_t closerOf(wchar_t c) {
+    switch (c) { case L'(': return L')'; case L'[': return L']'; case L'{': return L'}'; case L'"': return L'"'; case L'\'': return L'\''; default: return 0; }
+}
 
 // Aplica f a cada línea seleccionada (sangrar, comentar...)
 template <class F> void forSelectedLines(F f) {
@@ -1207,6 +1299,425 @@ void acceptComplete() {
     if (g_signatures.count(key)) SendMessageW(g_status, SB_SETTEXTW, 1, (LPARAM)(L"  " + g_signatures[key]).c_str());
 }
 
+// ---------------------------------------------------------------------------
+// Explorador: la carpeta del proyecto a la izquierda (como en VS Code), con carpetas, archivos nuevos,
+// renombrar, eliminar (a la papelera) y los iconos de HyperEZ para los .hez
+// ---------------------------------------------------------------------------
+void setCheck(int cmd, bool on);
+std::vector<std::wstring> g_treePaths;   // lParam de cada elemento → su ruta
+std::map<std::wstring, int> g_extIcons;  // icono del sistema para cada extensión
+bool g_treeSilent = false;               // seleccionar sin abrir (al sincronizar con la pestaña activa)
+std::wstring g_treeNewFile;              // archivo recién creado: se abre al terminar de ponerle nombre
+bool g_explorerFollowNext = false;       // el próximo archivo que se abra decide la carpeta del explorador
+enum : UINT { WM_APP_TREEREFRESH = WM_APP + 30 };
+
+std::wstring lowerW(std::wstring s) { for (auto& c : s) c = (wchar_t)towlower(c); return s; }
+
+int addStockIcon(SHSTOCKICONID id) {
+    SHSTOCKICONINFO si{};
+    si.cbSize = sizeof si;
+    if (FAILED(SHGetStockIconInfo(id, SHGSI_ICON | SHGSI_SMALLICON, &si))) return -1;
+    int r = ImageList_AddIcon(g_treeImages, si.hIcon);
+    DestroyIcon(si.hIcon);
+    return r;
+}
+
+void initTreeImages() {
+    g_treeImages = ImageList_Create(S(16), S(16), ILC_COLOR32 | ILC_MASK, 8, 8);
+    addStockIcon(SIID_FOLDER);     // 0: carpeta
+    addStockIcon(SIID_FOLDEROPEN); // 1: carpeta abierta
+    HICON hz = (HICON)LoadImageW(g_inst, MAKEINTRESOURCEW(2), IMAGE_ICON, S(16), S(16), 0);
+    ImageList_AddIcon(g_treeImages, hz); // 2: programa de HyperEZ
+    if (hz) DestroyIcon(hz);
+    addStockIcon(SIID_DOCNOASSOC); // 3: archivo sin programa
+    TreeView_SetImageList(g_tree, g_treeImages, TVSIL_NORMAL);
+}
+
+int fileIcon(const fs::path& p) {
+    std::wstring ext = lowerW(p.extension().wstring());
+    if (ext == L".hez" || ext == L".hz") return 2;
+    if (ext.empty()) return 3;
+    auto it = g_extIcons.find(ext);
+    if (it != g_extIcons.end()) return it->second;
+    SHFILEINFOW sfi{};
+    int r = 3;
+    if (SHGetFileInfoW((L"x" + ext).c_str(), FILE_ATTRIBUTE_NORMAL, &sfi, sizeof sfi, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES) && sfi.hIcon) {
+        r = ImageList_AddIcon(g_treeImages, sfi.hIcon);
+        DestroyIcon(sfi.hIcon);
+    }
+    g_extIcons[ext] = r;
+    return r;
+}
+
+std::wstring treePath(HTREEITEM item) {
+    if (!item) return L"";
+    TVITEMW it{};
+    it.mask = TVIF_PARAM;
+    it.hItem = item;
+    if (!TreeView_GetItem(g_tree, &it)) return L"";
+    size_t i = (size_t)it.lParam;
+    return i < g_treePaths.size() ? g_treePaths[i] : L"";
+}
+
+HTREEITEM treeInsert(HTREEITEM parent, const fs::path& p, bool dir) {
+    std::wstring name = p.filename().wstring();
+    TVINSERTSTRUCTW is{};
+    is.hParent = parent;
+    is.hInsertAfter = TVI_LAST;
+    is.item.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_PARAM | TVIF_CHILDREN;
+    is.item.pszText = name.data();
+    is.item.iImage = dir ? 0 : fileIcon(p);
+    is.item.iSelectedImage = is.item.iImage;
+    is.item.cChildren = dir ? 1 : 0;
+    g_treePaths.push_back(p.wstring());
+    is.item.lParam = (LPARAM)(g_treePaths.size() - 1);
+    return TreeView_InsertItem(g_tree, &is);
+}
+
+// Mete en el árbol lo que hay en una carpeta: carpetas primero y por nombre (sin los ocultos)
+void treeFill(HTREEITEM parent, const std::wstring& dir) {
+    std::vector<std::pair<bool, fs::path>> items;
+    std::error_code ec;
+    for (auto it = fs::directory_iterator(dir, fs::directory_options::skip_permission_denied, ec); !ec && it != fs::directory_iterator(); it.increment(ec)) {
+        std::wstring n = it->path().filename().wstring();
+        if (n.empty() || n[0] == L'.') continue;
+        DWORD a = GetFileAttributesW(it->path().c_str());
+        if (a != INVALID_FILE_ATTRIBUTES && (a & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM))) continue;
+        std::error_code e2;
+        items.push_back({it->is_directory(e2), it->path()});
+    }
+    std::sort(items.begin(), items.end(), [](const auto& a, const auto& b) {
+        if (a.first != b.first) return a.first;
+        return _wcsicmp(a.second.filename().c_str(), b.second.filename().c_str()) < 0;
+    });
+    for (auto& [d, p] : items) treeInsert(parent, p, d);
+    if (items.empty() && parent != TVI_ROOT) { // carpeta vacía: sin el triángulo
+        TVITEMW it{};
+        it.mask = TVIF_CHILDREN;
+        it.hItem = parent;
+        it.cChildren = 0;
+        TreeView_SetItem(g_tree, &it);
+    }
+}
+
+HTREEITEM treeFirstChild(HTREEITEM item) { return item ? TreeView_GetChild(g_tree, item) : TreeView_GetRoot(g_tree); }
+
+void treeCollectExpanded(HTREEITEM item, std::set<std::wstring>& out) {
+    for (HTREEITEM c = treeFirstChild(item); c; c = TreeView_GetNextSibling(g_tree, c))
+        if (TreeView_GetItemState(g_tree, c, TVIS_EXPANDED) & TVIS_EXPANDED) {
+            out.insert(lowerW(treePath(c)));
+            treeCollectExpanded(c, out);
+        }
+}
+
+void treeExpandSaved(HTREEITEM item, const std::set<std::wstring>& open) {
+    for (HTREEITEM c = treeFirstChild(item); c; c = TreeView_GetNextSibling(g_tree, c))
+        if (open.count(lowerW(treePath(c)))) {
+            TreeView_Expand(g_tree, c, TVE_EXPAND);
+            treeExpandSaved(c, open);
+        }
+}
+
+// El elemento de una ruta (abriendo las carpetas que haga falta) o null si no está en la carpeta del proyecto
+HTREEITEM treeFind(const std::wstring& path) {
+    if (g_explorerRoot.empty() || path.empty()) return nullptr;
+    fs::path rel = fs::path(path).lexically_relative(g_explorerRoot);
+    if (rel.empty() || rel.native()[0] == L'.') return nullptr;
+    HTREEITEM parent = nullptr, found = nullptr;
+    for (auto part = rel.begin(); part != rel.end(); ++part) {
+        if (parent) TreeView_Expand(g_tree, parent, TVE_EXPAND);
+        found = nullptr;
+        for (HTREEITEM c = treeFirstChild(parent); c; c = TreeView_GetNextSibling(g_tree, c))
+            if (_wcsicmp(fs::path(treePath(c)).filename().c_str(), part->c_str()) == 0) { found = c; break; }
+        if (!found) return nullptr;
+        parent = found;
+    }
+    return found;
+}
+
+void treeSelectPath(const std::wstring& path) {
+    HTREEITEM it = treeFind(path);
+    if (!it) return;
+    g_treeSilent = true;
+    TreeView_SelectItem(g_tree, it);
+    TreeView_EnsureVisible(g_tree, it);
+    g_treeSilent = false;
+}
+
+void explorerRefresh() {
+    if (!g_tree) return;
+    std::set<std::wstring> open;
+    treeCollectExpanded(nullptr, open);
+    std::wstring sel = treePath(TreeView_GetSelection(g_tree));
+    SendMessageW(g_tree, WM_SETREDRAW, FALSE, 0);
+    g_treeSilent = true;
+    TreeView_DeleteAllItems(g_tree);
+    g_treePaths.clear();
+    std::error_code ec;
+    if (!g_explorerRoot.empty() && fs::is_directory(g_explorerRoot, ec)) {
+        treeFill(TVI_ROOT, g_explorerRoot);
+        treeExpandSaved(nullptr, open);
+    }
+    g_treeSilent = false;
+    if (!sel.empty()) treeSelectPath(sel);
+    else if (!g_file.empty()) treeSelectPath(g_file);
+    SendMessageW(g_tree, WM_SETREDRAW, TRUE, 0);
+    InvalidateRect(g_tree, nullptr, TRUE);
+}
+
+void explorerSetRoot(const std::wstring& dir);
+// Al abrir un archivo: si el explorador no tiene carpeta (o se abrió desde Windows), la del archivo; si no, marcarlo
+void explorerFollow(const std::wstring& file) {
+    if (!g_tree || file.empty()) return;
+    if (g_explorerRoot.empty() || g_explorerFollowNext) {
+        g_explorerFollowNext = false;
+        explorerSetRoot(fs::path(file).parent_path().wstring());
+    }
+    treeSelectPath(file);
+}
+
+void explorerSetRoot(const std::wstring& dir) {
+    g_explorerRoot = dir;
+    std::wstring name = dir.empty() ? L"(ninguna carpeta)" : fs::path(dir).filename().wstring();
+    for (auto& c : name) c = (wchar_t)towupper(c);
+    SetWindowTextW(g_treeHeader, (L"  EXPLORADOR · " + name).c_str());
+    explorerRefresh();
+}
+
+// Elegir la carpeta del proyecto
+bool chooseExplorerFolder() {
+    IFileOpenDialog* dlg = nullptr;
+    if (FAILED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dlg)))) return false;
+    DWORD opt = 0;
+    dlg->GetOptions(&opt);
+    dlg->SetOptions(opt | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+    dlg->SetTitle(L"Carpeta del proyecto para el Explorador");
+    IShellItem* start = nullptr;
+    std::wstring from = g_explorerRoot.empty() ? projectsDir() : g_explorerRoot;
+    if (!from.empty() && SUCCEEDED(SHCreateItemFromParsingName(from.c_str(), nullptr, IID_PPV_ARGS(&start)))) { dlg->SetFolder(start); start->Release(); }
+    bool ok = false;
+    if (SUCCEEDED(dlg->Show(g_wnd))) {
+        IShellItem* item = nullptr;
+        if (SUCCEEDED(dlg->GetResult(&item))) {
+            PWSTR p = nullptr;
+            if (SUCCEEDED(item->GetDisplayName(SIGDN_FILESYSPATH, &p))) {
+                explorerSetRoot(p);
+                CoTaskMemFree(p);
+                ok = true;
+            }
+            item->Release();
+        }
+    }
+    dlg->Release();
+    if (ok && !g_showExplorer) { g_showExplorer = true; setCheck(CMD_EXPLORER, true); layout(); }
+    return ok;
+}
+
+std::wstring treeTargetDir() {
+    std::wstring p = treePath(TreeView_GetSelection(g_tree));
+    std::error_code ec;
+    if (p.empty()) return g_explorerRoot;
+    return fs::is_directory(p, ec) ? p : fs::path(p).parent_path().wstring();
+}
+
+void treeNew(bool folder) {
+    if (g_explorerRoot.empty() && !chooseExplorerFolder()) return;
+    if (!g_showExplorer) { g_showExplorer = true; setCheck(CMD_EXPLORER, true); layout(); }
+    std::wstring dir = treeTargetDir();
+    std::error_code ec;
+    std::wstring path;
+    for (int i = 1; i < 1000; i++) {
+        std::wstring name = (folder ? L"carpeta" : L"nuevo") + (i > 1 ? L" " + std::to_wstring(i) : L"") + (folder ? L"" : L".hez");
+        path = (fs::path(dir) / name).wstring();
+        if (!fs::exists(path, ec)) break;
+    }
+    if (folder) fs::create_directory(path, ec);
+    else writeFileAtomic(narrow(path), "// " + narrow(fs::path(path).filename().wstring()) + "\r\nprint(\"¡Hola desde HyperEZ!\")\r\n");
+    if (ec) { MessageBoxW(g_wnd, (L"No se pudo crear:\n" + path).c_str(), L"HyperEZ Editor", MB_ICONERROR); return; }
+    explorerRefresh();
+    HTREEITEM it = treeFind(path);
+    if (!it) return;
+    g_treeSilent = true;
+    TreeView_SelectItem(g_tree, it);
+    g_treeSilent = false;
+    if (!folder) g_treeNewFile = path;
+    SetFocus(g_tree);
+    TreeView_EditLabel(g_tree, it);
+}
+
+// Un archivo o carpeta abiertos en pestañas que cambian de sitio
+void renameOpenDocs(const std::wstring& from, const std::wstring& to) {
+    storeCurrent();
+    std::wstring f = lowerW(from);
+    for (size_t i = 0; i < g_docs.size(); i++) {
+        std::wstring& p = g_docs[i].file;
+        std::wstring l = lowerW(p);
+        if (l == f) p = to;
+        else if (l.size() > f.size() && l.compare(0, f.size(), f) == 0 && (l[f.size()] == L'\\' || l[f.size()] == L'/')) p = to + p.substr(from.size());
+        else continue;
+        updateTabLabel((int)i);
+        if ((int)i == g_cur) g_file = p;
+    }
+    updateTitle();
+}
+
+void treeDelete() {
+    HTREEITEM it = TreeView_GetSelection(g_tree);
+    std::wstring p = treePath(it);
+    if (p.empty()) return;
+    std::wstring msg = L"¿Enviar «" + fs::path(p).filename().wstring() + L"» a la papelera de reciclaje?";
+    if (MessageBoxW(g_wnd, msg.c_str(), L"Eliminar", MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) != IDYES) return;
+    std::wstring from = p + L'\0';
+    SHFILEOPSTRUCTW op{};
+    op.hwnd = g_wnd;
+    op.wFunc = FO_DELETE;
+    op.pFrom = from.c_str();
+    op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT;
+    if (SHFileOperationW(&op) != 0 || op.fAnyOperationsAborted) MessageBoxW(g_wnd, (L"No se pudo eliminar:\n" + p).c_str(), L"HyperEZ Editor", MB_ICONERROR);
+    explorerRefresh();
+}
+
+void treeContextMenu(HTREEITEM item) {
+    HMENU m = CreatePopupMenu();
+    std::wstring p = treePath(item);
+    std::error_code ec;
+    bool isFile = !p.empty() && !fs::is_directory(p, ec);
+    if (isFile) {
+        AppendMenuW(m, MF_STRING, CMD_TREE_OPEN, L"&Abrir");
+        AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
+    }
+    AppendMenuW(m, MF_STRING, CMD_TREE_NEWFILE, L"Nuevo &archivo");
+    AppendMenuW(m, MF_STRING, CMD_TREE_NEWDIR, L"Nueva &carpeta");
+    if (!p.empty()) {
+        AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
+        AppendMenuW(m, MF_STRING, CMD_TREE_RENAME, L"&Renombrar\tF2");
+        AppendMenuW(m, MF_STRING, CMD_TREE_DELETE, L"&Eliminar\tSupr");
+        AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
+        AppendMenuW(m, MF_STRING, CMD_TREE_REVEAL, L"Mostrar en el E&xplorador de Windows");
+        AppendMenuW(m, MF_STRING, CMD_TREE_COPYPATH, L"Copiar la r&uta");
+    }
+    AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(m, MF_STRING, CMD_TREE_REFRESH, L"Ac&tualizar");
+    AppendMenuW(m, MF_STRING, CMD_OPENDIR, L"Abrir &otra carpeta...");
+    POINT pt;
+    GetCursorPos(&pt);
+    TrackPopupMenu(m, TPM_RIGHTBUTTON, pt.x, pt.y, 0, g_wnd, nullptr);
+    DestroyMenu(m);
+}
+
+void treeCommand(int cmd) {
+    std::wstring p = treePath(TreeView_GetSelection(g_tree));
+    switch (cmd) {
+        case CMD_TREE_OPEN: if (!p.empty()) openFile(p); break;
+        case CMD_TREE_NEWFILE: treeNew(false); break;
+        case CMD_TREE_NEWDIR: treeNew(true); break;
+        case CMD_TREE_RENAME: { HTREEITEM it = TreeView_GetSelection(g_tree); if (it) { SetFocus(g_tree); TreeView_EditLabel(g_tree, it); } break; }
+        case CMD_TREE_DELETE: treeDelete(); break;
+        case CMD_TREE_REVEAL:
+            if (!p.empty()) ShellExecuteW(g_wnd, L"open", L"explorer.exe", (L"/select,\"" + p + L"\"").c_str(), nullptr, SW_SHOWNORMAL);
+            break;
+        case CMD_TREE_COPYPATH:
+            if (!p.empty() && OpenClipboard(g_wnd)) {
+                EmptyClipboard();
+                HGLOBAL g = GlobalAlloc(GMEM_MOVEABLE, (p.size() + 1) * sizeof(wchar_t));
+                if (g) { memcpy(GlobalLock(g), p.c_str(), (p.size() + 1) * sizeof(wchar_t)); GlobalUnlock(g); SetClipboardData(CF_UNICODETEXT, g); }
+                CloseClipboard();
+            }
+            break;
+        case CMD_TREE_REFRESH: explorerRefresh(); break;
+        default: break;
+    }
+}
+
+// Notificaciones del árbol (desde WM_NOTIFY). Devuelve true si la ha atendido y pone el resultado en r.
+bool treeNotify(NMHDR* n, LRESULT& r) {
+    r = 0;
+    switch (n->code) {
+        case TVN_ITEMEXPANDINGW: {
+            auto* t = (NMTREEVIEWW*)n;
+            if (t->action == TVE_EXPAND && !TreeView_GetChild(g_tree, t->itemNew.hItem)) treeFill(t->itemNew.hItem, treePath(t->itemNew.hItem));
+            TVITEMW it{};
+            it.mask = TVIF_IMAGE | TVIF_SELECTEDIMAGE;
+            it.hItem = t->itemNew.hItem;
+            it.iImage = it.iSelectedImage = t->action == TVE_EXPAND ? 1 : 0;
+            TreeView_SetItem(g_tree, &it);
+            return true;
+        }
+        case NM_CLICK: {
+            TVHITTESTINFO ht{};
+            GetCursorPos(&ht.pt);
+            ScreenToClient(g_tree, &ht.pt);
+            HTREEITEM it = TreeView_HitTest(g_tree, &ht);
+            if (!it || !(ht.flags & (TVHT_ONITEMLABEL | TVHT_ONITEMICON))) return true;
+            std::wstring p = treePath(it);
+            std::error_code ec;
+            if (fs::is_directory(p, ec)) TreeView_Expand(g_tree, it, TVE_TOGGLE); // un clic abre o cierra la carpeta
+            else if (!p.empty()) { TreeView_SelectItem(g_tree, it); openFile(p); }
+            return true;
+        }
+        case NM_RCLICK: {
+            TVHITTESTINFO ht{};
+            GetCursorPos(&ht.pt);
+            ScreenToClient(g_tree, &ht.pt);
+            HTREEITEM it = TreeView_HitTest(g_tree, &ht);
+            g_treeSilent = true;
+            TreeView_SelectItem(g_tree, it);
+            g_treeSilent = false;
+            treeContextMenu(it);
+            r = 1;
+            return true;
+        }
+        case TVN_KEYDOWN: {
+            auto* k = (NMTVKEYDOWN*)n;
+            if (k->wVKey == VK_RETURN) treeCommand(CMD_TREE_OPEN);
+            else if (k->wVKey == VK_F2) treeCommand(CMD_TREE_RENAME);
+            else if (k->wVKey == VK_DELETE) treeCommand(CMD_TREE_DELETE);
+            else return false;
+            r = 1;
+            return true;
+        }
+        case TVN_BEGINLABELEDITW: {
+            auto* d = (NMTVDISPINFOW*)n;
+            std::wstring p = treePath(d->item.hItem);
+            std::error_code ec;
+            HWND ed = TreeView_GetEditControl(g_tree);
+            if (ed && !fs::is_directory(p, ec)) { // seleccionar el nombre sin la extensión
+                std::wstring name = fs::path(p).filename().wstring();
+                size_t dot = name.rfind(L'.');
+                SendMessageW(ed, EM_SETSEL, 0, dot == std::wstring::npos || dot == 0 ? (LPARAM)-1 : (LPARAM)dot);
+            }
+            r = FALSE;
+            return true;
+        }
+        case TVN_ENDLABELEDITW: {
+            auto* d = (NMTVDISPINFOW*)n;
+            std::wstring old = treePath(d->item.hItem);
+            std::wstring openAfter = g_treeNewFile;
+            g_treeNewFile.clear();
+            r = FALSE;
+            if (d->item.pszText && *d->item.pszText) {
+                std::wstring name = d->item.pszText;
+                while (!name.empty() && name.back() == L' ') name.pop_back();
+                if (name.find_first_of(L"\\/:*?\"<>|") != std::wstring::npos || name.empty()) {
+                    MessageBoxW(g_wnd, L"Un nombre no puede tener \\ / : * ? \" < > |", L"Renombrar", MB_ICONWARNING);
+                } else {
+                    std::wstring to = (fs::path(old).parent_path() / name).wstring();
+                    if (_wcsicmp(to.c_str(), old.c_str()) != 0 || to != old) {
+                        if (MoveFileExW(old.c_str(), to.c_str(), 0)) {
+                            renameOpenDocs(old, to);
+                            if (!openAfter.empty() && _wcsicmp(openAfter.c_str(), old.c_str()) == 0) openAfter = to;
+                        } else MessageBoxW(g_wnd, (L"No se pudo renombrar a:\n" + to).c_str(), L"Renombrar", MB_ICONERROR);
+                    }
+                }
+            }
+            PostMessageW(g_wnd, WM_APP_TREEREFRESH, 0, 0);
+            if (!openAfter.empty()) { std::wstring* p = new std::wstring(openAfter); PostMessageW(g_wnd, WM_APP_TREEREFRESH, 1, (LPARAM)p); }
+            return true;
+        }
+        default: return false;
+    }
+}
+
 // Teclas especiales dentro del editor
 LRESULT CALLBACK editProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     bool completing = IsWindowVisible(g_complete);
@@ -1231,6 +1742,18 @@ LRESULT CALLBACK editProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             else replaceSel(L"    ");
             return 0;
         }
+        if (wp == VK_BACK && !ctrl) {
+            // Retroceso entre una pareja vacía ( "|" o (|) ) borra las dos
+            CHARRANGE sel;
+            SendMessageW(h, EM_EXGETSEL, 0, (LPARAM)&sel);
+            wchar_t prev = charAt(sel.cpMin - 1), next = charAt(sel.cpMin);
+            if (sel.cpMin == sel.cpMax && prev && closerOf(prev) == next && charAt(sel.cpMin - 2) != L'\\') {
+                CHARRANGE cr{sel.cpMin - 1, sel.cpMin + 1};
+                SendMessageW(h, EM_EXSETSEL, 0, (LPARAM)&cr);
+                replaceSel(L"");
+                return 0;
+            }
+        }
         if (wp == VK_RETURN && !ctrl) {
             // Sangría automática: la misma que la línea actual, y 4 más tras una llave abierta
             CHARRANGE sel;
@@ -1242,7 +1765,16 @@ LRESULT CALLBACK editProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             for (wchar_t c : before) { if (c == L' ' || c == L'\t') indent += c; else break; }
             std::wstring trimmed = before;
             while (!trimmed.empty() && (trimmed.back() == L' ' || trimmed.back() == L'\t')) trimmed.pop_back();
-            if (!trimmed.empty() && (trimmed.back() == L'{' || trimmed.back() == L'[' || trimmed.back() == L'(')) indent += L"    ";
+            bool opens = !trimmed.empty() && (trimmed.back() == L'{' || trimmed.back() == L'[' || trimmed.back() == L'(');
+            if (opens && sel.cpMin == sel.cpMax && charAt(sel.cpMin) == closerOf(trimmed.back())) {
+                // entre {} : el cursor en una línea nueva con sangría y el cierre debajo
+                replaceSel(L"\r" + indent + L"    \r" + indent);
+                LONG caret = sel.cpMin + 1 + (LONG)indent.size() + 4;
+                CHARRANGE cr{caret, caret};
+                SendMessageW(h, EM_EXSETSEL, 0, (LPARAM)&cr);
+                return 0;
+            }
+            if (opens) indent += L"    ";
             replaceSel(L"\r" + indent);
             return 0;
         }
@@ -1256,6 +1788,49 @@ LRESULT CALLBACK editProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     }
     if (msg == WM_CHAR) {
         if (wp == L' ' && GetKeyState(VK_CONTROL) < 0) return 0; // Ctrl+Espacio ya gestionado
+        if (wp == L'(' || wp == L'[' || wp == L'{' || wp == L'"' || wp == L'\'' || wp == L')' || wp == L']' || wp == L'}') {
+            CHARRANGE sel;
+            SendMessageW(h, EM_EXGETSEL, 0, (LPARAM)&sel);
+            wchar_t c = (wchar_t)wp, next = charAt(sel.cpMax), prev = charAt(sel.cpMin - 1);
+            // saltar el cierre que ya está escrito
+            if ((c == L')' || c == L']' || c == L'}' || c == L'"' || c == L'\'') && sel.cpMin == sel.cpMax && next == c) {
+                bool skip = true;
+                if (c == L'"' || c == L'\'') { // la comilla, solo si cierra un texto abierto en esta línea
+                    LONG line = (LONG)SendMessageW(h, EM_EXLINEFROMCHAR, 0, sel.cpMin);
+                    LONG ls = (LONG)SendMessageW(h, EM_LINEINDEX, line, 0);
+                    std::wstring before = lineText(line).substr(0, (size_t)std::max(0L, sel.cpMin - ls));
+                    skip = std::count(before.begin(), before.end(), c) % 2 == 1;
+                }
+                if (skip) {
+                    CHARRANGE cr{sel.cpMin + 1, sel.cpMin + 1};
+                    SendMessageW(h, EM_EXSETSEL, 0, (LPARAM)&cr);
+                    return 0;
+                }
+            }
+            wchar_t close = closerOf(c);
+            if (close && (c != L'}' && c != L')' && c != L']')) {
+                if (sel.cpMin != sel.cpMax) { // rodear la selección
+                    std::wstring text((size_t)(sel.cpMax - sel.cpMin) + 1, L'\0');
+                    LRESULT n = SendMessageW(h, EM_GETSELTEXT, 0, (LPARAM)text.data());
+                    text.resize((size_t)n);
+                    replaceSel(std::wstring(1, c) + text + close);
+                    CHARRANGE cr{sel.cpMin + 1, sel.cpMin + 1 + (LONG)text.size()};
+                    SendMessageW(h, EM_EXSETSEL, 0, (LPARAM)&cr);
+                    return 0;
+                }
+                bool pair;
+                if (c == L'"' || c == L'\'') pair = !isWordChar(prev) && prev != L'\\' && !isWordChar(next);
+                else pair = !next || next == L'\r' || next == L' ' || next == L'\t' || next == L')' || next == L']' || next == L'}' ||
+                            next == L',' || next == L';' || next == L':';
+                if (pair) {
+                    replaceSel(std::wstring(1, c) + close);
+                    CHARRANGE cr{sel.cpMin + 1, sel.cpMin + 1};
+                    SendMessageW(h, EM_EXSETSEL, 0, (LPARAM)&cr);
+                    if (c == L'(') showCallSignature();
+                    return 0;
+                }
+            }
+        }
         if (wp == L'}') {
             // al cerrar un bloque en una línea con solo espacios, quitar un nivel de sangría
             CHARRANGE sel;
@@ -1422,6 +1997,7 @@ void updateTabLabel(int i) {
     SendMessageW(g_tabs, TCM_SETITEMW, (WPARAM)i, (LPARAM)&it);
 }
 
+void treeSelectPath(const std::wstring& path);
 void activate(int i) {
     if (i < 0 || i >= (int)g_docs.size()) return;
     if (i != g_cur) {
@@ -1445,6 +2021,7 @@ void activate(int i) {
     showProblems();
     updateTitle();
     updateStatus();
+    if (g_tree && !g_file.empty()) treeSelectPath(g_file);
     SetFocus(g_edit);
 }
 
@@ -1576,7 +2153,6 @@ void stopRun() {
 bool ensureSaved();
 
 void runInPanel() {
-    if (!ensureSaved()) return;
     checkProgram();
     if (std::any_of(g_problems.begin(), g_problems.end(), [](const Problem& p) { return p.error; })) {
         setBottomPage(0);
@@ -1597,7 +2173,9 @@ void runInPanel() {
     setBottomPage(1);
     SetWindowTextW(g_output, L"");
     g_outCarry.clear();
-    appendOutput(L"▶ " + docName(g_file) + L"   (sin teclado: para juegos e input() usa F5)\r\n\r\n");
+    std::wstring runCwd, runArgs = runTarget(runCwd);
+    if (runArgs.empty()) { appendOutput(L"No se pudo preparar el programa para ejecutarlo\r\n"); return; }
+    appendOutput(L"▶ " + docName(g_file) + (g_dirty || g_file.empty() ? L"   (sin guardar)" : L"") + L"   (sin teclado: para juegos e input() usa F5)\r\n\r\n");
     SECURITY_ATTRIBUTES sa{sizeof sa, nullptr, TRUE};
     HANDLE rd = nullptr, wr = nullptr;
     if (!CreatePipe(&rd, &wr, &sa, 0)) return;
@@ -1609,9 +2187,9 @@ void runInPanel() {
     si.hStdOutput = wr;
     si.hStdError = wr;
     PROCESS_INFORMATION pi{};
-    std::wstring cmd = L"\"" + exe + L"\" run \"" + g_file + L"\"";
+    std::wstring cmd = L"\"" + exe + L"\" run " + runArgs;
     std::vector<wchar_t> env = environmentWithNoColor();
-    std::wstring cwd = fs::path(g_file).parent_path().wstring();
+    std::wstring cwd = runCwd;
     BOOL ok = CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, TRUE, CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT, env.data(), cwd.c_str(), &si, &pi);
     CloseHandle(wr);
     if (nul != INVALID_HANDLE_VALUE) CloseHandle(nul);
@@ -1803,6 +2381,7 @@ HMENU buildMenu() {
     AppendMenuW(file, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(file, MF_STRING, CMD_SAVE, L"&Guardar\tCtrl+S");
     AppendMenuW(file, MF_STRING, CMD_SAVEAS, L"Guardar &como...\tCtrl+Mayús+S");
+    AppendMenuW(file, MF_STRING, CMD_OPENDIR, L"Abrir carpeta en el E&xplorador...");
     AppendMenuW(file, MF_STRING, CMD_OPEN_FOLDER, L"Abrir la &carpeta del archivo");
     AppendMenuW(file, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(file, MF_STRING, CMD_CLOSETAB, L"Ce&rrar la pestaña\tCtrl+W");
@@ -1852,6 +2431,7 @@ HMENU buildMenu() {
     AppendMenuW(view, MF_STRING, CMD_NEXTTAB, L"Pestaña &siguiente\tCtrl+Tab");
     AppendMenuW(view, MF_STRING, CMD_PREVTAB, L"Pestaña &anterior\tCtrl+Mayús+Tab");
     AppendMenuW(view, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(view, MF_STRING | (g_showExplorer ? MF_CHECKED : 0), CMD_EXPLORER, L"E&xplorador\tCtrl+Mayús+E");
     AppendMenuW(view, MF_STRING | (g_showToolbar ? MF_CHECKED : 0), CMD_TOOLBAR, L"&Barra de herramientas");
     AppendMenuW(view, MF_STRING | (g_showStatus ? MF_CHECKED : 0), CMD_STATUSBAR, L"Barra de &estado");
     AppendMenuW(view, MF_STRING | (g_showNumbers ? MF_CHECKED : 0), CMD_LINENUMBERS, L"&Números de línea");
@@ -1978,6 +2558,15 @@ void onCommand(int id) {
         case CMD_TOOLBAR: g_showToolbar = !g_showToolbar; setCheck(CMD_TOOLBAR, g_showToolbar); layout(); break;
         case CMD_STATUSBAR: g_showStatus = !g_showStatus; setCheck(CMD_STATUSBAR, g_showStatus); layout(); break;
         case CMD_PANEL: g_showPanel = !g_showPanel; setCheck(CMD_PANEL, g_showPanel); layout(); break;
+        case CMD_EXPLORER:
+            g_showExplorer = !g_showExplorer;
+            setCheck(CMD_EXPLORER, g_showExplorer);
+            if (g_showExplorer && g_explorerRoot.empty()) explorerSetRoot(!g_file.empty() ? fs::path(g_file).parent_path().wstring() : projectsDir());
+            layout();
+            break;
+        case CMD_OPENDIR: chooseExplorerFolder(); break;
+        case CMD_TREE_OPEN: case CMD_TREE_NEWFILE: case CMD_TREE_NEWDIR: case CMD_TREE_RENAME: case CMD_TREE_DELETE:
+        case CMD_TREE_REVEAL: case CMD_TREE_COPYPATH: case CMD_TREE_REFRESH: treeCommand(id); break;
         case CMD_LINENUMBERS: g_showNumbers = !g_showNumbers; setCheck(CMD_LINENUMBERS, g_showNumbers); layout(); break;
         case CMD_HELP_GUIDE: case ID_TB_HELP: openDoc(L"docs-html\\GUIA.html", L"docs\\GUIA.md"); break;
         case CMD_HELP_DOCS: openDoc(L"docs-html\\index.html", L"docs\\README.md"); break;
@@ -2071,6 +2660,23 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
                                      (HMENU)(INT_PTR)ID_TABS, g_inst, nullptr);
             SendMessageW(g_tabs, WM_SETFONT, (WPARAM)g_uiFont, TRUE);
             g_tabsProc = (WNDPROC)SetWindowLongPtrW(g_tabs, GWLP_WNDPROC, (LONG_PTR)tabsProc);
+            // Explorador: título y árbol de carpetas
+            g_treeHeader = CreateWindowExW(0, L"STATIC", L"  EXPLORADOR", WS_CHILD | WS_VISIBLE | SS_LEFT | SS_CENTERIMAGE, 0, 0, 10, 10, h,
+                                           (HMENU)(INT_PTR)ID_TREEHEADER, g_inst, nullptr);
+            {
+                LOGFONTW lf{};
+                GetObjectW(g_uiFont, sizeof lf, &lf);
+                lf.lfWeight = FW_SEMIBOLD;
+                SendMessageW(g_treeHeader, WM_SETFONT, (WPARAM)CreateFontIndirectW(&lf), TRUE);
+            }
+            g_tree = CreateWindowExW(0, WC_TREEVIEWW, L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP | TVS_HASBUTTONS | TVS_LINESATROOT |
+                                     TVS_SHOWSELALWAYS | TVS_EDITLABELS | TVS_TRACKSELECT, 0, 0, 10, 10, h, (HMENU)(INT_PTR)ID_TREE, g_inst, nullptr);
+            SetWindowTheme(g_tree, L"Explorer", nullptr); // el aspecto del Explorador de Windows
+            SendMessageW(g_tree, WM_SETFONT, (WPARAM)g_uiFont, TRUE);
+            TreeView_SetExtendedStyle(g_tree, TVS_EX_DOUBLEBUFFER | TVS_EX_FADEINOUTEXPANDOS, TVS_EX_DOUBLEBUFFER | TVS_EX_FADEINOUTEXPANDOS);
+            TreeView_SetIndent(g_tree, S(12));
+            initTreeImages();
+            explorerSetRoot(g_explorerRoot.empty() ? projectsDir() : g_explorerRoot);
             WNDCLASSW gc{};
             gc.lpfnWndProc = gutterProc;
             gc.hInstance = g_inst;
@@ -2116,14 +2722,24 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_SETFOCUS: SetFocus(g_edit); return 0;
         // Separador entre el código y el panel de abajo: se arrastra para cambiar el alto del panel
         case WM_SETCURSOR:
-            if ((HWND)wp == h && LOWORD(lp) == HTCLIENT && g_splitTop >= 0) {
+            if ((HWND)wp == h && LOWORD(lp) == HTCLIENT) {
                 POINT pt;
                 GetCursorPos(&pt);
                 ScreenToClient(h, &pt);
-                if (pt.y >= g_splitTop && pt.y < g_splitBottom) { SetCursor(LoadCursorW(nullptr, IDC_SIZENS)); return TRUE; }
+                if (g_vsplitLeft >= 0 && pt.x >= g_vsplitLeft && pt.x < g_vsplitRight && pt.y >= g_vsplitTop && pt.y < g_vsplitBottom) {
+                    SetCursor(LoadCursorW(nullptr, IDC_SIZEWE));
+                    return TRUE;
+                }
+                if (g_splitTop >= 0 && pt.y >= g_splitTop && pt.y < g_splitBottom) { SetCursor(LoadCursorW(nullptr, IDC_SIZENS)); return TRUE; }
             }
             break;
         case WM_LBUTTONDOWN:
+            if (g_vsplitLeft >= 0 && GET_X_LPARAM(lp) >= g_vsplitLeft && GET_X_LPARAM(lp) < g_vsplitRight &&
+                GET_Y_LPARAM(lp) >= g_vsplitTop && GET_Y_LPARAM(lp) < g_vsplitBottom) {
+                g_vsplitDrag = true;
+                SetCapture(h);
+                return 0;
+            }
             if (g_splitTop >= 0 && GET_Y_LPARAM(lp) >= g_splitTop && GET_Y_LPARAM(lp) < g_splitBottom) {
                 g_splitDrag = true;
                 SetCapture(h);
@@ -2131,6 +2747,12 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             }
             break;
         case WM_MOUSEMOVE:
+            if (g_vsplitDrag) {
+                g_explorerWidth = std::clamp(MulDiv(GET_X_LPARAM(lp) - S(2), 96, g_dpi), 120, 800);
+                layout();
+                UpdateWindow(h);
+                return 0;
+            }
             if (g_splitDrag) {
                 RECT rc;
                 GetClientRect(h, &rc);
@@ -2144,9 +2766,14 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             }
             break;
         case WM_LBUTTONUP:
-            if (g_splitDrag) { ReleaseCapture(); return 0; }
+            if (g_splitDrag || g_vsplitDrag) { ReleaseCapture(); return 0; }
             break;
         case WM_CAPTURECHANGED:
+            if (g_vsplitDrag) {
+                g_vsplitDrag = false;
+                if (g_vsplitLeft >= 0) g_explorerWidth = std::clamp(MulDiv(g_vsplitLeft, 96, g_dpi), 120, 800);
+                return 0;
+            }
             if (g_splitDrag) {
                 g_splitDrag = false;
                 // si el separador se soltó más allá del límite, guardar el alto que se ve de verdad
@@ -2196,6 +2823,11 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         }
         case WM_NOTIFY: {
             auto* n = (NMHDR*)lp;
+            if (n->hwndFrom == g_tree) {
+                LRESULT r = 0;
+                if (treeNotify(n, r)) return r;
+                break;
+            }
             if (n->hwndFrom == g_edit && n->code == EN_SELCHANGE && !g_formatting) updateStatus();
             if (n->hwndFrom == g_tabs && n->code == TCN_SELCHANGE) activate((int)SendMessageW(g_tabs, TCM_GETCURSEL, 0, 0));
             if (n->hwndFrom == g_bottomTabs && n->code == TCN_SELCHANGE) {
@@ -2204,7 +2836,19 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             }
             return 0;
         }
+        case WM_APP_TREEREFRESH:
+            if (wp == 1) { auto* p = (std::wstring*)lp; openFile(*p); delete p; }
+            else explorerRefresh();
+            return 0;
+        case WM_ACTIVATEAPP:
+            if (wp && g_tree && g_showExplorer) explorerRefresh(); // al volver a la ventana: los cambios hechos fuera
+            break;
         case WM_CTLCOLORSTATIC:
+            if ((HWND)lp == g_treeHeader) {
+                SetBkColor((HDC)wp, GetSysColor(COLOR_BTNFACE));
+                SetTextColor((HDC)wp, RGB(80, 86, 96));
+                return (LRESULT)GetSysColorBrush(COLOR_BTNFACE);
+            }
             if ((HWND)lp == g_output) { // la salida, en blanco como el editor aunque sea de solo lectura
                 SetBkColor((HDC)wp, RGB(255, 255, 255));
                 SetTextColor((HDC)wp, RGB(31, 35, 40));
@@ -2241,6 +2885,7 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         }
         case WM_DESTROY:
             stopRun();
+            cleanRunTemps();
             for (auto& d : g_docs) if (d.tom) d.tom->Release();
             g_docs.clear();
             g_doc = nullptr;
@@ -2256,7 +2901,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int show) {
     g_inst = inst;
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     OleInitialize(nullptr);
-    INITCOMMONCONTROLSEX icc{sizeof icc, ICC_BAR_CLASSES | ICC_STANDARD_CLASSES | ICC_TAB_CLASSES};
+    INITCOMMONCONTROLSEX icc{sizeof icc, ICC_BAR_CLASSES | ICC_STANDARD_CLASSES | ICC_TAB_CLASSES | ICC_TREEVIEW_CLASSES};
     InitCommonControlsEx(&icc);
     LoadLibraryW(L"Msftedit.dll");
     HDC screen = GetDC(nullptr);
@@ -2294,7 +2939,11 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int show) {
     LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     bool opened = false;
     for (int i = 1; i < argc; i++)
-        if (fs::exists(argv[i])) { openFile(argv[i]); opened = true; }
+        if (fs::exists(argv[i])) {
+            if (!opened) g_explorerFollowNext = true; // abierto desde Windows: el explorador enseña su carpeta
+            openFile(argv[i]);
+            opened = true;
+        }
     if (!opened) { // primera vez: un programa de bienvenida
         setText(kWelcome);
         LONG end = (LONG)editorText().size();
@@ -2315,7 +2964,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int show) {
         {FCONTROL | FVIRTKEY, '0', CMD_ZOOMRESET}, {FCONTROL | FVIRTKEY, 'Y', CMD_REDO},
         {FCONTROL | FVIRTKEY, 'W', CMD_CLOSETAB}, {FCONTROL | FVIRTKEY, VK_TAB, CMD_NEXTTAB}, {FCONTROL | FSHIFT | FVIRTKEY, VK_TAB, CMD_PREVTAB},
         {FCONTROL | FVIRTKEY, 'P', CMD_PRINT}, {FSHIFT | FVIRTKEY, VK_F5, CMD_RUNPANEL}, {FCONTROL | FVIRTKEY, VK_CANCEL, CMD_STOP},
-        {FCONTROL | FVIRTKEY, VK_PAUSE, CMD_STOP},
+        {FCONTROL | FVIRTKEY, VK_PAUSE, CMD_STOP}, {FCONTROL | FSHIFT | FVIRTKEY, 'E', CMD_EXPLORER},
     };
     HACCEL accel = CreateAcceleratorTableW(keys, (int)std::size(keys));
     MSG m;

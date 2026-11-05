@@ -53,6 +53,7 @@ static void printHelp() {
     std::printf("\n");
     section("Opciones de run");
     row("--pause", "espera una tecla al terminar (doble clic, VS Code); también en check y test");
+    row("--as <ruta>", "ejecuta el archivo como si estuviera en <ruta> (los editores, para ejecutar sin guardar)");
     row("--", "lo que sigue se pasa al programa aunque empiece por -");
     std::printf("\n%sDocumentación: %s%s%s\n\n", G, HYPEREZ_REPO_URL "/tree/main/docs", R, "");
 }
@@ -196,14 +197,19 @@ static void waitForKey() {
 #endif
 }
 
-static int cmdRun(const std::string& file, const std::vector<std::string>& args, bool pause) {
+// asPath: si no está vacío, el código de 'file' se ejecuta como si estuviera en asPath (las importaciones,
+// System.scriptDir y los mensajes de error usan asPath). Lo usan los editores para ejecutar sin guardar.
+static int cmdRun(const std::string& file, const std::vector<std::string>& args, bool pause, const std::string& asPath = "") {
     int code = 0;
     {
         VM vm;
         setupVM(vm);
-        vm.projectRoot = pathDir(pathAbsolute(file));
+        vm.projectRoot = pathDir(pathAbsolute(asPath.empty() ? file : asPath));
         vm.scriptArgs = args;
-        ModuleUnit* unit = vm.compileFile(file);
+        ModuleUnit* unit = nullptr;
+        std::string source;
+        if (!asPath.empty() && readFile(file, source)) unit = vm.compileSource(pathAbsolute(asPath), source, true);
+        else unit = vm.compileFile(file);
         if (vm.unitHasErrors(unit)) {
             vm.printDiagnostics(unit, stderr, true);
             std::fprintf(stderr, "%sNo se puede ejecutar: corrige los errores de arriba.%s\n", color::red(), color::reset());
@@ -455,13 +461,15 @@ int main(int argc, char** argv) {
     if (cmd == "run" || isSourceFile(cmd)) {
         if (cmd != "run") rest.insert(rest.begin(), cmd);
         bool pause = false;
-        std::string file;
+        std::string file, asPath;
         std::vector<std::string> progArgs;
         bool passthrough = false;
-        for (auto& a : rest) {
+        for (size_t i = 0; i < rest.size(); i++) {
+            const std::string& a = rest[i];
             if (passthrough) { progArgs.push_back(a); continue; }
             if (a == "--") { passthrough = true; continue; }
             if (a == "--pause" && file.empty()) { pause = true; continue; }
+            if (a == "--as" && file.empty() && i + 1 < rest.size()) { asPath = rest[++i]; continue; }
             if (file.empty()) { file = a; continue; }
             progArgs.push_back(a);
         }
@@ -475,7 +483,7 @@ int main(int argc, char** argv) {
             if (pause) waitForKey();
             return 1;
         }
-        return cmdRun(file, progArgs, pause);
+        return cmdRun(file, progArgs, pause, asPath);
     }
     if (cmd == "repl") return runRepl();
     if (cmd == "watch") {

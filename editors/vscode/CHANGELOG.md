@@ -1,5 +1,11 @@
 # Cambios
 
+## 0.8.2
+
+- El identificador de la extensión es ahora **`hyperez.hyperezprogramminglanguagevscodeextension`**. El instalador de HyperEZ quita las anteriores (`hyperez.hyperez` y `hyperez.hyperezprogramminglanguage`).
+- **Ejecutar sin guardar**: F5 en un archivo sin título lo ejecuta tal cual, sin pedir dónde guardarlo; con `hyperez.run.saveBeforeRun` desactivado, también los archivos con cambios (necesita HyperEZ 0.8.2).
+- HyperEZ también se puede usar sin instalar nada en el [editor del navegador](https://cuevacaravacaadrian.github.io/HyperEZ/editor/index.html).
+
 ## 0.8.1
 
 - **Nuevo identificador para el Marketplace: `hyperez.hyperezprogramminglanguage`.** Si tenías la versión anterior (`hyperez.hyperez`, la del instalador), desinstálala para no tener dos; el instalador de HyperEZ 0.8.1 ya lo hace solo.

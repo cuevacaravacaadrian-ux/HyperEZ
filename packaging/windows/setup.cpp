@@ -264,11 +264,11 @@ static std::wstring vsixPath(const std::wstring& dir) {
 
 // <publisher>.<name> de editors/vscode/package.json (lo pone CMake)
 #ifndef HZ_VSCODE_EXTENSION_ID
-#define HZ_VSCODE_EXTENSION_ID "hyperez.hyperezprogramminglanguage"
+#define HZ_VSCODE_EXTENSION_ID "hyperez.hyperezprogramminglanguagevscodeextension"
 #endif
 static const wchar_t* const kVSCodeExtension = L"" HZ_VSCODE_EXTENSION_ID;
-// Identificadores que tuvo antes la extensión (hasta la 0.8.0): se quitan para que no haya dos
-static const wchar_t* const kOldVSCodeExtensions[] = {L"hyperez.hyperez"};
+// Identificadores que tuvo antes la extensión (0.8.0 y 0.8.1): se quitan para que no haya dos
+static const wchar_t* const kOldVSCodeExtensions[] = {L"hyperez.hyperez", L"hyperez.hyperezprogramminglanguage"};
 
 static void uninstallVSCodeExtensionId(const std::wstring& cli, const std::wstring& id) {
     std::wstring cmd = cmdExe() + L" /d /c \"\"" + cli + L"\" --uninstall-extension " + id;

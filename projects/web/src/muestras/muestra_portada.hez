@@ -1,0 +1,14 @@
+// Programa en español: clases, listas y textos con formato
+class Jugador {
+    var nombre: text
+    var puntos = 0
+    constructor(nombre: text) { this.nombre = nombre }
+}
+
+var equipo = [Jugador("Ana"), Jugador("Luis"), Jugador("Sara")]
+foreach i, j in equipo { j.puntos = (i + 1) * 120 }
+
+var mejores = [j for j in equipo if j.puntos >= 200]
+foreach j in mejores {
+    print("🏆 ${j.nombre:<6} ${j.puntos:>5} puntos")
+}

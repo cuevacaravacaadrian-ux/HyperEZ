@@ -31,11 +31,11 @@ npx vsce publish                compila y publica la versión de package.json
 
 ```text
 npx ovsx create-namespace hyperez -p <token de open-vsx.org>
-npx ovsx publish hyperez-0.8.1.vsix -p <token>
+npx ovsx publish hyperez-0.8.2.vsix -p <token>
 ```
 
 ## Antes de publicar
 
-- Cambia `"publisher"` en `package.json` si tu ID no es `hyperez`. El identificador de la extensión es `<publisher>.<name>`: ahora `hyperez.hyperezprogramminglanguage` (el `name` `hyperez` ya estaba cogido en el Marketplace). El instalador de Windows lo lee de `package.json` y quita la extensión antigua `hyperez.hyperez` para que no haya dos.
+- Cambia `"publisher"` en `package.json` si tu ID no es `hyperez`. El identificador de la extensión es `<publisher>.<name>`: ahora `hyperez.hyperezprogramminglanguagevscodeextension`. El instalador de Windows lo lee de `package.json` y quita las extensiones con los nombres anteriores (`hyperez.hyperez` y `hyperez.hyperezprogramminglanguage`) para que no haya dos.
 - Las imágenes y enlaces del README deben ser accesibles públicamente (el repositorio de GitHub lo es): si algún día pasa a ser privado, los enlaces a él no se podrán abrir desde el Marketplace.
 - Comprueba el paquete: `npx vsce ls` lista los archivos que incluye.

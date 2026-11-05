@@ -1,0 +1,25 @@
+<section class="titular">
+  <div class="envoltura">
+    <h1>Versiones</h1>
+    <p>Todo lo que ha cambiado en HyperEZ, versión a versión. El formato sigue <a href="https://keepachangelog.com/es-ES/1.1.0/" style="color:#9fe8a6">Keep a Changelog</a>.</p>
+  </div>
+</section>
+<div class="envoltura contenido">
+{{#each versiones}}
+  <div class="version" id="v{{numero}}">
+    <div class="cuando">
+      <b>{{numero}}</b><span>{{fecha}}</span>
+{{#if ultima}}
+      <span class="ultima">La última</span>
+{{/if}}
+{{#if publicada}}
+      <a href="https://github.com/cuevacaravacaadrian/HyperEZ/releases/tag/v{{numero}}">Descargas de esta versión</a>
+{{/if}}
+{{#if etiqueta}}
+      <a href="https://github.com/cuevacaravacaadrian/HyperEZ/tree/v{{numero}}">El código de la {{numero}}</a>
+{{/if}}
+    </div>
+    <div class="prosa">{{{html}}}</div>
+  </div>
+{{/each}}
+</div>

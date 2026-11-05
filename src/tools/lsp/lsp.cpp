@@ -52,6 +52,7 @@ public:
     }
     void write(const json& msg) {
         std::string body = msg.dump(-1, ' ', false, json::error_handler_t::replace);
+        if (outbox) { outbox->push_back(body); return; } // en memoria (editor web)
         std::string header = "Content-Length: " + std::to_string(body.size()) + "\r\n\r\n";
         writeRaw(header);
         writeRaw(body);
@@ -68,6 +69,8 @@ public:
         return poll(&p, 1, 0) > 0;
 #endif
     }
+
+    std::vector<std::string>* outbox = nullptr; // si no es nulo, los mensajes van aquí en lugar de a stdout
 
 private:
     std::string buf;
@@ -290,6 +293,8 @@ struct Member {
 class Server {
 public:
     int run();
+    // Un mensaje JSON-RPC (texto) → las respuestas y notificaciones que produce, como lista JSON (texto)
+    std::string handleText(const std::string& text);
 
 private:
     Transport io;
@@ -1016,6 +1021,18 @@ void Server::handle(const json& msg) {
     }
 }
 
+std::string Server::handleText(const std::string& text) {
+    std::vector<std::string> out;
+    io.outbox = &out;
+    json msg = json::parse(text, nullptr, false);
+    if (msg.is_object()) handle(msg);
+    for (auto& [u, d] : docs) if (d.dirty) ensure(d); // los diagnósticos, al momento
+    io.outbox = nullptr;
+    std::string r = "[";
+    for (size_t i = 0; i < out.size(); i++) r += (i ? "," : "") + out[i];
+    return r + "]";
+}
+
 int Server::run() {
     for (;;) {
         // Analizar los documentos pendientes cuando no llegan más mensajes
@@ -1033,6 +1050,11 @@ int Server::run() {
 int runLanguageServer() {
     Server s;
     return s.run();
+}
+
+std::string languageServerMessage(const std::string& message) {
+    static Server* s = new Server(); // vive mientras dure la página
+    return s->handleText(message);
 }
 
 } // namespace hz

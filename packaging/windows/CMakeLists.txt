@@ -13,7 +13,7 @@ set(HZ_PAYLOAD ${CMAKE_BINARY_DIR}/payload.bin)
 set(HZ_SRC ${CMAKE_SOURCE_DIR})
 file(GLOB_RECURSE HZ_STAGE_INPUTS CONFIGURE_DEPENDS
   ${CMAKE_SOURCE_DIR}/examples/* ${CMAKE_SOURCE_DIR}/docs/*.md ${CMAKE_SOURCE_DIR}/docs/img/* ${CMAKE_SOURCE_DIR}/editors/vscode/*.vsix
-  ${CMAKE_SOURCE_DIR}/tools/docs_html.hz ${CMAKE_SOURCE_DIR}/src/lib/*.hz ${CMAKE_SOURCE_DIR}/editors/README.md)
+  ${CMAKE_SOURCE_DIR}/tools/docs_html.hz ${CMAKE_SOURCE_DIR}/tools/docs_menu.hz ${CMAKE_SOURCE_DIR}/src/lib/*.hz ${CMAKE_SOURCE_DIR}/editors/README.md)
 
 # HyperEZ Editor va en el paquete si se construye (opción HYPEREZ_EDITOR)
 set(HZ_EDITOR_ARG "")

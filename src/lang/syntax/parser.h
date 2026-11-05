@@ -51,6 +51,7 @@ private:
     StmtP whileStmt();
     StmtP doWhileStmt();
     bool inIsType = false; // leyendo el tipo de "x is Tipo"
+    size_t noLambdaLevel = (size_t)-1; // nivel de nlStack del patrón o la guarda de un match (sin lambdas sueltas)
     StmtP forStmt();
     StmtP repeatStmt();
     StmtP returnStmt();

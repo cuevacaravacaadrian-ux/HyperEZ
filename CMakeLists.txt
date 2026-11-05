@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 # macOS: std::to_chars con decimales necesita macOS 13.3 o posterior
 set(CMAKE_OSX_DEPLOYMENT_TARGET "13.3" CACHE STRING "Versión mínima de macOS")
-project(HyperEZ VERSION 0.8.1 LANGUAGES C CXX)
+project(HyperEZ VERSION 0.8.2 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -47,6 +47,22 @@ add_custom_command(OUTPUT ${HZ_FONT_CPP}
 
 add_library(hzlang STATIC ${HZ_CORE} ${HZ_LANG} ${HZ_EMBED_CPP} ${HZ_FONT_CPP})
 target_include_directories(hzlang PUBLIC src third_party)
+
+if(EMSCRIPTEN)
+  # HyperEZ en el navegador (projects/web): el lenguaje, el servidor de lenguaje y una API para JavaScript.
+  #   emcmake cmake -S . -B build-web -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build-web
+  # Resultado: build-web/hyperez.js y hyperez.wasm (los usa projects/web/src/editor)
+  target_compile_options(hzlang PRIVATE -fwasm-exceptions -Wall -Wno-unused-parameter -Wno-sign-compare)
+  add_executable(hyperez-web src/wasm/web_api.cpp src/tools/lsp/lsp.cpp)
+  target_compile_options(hyperez-web PRIVATE -fwasm-exceptions)
+  target_link_libraries(hyperez-web PRIVATE hzlang)
+  target_link_options(hyperez-web PRIVATE -fwasm-exceptions --no-entry -sMODULARIZE=1 -sEXPORT_NAME=createHyperEZ
+    -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=8388608 -sEXIT_RUNTIME=0
+    "-sEXPORTED_FUNCTIONS=['_hz_run','_hz_lsp','_hz_format','_hz_version','_malloc','_free']"
+    "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','FS','UTF8ToString','ENV']")
+  set_target_properties(hyperez-web PROPERTIES OUTPUT_NAME hyperez SUFFIX ".js")
+  return()
+endif()
 
 # ---------------------------------------------------------------------------
 # Herramienta hyper (CLI, consola interactiva, watch, servidor de lenguaje)
@@ -141,7 +157,7 @@ if(WIN32 AND HYPEREZ_EDITOR)
   add_executable(hyperez-editor WIN32 src/editor/editor.cpp packaging/windows/editor.rc)
   set_source_files_properties(packaging/windows/editor.rc PROPERTIES OBJECT_DEPENDS
     "${CMAKE_SOURCE_DIR}/packaging/windows/editor.manifest;${CMAKE_SOURCE_DIR}/src/core/version.h;${CMAKE_SOURCE_DIR}/assets/icons/hyperez.ico")
-  target_link_libraries(hyperez-editor PRIVATE hzlang comctl32 comdlg32 shell32 ole32 oleaut32 uuid)
+  target_link_libraries(hyperez-editor PRIVATE hzlang comctl32 comdlg32 shell32 ole32 oleaut32 uuid uxtheme)
   if(MSVC)
     target_compile_options(hyperez-editor PRIVATE /utf-8 /W3)
   else()

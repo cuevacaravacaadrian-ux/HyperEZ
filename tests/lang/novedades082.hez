@@ -1,0 +1,29 @@
+// Arreglos de la 0.8.2
+
+function clasificar(n: number, limite: number): text {
+    return match n {
+        _ if n < limite => "menor",       // antes "limite => ..." se leía como una función
+        limite => "igual",                // un nombre como patrón
+        _ if (n > limite * 2) => "doble", // la guarda entre paréntesis
+        _ => "mayor",
+    }
+}
+
+test("match: guardas y patrones que terminan en un nombre", () => {
+    assertEqual(clasificar(3, 5), "menor")
+    assertEqual(clasificar(5, 5), "igual")
+    assertEqual(clasificar(11, 5), "doble")
+    assertEqual(clasificar(7, 5), "mayor")
+})
+
+test("match: las lambdas dentro de la guarda siguen funcionando", () => {
+    var lista = [1, 2, 3]
+    var r = match 0 {
+        _ if lista.any(x => x > 2) => "sí",
+        _ => "no",
+    }
+    assertEqual(r, "sí")
+    var doble = x => x * 2
+    assertEqual(doble(21), 42)
+    assertEqual([1, 2].map((a) => a + 1), [2, 3])
+})

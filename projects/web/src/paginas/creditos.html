@@ -1,0 +1,38 @@
+<section class="titular">
+  <div class="envoltura">
+    <h1>Créditos y licencias</h1>
+    <p>Quién hace HyperEZ, con qué está hecho y las licencias de todo lo que incluye.</p>
+  </div>
+</section>
+<div class="envoltura contenido prosa">
+  <h2>Autor</h2>
+  <div class="persona">
+    <img src="img/hyperez-256.png" alt="">
+    <div>
+      <h3>Adrián Cueva Caravaca</h3>
+      <p>Creador de HyperEZ: el lenguaje, su compilador y máquina virtual, la biblioteca, HyperEZ Editor, la extensión de VS Code, el instalador y esta web.</p>
+      <p><a href="https://github.com/cuevacaravacaadrian">github.com/cuevacaravacaadrian</a> · <a href="https://github.com/cuevacaravacaadrian/HyperEZ">El proyecto en GitHub</a></p>
+    </div>
+  </div>
+
+  <h2>Licencia de HyperEZ</h2>
+  <p>HyperEZ es software libre con la <strong>licencia MIT</strong>: puedes usarlo, copiarlo, modificarlo y distribuirlo, también en proyectos comerciales, manteniendo el aviso de copyright.</p>
+  <pre>{{licencia}}</pre>
+
+  <h2>Con qué está hecho</h2>
+  <table>
+    <tr><th>Parte</th><th>Tecnología</th></tr>
+    <tr><td>El lenguaje (compilador, máquina virtual y biblioteca nativa)</td><td>C++20, compilado con GCC (MSYS2 y MinGW-w64 en Windows) con LTO y optimización guiada por perfil; CMake y Ninja</td></tr>
+    <tr><td>Las bibliotecas (<code>web</code>, <code>ai</code>, <code>site</code>, <code>validate</code>...)</td><td>Escritas en el propio HyperEZ</td></tr>
+    <tr><td>HyperEZ Editor e instalador</td><td>API de Windows (Win32), RichEdit y controles comunes</td></tr>
+    <tr><td>Extensión de VS Code</td><td>JavaScript, <code>vscode-languageclient</code> y el servidor de lenguaje de HyperEZ</td></tr>
+    <tr><td>El editor del navegador</td><td>HyperEZ compilado a WebAssembly con Emscripten; la interfaz en HTML, CSS y JavaScript sin dependencias</td></tr>
+    <tr><td>Esta web</td><td>Generada con HyperEZ ({{version}}): bibliotecas <code>site</code>, <code>markdown</code> y <code>template</code>; publicada con GitHub Pages</td></tr>
+  </table>
+
+  <h2>Software de terceros incluido</h2>
+  {{{terceros}}}
+
+  <h2>Gracias</h2>
+  <p>A quienes prueban HyperEZ, informan de errores, proponen ideas y suben sus programas a GitHub con archivos <code>.hez</code>: así HyperEZ crece y algún día GitHub lo reconocerá como lenguaje. <a href="https://github.com/cuevacaravacaadrian/HyperEZ/blob/main/CONTRIBUTING.md">Cómo colaborar</a>.</p>
+</div>

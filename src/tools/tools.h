@@ -30,6 +30,8 @@ std::string generateApiMarkdown(VM& vm);
 
 // Servidor de lenguaje (Language Server Protocol) por stdin/stdout.
 int runLanguageServer();
+// El mismo servidor en memoria (editor web): un mensaje JSON-RPC → lista JSON con lo que responde
+std::string languageServerMessage(const std::string& message);
 
 #ifdef _WIN32
 // Asociación de .hz/.hez, iconos y menú contextual (HKEY_CURRENT_USER; no requiere administrador).

@@ -2,7 +2,7 @@
 
 Un editor de código sencillo y clásico, con fondo blanco, que se instala con HyperEZ en Windows como complemento del lenguaje. Es la forma más rápida de empezar: lo abres, escribes y pulsas **F5**.
 
-Tiene lo que se espera de un editor de los de siempre: **barra de herramientas** con los iconos de Windows, **pestañas** para tener varios programas abiertos, **panel de salida** para ver el resultado sin salir del editor, **imprimir**, elegir la **fuente** y el indicador **INS/SOB** (insertar o sobrescribir).
+Tiene lo que se espera de un editor de los de siempre: **barra de herramientas** con los iconos de Windows, un **Explorador** con las carpetas del proyecto, **pestañas** para tener varios programas abiertos, **panel de salida** para ver el resultado sin salir del editor, **imprimir**, elegir la **fuente** y el indicador **INS/SOB** (insertar o sobrescribir). También está en el navegador, sin instalar nada: el [editor web](editor-web.md).
 
 ![HyperEZ Editor con un juego de tres en raya abierto](../img/editor.png)
 
@@ -22,8 +22,10 @@ Los programas nuevos se guardan como **`.hez`** en `Documentos\HyperEZ` (puedes 
 |---|---|
 | **Colores** | palabras clave, textos (y lo que va dentro de `${...}`), números, comentarios, tipos y llamadas. Usa el analizador del propio lenguaje, así que colorea igual que el compilador entiende el código. |
 | **Errores mientras escribes** | el panel de abajo lista los errores y avisos con su línea; doble clic lleva a cada uno. La parte del código con el error se marca en rojo claro y su número de línea también. |
-| **Ejecutar (F5)** | guarda y ejecuta el programa en una consola nueva, que espera una tecla al terminar. Los juegos de consola funcionan con el teclado. |
-| **Ejecutar en el panel (Mayús+F5)** | el resultado sale abajo, en la pestaña *Salida*, con el tiempo que tardó y si terminó bien. Doble clic en una línea con `archivo.hez:12` lleva a esa línea. **■** (o Ctrl+Pausa) detiene el programa. Sin teclado: para juegos e `input()` usa F5. |
+| **Ejecutar sin guardar (F5)** | ejecuta lo que ves en el editor en una consola nueva, que espera una tecla al terminar, **aunque no lo hayas guardado** (ni le hayas puesto nombre). Las importaciones funcionan igual que con el archivo guardado. Los juegos de consola funcionan con el teclado. |
+| **Explorador (Ctrl+Mayús+E)** | a la izquierda, las carpetas y archivos del proyecto, con el icono de HyperEZ en los `.hez`. Un clic abre un archivo o una carpeta; clic derecho para **nuevo archivo, nueva carpeta, renombrar (F2), eliminar (Supr, a la papelera)**, mostrarlo en el Explorador de Windows o copiar su ruta. *Archivo → Abrir carpeta en el Explorador* elige otra carpeta; la franja de su derecha se arrastra para cambiar el ancho. |
+| **Cerrar parejas** | al escribir `(`, `[`, `{`, `"` o `'` aparece también el cierre, con el cursor en medio; si escribes el cierre, se salta el que ya estaba. Con texto seleccionado, lo rodea. Retroceso entre una pareja vacía borra las dos, e Intro entre `{}` deja el cierre en su línea. |
+| **Ejecutar en el panel (Mayús+F5)** | también sin guardar; el resultado sale abajo, en la pestaña *Salida*, con el tiempo que tardó y si terminó bien. Doble clic en una línea con `archivo.hez:12` lleva a esa línea. **■** (o Ctrl+Pausa) detiene el programa. Sin teclado: para juegos e `input()` usa F5. |
 | **Pestañas** | cada archivo en su pestaña (Ctrl+N nueva, Ctrl+W cerrar, Ctrl+Tab cambiar; el botón central del ratón cierra). Abrir un archivo que ya está abierto va a su pestaña. Al salir pregunta por cada una con cambios. |
 | **Repetir al guardar (Ctrl+F5)** | ejecuta en modo *watch*: cada vez que guardas, vuelve a ejecutarse. |
 | **Consola interactiva (F6)** | abre `hyper repl` en la carpeta del archivo. |
@@ -51,8 +53,10 @@ Si cierras con cambios sin guardar, pregunta antes. El título muestra `•` mie
 
 | Tecla | Acción |
 |---|---|
-| F5 | Ejecutar en una consola |
-| Mayús+F5 | Ejecutar en el panel de salida |
+| F5 | Ejecutar en una consola (sin guardar) |
+| Mayús+F5 | Ejecutar en el panel de salida (sin guardar) |
+| Ctrl+Mayús+E | Mostrar u ocultar el Explorador |
+| F2 / Supr (en el Explorador) | Renombrar / eliminar |
 | Ctrl+Pausa | Detener el programa del panel |
 | Ctrl+F5 | Ejecutar y repetir al guardar |
 | F6 | Consola interactiva |

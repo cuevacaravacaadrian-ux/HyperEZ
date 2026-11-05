@@ -1,0 +1,10 @@
+// Inteligencia artificial: una red neuronal aprende la operación XOR
+import ai
+
+randomSeed(7)
+var red = ai.NeuralNetwork([2, 6, 1], "tanh", "sigmoid")
+red.train([[0, 0], [0, 1], [1, 0], [1, 1]], [[0], [1], [1], [0]], 2000, 0.5)
+
+foreach e in [[0, 0], [0, 1], [1, 0], [1, 1]] {
+    print("${e[0]} XOR ${e[1]} = ${red.predict(e).get(0, 0):.2f}")
+}

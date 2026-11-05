@@ -1,0 +1,11 @@
+// Un juego: el ordenador piensa un número y tú lo adivinas
+var secreto = 37
+var intentos = [50, 25, 37]
+
+foreach n in intentos {
+    match n {
+        _ if n < secreto => print("${n}: ¡más alto!"),
+        _ if n > secreto => print("${n}: ¡más bajo!"),
+        _ => print("${n}: ¡acertaste!"),
+    }
+}

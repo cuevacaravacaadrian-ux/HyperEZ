@@ -1,4 +1,4 @@
-# Referencia de la API de HyperEZ 0.8.1
+# Referencia de la API de HyperEZ 0.8.2
 
 > Generada automáticamente con `hyper docs` a partir del catálogo de la máquina virtual.
 

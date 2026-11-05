@@ -1,0 +1,28 @@
+<section class="titular">
+  <div class="envoltura">
+    <h1>Ejemplos</h1>
+    <p>{{total}} programas completos para aprender y para copiar: ábrelos en el editor del navegador, cámbialos y ejecútalos. Todos vienen también con el instalador.</p>
+  </div>
+</section>
+<div class="envoltura contenido">
+  <div class="filtros">
+    <button data-cat="*" class="activa">Todos</button>
+{{#each categorias}}
+    <button data-cat="{{id}}">{{nombre}}</button>
+{{/each}}
+  </div>
+  <div class="rejilla">
+{{#each ejemplos}}
+    <div class="tarjeta ejemplo" data-cat="{{cat}}">
+      <span class="cat">{{catNombre}}</span>
+      <h3>{{titulo}}</h3>
+      <p>{{descripcion}}</p>
+      <pre>{{resultado}}</pre>
+      <div class="botones">
+        <a class="btn btn-verde" href="editor/index.html?ejemplo={{ruta}}">▶ Abrir en el editor</a>
+        <a class="btn btn-claro" href="https://github.com/cuevacaravacaadrian/HyperEZ/blob/main/examples/{{ruta}}">Ver el código</a>
+      </div>
+    </div>
+{{/each}}
+  </div>
+</div>

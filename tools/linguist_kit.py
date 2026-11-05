@@ -131,7 +131,7 @@ def pull_request():
 [HyperEZ](https://github.com/{repo}) is a general-purpose programming language with Spanish documentation and error
 messages, aimed at learners and used for games, web applications, data analysis, AI and tooling. It ships an
 installer for Windows, packages for Linux and macOS, a language server, a formatter and a VS Code extension
-([Marketplace](https://marketplace.visualstudio.com/items?itemName=hyperez.hyperezprogramminglanguage)).
+([Marketplace](https://marketplace.visualstudio.com/items?itemName=hyperez.hyperezprogramminglanguagevscodeextension)).
 Files use the `.hez` extension (not used by any other language in Linguist); scripts may start with
 `#!/usr/bin/env hyper`.
 

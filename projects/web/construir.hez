@@ -1,0 +1,270 @@
+// La web de HyperEZ, hecha con el propio HyperEZ: portada, descargas, documentación, ejemplos, versiones,
+// créditos y el editor en el navegador (HyperEZ compilado a WebAssembly).
+//
+//   hyper projects/web/construir.hez [carpeta de salida] [--wasm carpeta] [--url https://...] [--base /HyperEZ/]
+//
+// Por defecto la deja en projects/web/dist. --wasm es donde están hyperez.js y hyperez.wasm (build-web, ver
+// projects/web/README.md). Para verla: hyper serve projects/web/dist --abrir
+import markdown
+import site
+import template
+from "../../tools/docs_menu.hz" import MENU
+
+const REPO_URL = "https://github.com/cuevacaravacaadrian/HyperEZ"
+const AQUI = System.scriptDir
+const RAIZ = Path.absolute(Path.join(AQUI, "..", ".."))
+const SRC = Path.join(AQUI, "src")
+
+// ---- opciones ----
+var destino = Path.join(AQUI, "dist")
+var wasm = Path.join(RAIZ, "build-web")
+var url = "https://cuevacaravacaadrian.github.io/HyperEZ/"
+var base = "/HyperEZ/"
+var i = 0
+while i < System.args.length {
+    var a = System.args[i]
+    if a == "--wasm" { i += 1; wasm = Path.join(System.cwd, System.args[i]) }
+    else if a == "--url" { i += 1; url = System.args[i] }
+    else if a == "--base" { i += 1; base = System.args[i] }
+    else { destino = Path.join(System.cwd, a) }
+    i += 1
+}
+if not url.endsWith("/") { url += "/" }
+
+var t0 = Time.clock()
+var version = System.version
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+function fechaLarga(iso: text): text {
+    var p = iso.split("-")
+    if p.length < 3 { return iso }
+    return "${toNumber(p[2])} de ${MESES[toNumber(p[1]) - 1]} de ${p[0]}"
+}
+var hoy = fechaLarga(Time.format(Time.now(), "%Y-%m-%d"))
+
+// ---- utilidades ----
+function leer(...partes: text): text { return File.read(Path.join(RAIZ, ...partes)).replace("\r\n", "\n") }
+function escribir(rel: text, contenido: text) {
+    var ruta = Path.join(destino, rel)
+    File.makeDir(Path.dir(ruta))
+    File.write(ruta, contenido)
+}
+function copiar(desde: text, rel: text) {
+    var ruta = Path.join(destino, rel)
+    File.makeDir(Path.dir(ruta))
+    File.copy(desde, ruta)
+}
+/// Base64 apto para direcciones (el editor lo lee de #c=...)
+function base64url(t: text): text { return Base64.encode(t).replace("+", "-").replace("/", "_").replace("=", "") }
+function quitarEtiquetas(html: text): text {
+    return Regex(r"<[^>]+>").replace(html, "").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'").replace("&amp;", "&")
+}
+
+const NAV = [
+    { url: "index.html", texto: "Inicio" },
+    { url: "descargar.html", texto: "Descargar" },
+    { url: "docs/index.html", texto: "Documentación" },
+    { url: "editor/index.html", texto: "Editor online" },
+    { url: "ejemplos.html", texto: "Ejemplos" },
+    { url: "versiones.html", texto: "Versiones" },
+    { url: "creditos.html", texto: "Créditos" },
+]
+var plantilla = File.read(Path.join(SRC, "plantilla.html"))
+var paginasHechas = []
+
+function envolver(raiz: text, activo: text, titulo: text, descripcion: text, contenido: text): text {
+    return template.renderHtml(plantilla, {
+        titulo: titulo, descripcion: descripcion, raiz: raiz, url: url, version: version, fecha: hoy, contenido: contenido,
+        nav: NAV.map(n => ({ url: n.url, texto: n.texto, activo: n.url == activo })),
+    })
+}
+function pagina(fragmento: text, salida: text, titulo: text, descripcion: text, datos: map = {}) {
+    var cuerpo = template.renderHtml(File.read(Path.join(SRC, "paginas", fragmento)), { version: version, fecha: hoy, raiz: "", ...datos })
+    escribir(salida, envolver("", salida, titulo, descripcion, cuerpo))
+    paginasHechas.add(salida)
+}
+
+// ---- 1. archivos estáticos e imágenes ----
+if File.isDir(destino) { File.deleteDir(destino) }
+File.makeDir(destino)
+copiar(Path.join(SRC, "estilos.css"), "estilos.css")
+copiar(Path.join(SRC, "sitio.js"), "sitio.js")
+copiar(Path.join(RAIZ, "assets", "branding", "banner.png"), "img/banner.png")
+copiar(Path.join(RAIZ, "assets", "icons", "hyperez-256.png"), "img/hyperez-256.png")
+copiar(Path.join(RAIZ, "assets", "icons", "hyperez-128.png"), "img/hyperez-128.png")
+foreach f in File.list(Path.join(RAIZ, "docs", "img")) { copiar(Path.join(RAIZ, "docs", "img", f), "img/" + f) }
+
+// ---- 2. portada (los ejemplos se ejecutan de verdad para enseñar su salida) ----
+function muestra(archivo: text): map {
+    var ruta = Path.join(SRC, "muestras", archivo)
+    var codigo = File.read(ruta).replace("\r\n", "\n").trimEnd()
+    var r = Process.run(System.exe, ["run", ruta], { cwd: Path.dir(ruta), timeout: 60, env: { NO_COLOR: "1" } })
+    if not r.ok { throw Error("El ejemplo ${archivo} no funciona:\n${r.output}${r.error}") }
+    return { codigo: markdown.highlightHz(codigo), salida: r.output.trimEnd(), enlace: base64url(codigo + "\n"),
+             archivo: archivo.replace("muestra_", "") }
+}
+var muestras = [
+    { id: "juego", titulo: "🎮 Un juego", ...muestra("muestra_juego.hez") },
+    { id: "web", titulo: "🌐 Una web", ...muestra("muestra_web.hez") },
+    { id: "ia", titulo: "🧠 Inteligencia artificial", ...muestra("muestra_ia.hez") },
+    { id: "datos", titulo: "📊 Datos", ...muestra("muestra_datos.hez") },
+]
+muestras[0].primera = true
+var api = leer("docs", "biblioteca", "API.md")
+var cifras = {
+    bibliotecas: File.list(Path.join(RAIZ, "src", "lib")).filter(f => f.endsWith(".hz")).length,
+    funciones: api.lines().filter(l => l.startsWith("#### ")).length,
+    ejemplos: File.listAll(Path.join(RAIZ, "examples"), ".hz").length,
+    paginas: File.listAll(Path.join(RAIZ, "docs"), ".md").length,
+}
+pagina("inicio.html", "index.html", "HyperEZ · Programa en español",
+    "HyperEZ es un lenguaje de programación en español, sencillo y rápido, para hacer juegos, webs, IA, datos y herramientas. Descárgalo gratis o pruébalo en el navegador.",
+    { portada: muestra("muestra_portada.hez"), muestras: muestras, cifras: cifras })
+
+// ---- 3. descargas ----
+pagina("descargar.html", "descargar.html", "Descargar HyperEZ " + version,
+    "Descarga HyperEZ para Windows (instalador con HyperEZ Editor), Linux y macOS, y la extensión de Visual Studio Code.",
+    { releases: REPO_URL + "/releases/latest" })
+
+// ---- 4. ejemplos (también para el editor: ejemplos.json) ----
+const CATEGORIAS = {
+    basico: "Lo básico", juegos: "Juegos", web: "Webs", ia: "Inteligencia artificial", datos: "Datos", graficos: "Gráficos",
+    audio: "Sonido", algoritmos: "Algoritmos", apps: "Aplicaciones", herramientas: "Herramientas", sistema: "Sistema",
+    sistemas: "Sistemas operativos", red: "Internet",
+}
+var ejemplos = []
+var categoriasUsadas = []
+foreach rel in File.listAll(Path.join(RAIZ, "examples"), ".hz").map(r => r.replace("\\", "/")).sort() {
+    var partes = rel.split("/")
+    if partes.length != 2 { continue }
+    var cat = partes[0]
+    var codigo = leer("examples", cat, partes[1])
+    var comentario = codigo.lines().takeWhile(l => l.startsWith("//")).map(l => l.substring(2).trim()).filter(l => not l.startsWith("Ejecuta") and not l.startsWith("hyper "))
+    var descripcion = comentario.length > 0 ? comentario[0] : ""
+    var out = Path.join(RAIZ, "examples", cat, Path.stem(partes[1]) + ".out")
+    var teclado = codigo.contains("readKey") or codigo.contains("pollKey")
+    var resultado = File.exists(out) ? File.read(out).replace("\r\n", "\n").lines().take(8).join("\n") : (teclado ? "(un juego con teclado: ábrelo para verlo)" : "(ábrelo para ejecutarlo)")
+    // los archivos de datos de la carpeta (ventas.csv...) van con el ejemplo
+    var extras = {}
+    foreach f in File.list(Path.join(RAIZ, "examples", cat)) {
+        if f.endsWith(".hz") or f.endsWith(".out") { continue }
+        var p = Path.join(RAIZ, "examples", cat, f)
+        if File.size(p) < 200000 { extras[f] = File.read(p) }
+    }
+    var titulo = Path.stem(partes[1]).replace("_", " ").capitalize()
+    if not categoriasUsadas.contains(cat) { categoriasUsadas.add(cat) }
+    ejemplos.add({ cat: cat, catNombre: CATEGORIAS.get(cat, cat.capitalize()), titulo: titulo, descripcion: descripcion, ruta: rel,
+                   resultado: resultado, codigo: codigo, extras: extras, teclado: teclado })
+}
+pagina("ejemplos.html", "ejemplos.html", "Ejemplos de HyperEZ",
+    "Programas completos de HyperEZ para aprender: juegos, webs, IA, datos, gráficos, sonido y herramientas. Ábrelos y ejecútalos en el navegador.",
+    { ejemplos: ejemplos, total: ejemplos.length, categorias: categoriasUsadas.map(c => ({ id: c, nombre: CATEGORIAS.get(c, c) })) })
+escribir("editor/ejemplos.json", JSON.stringify(ejemplos.map(e => ({
+    ruta: e.ruta, titulo: e.titulo, categoria: e.catNombre, descripcion: e.descripcion, codigo: e.codigo, extras: e.extras, teclado: e.teclado
+}))))
+
+// ---- 5. versiones (del CHANGELOG) ----
+var etiquetas = []
+var git = Process.run("git", ["tag", "-l"], { cwd: RAIZ, timeout: 30 })
+if git.ok { etiquetas = git.output.lines().map(t => t.trim()).filter(t => t != "") }
+/// "0.10.0" > "0.8.0" como números, no como textos
+function versionMayorIgual(a: text, b: text): bool {
+    var x = a.split(".").map(n => toNumber(n))
+    var y = b.split(".").map(n => toNumber(n))
+    foreach k in 0..3 { if x[k] != y[k] { return x[k] > y[k] } }
+    return true
+}
+var versiones = []
+var cabecera = Regex(r"^## \[(\d+\.\d+\.\d+)\](?: - (\S+))?")
+var actualV: map? = null
+var lineas: list = []
+function cerrarVersion() {
+    if actualV == null { return }
+    var numero = actualV.numero
+    versiones.add({ numero: numero, fecha: fechaLarga(actualV.fecha), html: markdown.toHtml(lineas.join("\n").trim(), { highlight: true }),
+                    ultima: versiones.length == 0, etiqueta: etiquetas.contains("v" + numero),
+                    publicada: etiquetas.contains("v" + numero) and versionMayorIgual(numero, "0.8.0") })
+}
+foreach linea in leer("CHANGELOG.md").lines() {
+    if linea.startsWith("## ") {
+        cerrarVersion()
+        var m = cabecera.find(linea)
+        actualV = m == null ? null : { numero: m.groups[0], fecha: m.groups[1] ?? "" }
+        lineas = []
+    } else if actualV != null { lineas.add(linea) }
+}
+cerrarVersion()
+pagina("versiones.html", "versiones.html", "Versiones de HyperEZ", "Todos los cambios de HyperEZ, versión a versión, con sus descargas.",
+    { versiones: versiones })
+
+// ---- 6. créditos ----
+var terceros = leer("THIRD-PARTY-NOTICES.md")
+terceros = Regex(r"^# [^\n]*\n").replace(terceros, "")
+pagina("creditos.html", "creditos.html", "Créditos y licencias · HyperEZ", "Quién hace HyperEZ, con qué está hecho y las licencias del software que incluye.",
+    { licencia: leer("LICENSE"), terceros: markdown.toHtml(terceros, { highlight: true }) })
+
+// ---- 7. página 404 (GitHub Pages la sirve en cualquier dirección: rutas absolutas) ----
+var cuerpo404 = template.renderHtml(File.read(Path.join(SRC, "paginas", "404.html")), { raiz: base })
+escribir("404.html", envolver(base, "", "No encontrado · HyperEZ", "Esta página no existe.", cuerpo404))
+
+// ---- 8. documentación: docs/ con la misma cabecera, un menú lateral y "Probar en el editor" ----
+const MARCA = "@@hz@@"
+var layoutDocs = envolver(MARCA + "../", "docs/index.html", MARCA + "titulo · Documentación de HyperEZ",
+    "Documentación de HyperEZ: guía, tutoriales, referencia del lenguaje y de la biblioteca, herramientas y funcionamiento interno.",
+    "<div class=\"envoltura docs\">\n<aside class=\"docs-menu\"><input class=\"docs-buscar\" placeholder=\"Buscar en el menú…\" aria-label=\"Buscar\"><ul>\n" +
+        "@@hz@@menu\n</ul></aside>\n<article class=\"prosa\">@@hz@@contenido\n" +
+        "<div class=\"pie-doc\"><a href=\"" + REPO_URL + "/tree/main/docs\">Esta documentación en GitHub</a><a href=\"@@hz@@../editor/index.html\">▶ Probar código en el editor</a></div>" +
+        "</article>\n</div>")
+layoutDocs = layoutDocs
+    .replace(MARCA + "../", "{{raiz}}../")
+    .replace(MARCA + "titulo", "{{titulo}}")
+    .replace(MARCA + "menu", "{{#each menu}}{{#if grupo}}<li class=\"grupo\">{{grupo}}</li>{{else}}<li><a href=\"{{url}}\"{{#if actual}} class=\"actual\"{{/if}}>{{titulo}}</a></li>{{/if}}\n{{/each}}")
+    .replace(MARCA + "contenido", "{{{contenido}}}")
+var tmp = Path.join(Path.temp, "hyperez-web-docs-" + str(randomInt(100000, 999999)) + ".html")
+File.write(tmp, layoutDocs)
+var hechos = site.build(Path.join(RAIZ, "docs"), Path.join(destino, "docs"), { title: "Documentación de HyperEZ", index: "README.md", menu: MENU, layout: tmp })
+File.delete(tmp)
+// enlaces que salen de docs/ → GitHub; cada bloque de código HyperEZ, con su botón para abrirlo en el editor
+const FUERA = Regex(r'href="((?:\.\./)+)([^"#]+?)\.html(#[^"]*)?"')
+const BLOQUE = Regex(r'<pre><code class="language-hz">([\s\S]*?)</code></pre>')
+var docsDir = Path.join(destino, "docs")
+var paginasDocs = 0
+foreach ruta in hechos {
+    if not ruta.endsWith(".html") { continue }
+    paginasDocs += 1
+    var rel = Path.relative(ruta, docsDir).replace("\\", "/")
+    var nivel = rel.split("/").length - 1
+    var arriba = "../" * (nivel + 1)
+    var html = File.read(ruta)
+    html = FUERA.replace(html, m => {
+        if m.groups[0].length / 3 <= nivel { return m.text }
+        var destinoRel = m.groups[1]
+        if destinoRel.startsWith("examples/") { return "href=\"" + arriba + "ejemplos.html\"" }
+        return "href=\"" + REPO_URL + "/blob/main/" + destinoRel + ".md" + (m.groups[2] ?? "") + "\""
+    })
+    html = BLOQUE.replace(html, m => {
+        var codigo = quitarEtiquetas(m.groups[0])
+        return m.text + "<a class=\"probar\" href=\"" + arriba + "editor/index.html#c=" + base64url(codigo) + "&amp;n=ejemplo.hez\">▶ Probar en el editor</a>"
+    })
+    File.write(ruta, html)
+}
+
+// ---- 9. el editor ----
+foreach f in File.list(Path.join(SRC, "editor")) { copiar(Path.join(SRC, "editor", f), "editor/" + f) }
+var conMotor = File.exists(Path.join(wasm, "hyperez.wasm"))
+if conMotor {
+    copiar(Path.join(wasm, "hyperez.js"), "editor/hyperez.js")
+    copiar(Path.join(wasm, "hyperez.wasm"), "editor/hyperez.wasm")
+} else {
+    print("⚠ No está ${Path.join(wasm, "hyperez.wasm")}: el editor se publica sin el motor (ver projects/web/README.md)")
+}
+
+// ---- 10. para los buscadores y GitHub Pages ----
+var todas = paginasHechas + hechos.filter(h => h.endsWith(".html")).map(h => "docs/" + Path.relative(h, docsDir).replace("\\", "/")) + ["editor/index.html"]
+escribir("sitemap.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n" +
+        todas.map(p => "  <url><loc>" + url + p + "</loc></url>").join("\n") + "\n</urlset>\n")
+escribir("robots.txt", "User-agent: *\nAllow: /\nSitemap: " + url + "sitemap.xml\n")
+escribir(".nojekyll", "")
+
+print("✓ Web de HyperEZ ${version} en ${destino} (${round(Time.clock() - t0, 1)} s)")
+print("  ${paginasHechas.length + 1} páginas, ${paginasDocs} de documentación, ${ejemplos.length} ejemplos" + (conMotor ? ", editor con HyperEZ en WebAssembly" : ""))
+print("  Para verla: hyper serve ${Path.relative(destino, System.cwd)} --abrir")

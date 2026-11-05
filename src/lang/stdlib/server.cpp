@@ -58,7 +58,8 @@ static const char* mimeType(const std::string& ext) {
         {".html", "text/html; charset=utf-8"}, {".htm", "text/html; charset=utf-8"}, {".css", "text/css; charset=utf-8"},
         {".js", "text/javascript; charset=utf-8"}, {".json", "application/json"}, {".txt", "text/plain; charset=utf-8"},
         {".png", "image/png"}, {".jpg", "image/jpeg"}, {".jpeg", "image/jpeg"}, {".gif", "image/gif"}, {".svg", "image/svg+xml"},
-        {".ico", "image/x-icon"}, {".wasm", "application/wasm"}, {".hz", "text/plain; charset=utf-8"}, {".csv", "text/csv"},
+        {".ico", "image/x-icon"}, {".wasm", "application/wasm"}, {".hz", "text/plain; charset=utf-8"}, {".hez", "text/plain; charset=utf-8"},
+        {".md", "text/markdown; charset=utf-8"}, {".csv", "text/csv"}, {".webp", "image/webp"}, {".xml", "application/xml"},
         {".mp3", "audio/mpeg"}, {".wav", "audio/wav"}, {".pdf", "application/pdf"}};
     for (auto& [e, t] : types) if (ext == e) return t;
     return "application/octet-stream";

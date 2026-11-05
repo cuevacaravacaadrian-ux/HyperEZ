@@ -37,7 +37,7 @@
 | ⌨️ **Autocompletado** | según el tipo: los campos de tus clases, `"texto".`, `lista.`, `Http.`, `Matrix`... |
 | 📖 **Documentación al pasar el ratón** | y ayuda de parámetros mientras escribes una llamada |
 | 🧭 **Navegación** | ir a la definición (F12), referencias (Mayús+F12), renombrar en todos los archivos (F2), esquema |
-| ▶️ **Ejecutar con F5** | en una terminal con colores y teclado (para juegos e `input()`); espera una tecla al terminar |
+| ▶️ **Ejecutar con F5** | en una terminal con colores y teclado (para juegos e `input()`); espera una tecla al terminar. Los archivos sin título **se ejecutan sin guardar** |
 | 🔘 **Botones encima del código** | **▶ Ejecutar · ⟳ Repetir al guardar · ✓ Comprobar**, y **▶ Probar** sobre cada `test(...)` |
 | 🔁 **Modo watch** | **Ctrl+Alt+F5**: el programa se vuelve a ejecutar cada vez que guardas |
 | 📐 **Formato** | **Mayús+Alt+F** ordena la sangría y los espacios (`hyper fmt`); opcional al guardar |

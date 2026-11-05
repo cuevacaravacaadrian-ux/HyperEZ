@@ -2,6 +2,34 @@
 
 Todas las versiones de HyperEZ. El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.8.2] - 2026-11-05
+
+La web de HyperEZ, con el editor en el navegador, y un HyperEZ Editor con Explorador que ejecuta sin guardar.
+
+### Añadido
+
+**La web de HyperEZ** ([cuevacaravacaadrian.github.io/HyperEZ](https://cuevacaravacaadrian.github.io/HyperEZ/), en `projects/web`)
+- Portada, descargas (con el botón según tu sistema y los archivos de la última versión, sacados de GitHub), **toda la documentación** con buscador y menú lateral, ejemplos, versiones, créditos y licencias.
+- **HyperEZ Editor en el navegador**: el lenguaje de verdad compilado a **WebAssembly**, con Explorador de archivos y carpetas, pestañas, ejecutar sin guardar y ■ detener, entrada para `input()`, errores en vivo, autocompletado, ayuda al pasar el ratón y de parámetros, ir a la definición, cerrar parejas, formato, buscar y reemplazar, ejemplos, compartir por enlace, descargar en `.zip` y tema clásico o HyperEZ Noche.
+- Cada bloque de código de la documentación tiene su botón **▶ Probar en el editor**.
+- La genera el propio HyperEZ (`projects/web/construir.hez`) y se publica sola en GitHub Pages; sus pruebas abren el editor en un Chrome de verdad.
+
+**HyperEZ Editor**
+- **Explorador** (Ctrl+Mayús+E): las carpetas y archivos del proyecto, con el icono de HyperEZ en los `.hez`; nuevo archivo, nueva carpeta, renombrar (F2), eliminar a la papelera, mostrar en el Explorador de Windows. *Archivo → Abrir carpeta en el Explorador*.
+- **Ejecutar sin guardar**: F5 y Mayús+F5 ejecutan lo que ves en el editor, aunque no esté guardado ni tenga nombre.
+- **Cerrar parejas** `( [ { " '`, saltar el cierre ya escrito, rodear la selección, borrar la pareja vacía e Intro entre `{}`.
+
+**Lenguaje y herramientas**
+- La extensión de VS Code se llama ahora **`hyperez.hyperezprogramminglanguagevscodeextension`**; el instalador quita las de los nombres anteriores para que no haya dos.
+- `hyper run --as <ruta> <archivo>`: ejecuta un archivo como si estuviera en otra ruta (así ejecutan sin guardar los editores).
+- `hyper` en WebAssembly (`emcmake cmake`, `src/wasm/web_api.cpp`) y el servidor de lenguaje en memoria, para el navegador.
+- VS Code: los archivos sin título se ejecutan sin guardar; con `hyperez.run.saveBeforeRun` desactivado, también los demás.
+- `hyper serve` da el tipo correcto a `.hez`, `.md`, `.webp` y `.xml`.
+
+### Arreglado
+- `match`: una guarda o un patrón que terminaba en un nombre (`_ if n < limite => ...`) se leía como una función.
+- `lexico.md`: `.hez` es la extensión por defecto.
+
 ## [0.8.1] - 2026-11-04
 
 La extensión de VS Code, lista para el Marketplace; textos con formato, `do`-`while`, la biblioteca `validate` y todo preparado para que GitHub reconozca HyperEZ.

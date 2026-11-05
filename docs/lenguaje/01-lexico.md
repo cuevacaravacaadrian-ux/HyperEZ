@@ -4,7 +4,7 @@ Cómo se escriben las piezas más pequeñas de un programa.
 
 ## Archivos
 
-Los programas son archivos de texto UTF-8 con extensión `.hz` (o `.hez`). Las sentencias terminan con el salto de línea; para poner varias en una línea se separan con `;`.
+Los programas son archivos de texto UTF-8 con extensión `.hez` (o `.hz`). Las sentencias terminan con el salto de línea; para poner varias en una línea se separan con `;`.
 
 ```hz
 var a = 1; var b = 2

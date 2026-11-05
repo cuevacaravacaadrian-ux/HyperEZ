@@ -1,8 +1,8 @@
 {
-  "name": "hyperezprogramminglanguage",
+  "name": "hyperezprogramminglanguagevscodeextension",
   "displayName": "HyperEZ",
   "description": "Lenguaje de programación en español para hacer de todo: juegos, webs, IA, datos, gráficos y sistemas. Colores, errores en vivo, autocompletado, F5 para ejecutar, formato, pruebas, consola interactiva, tema propio y tutorial.",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "publisher": "hyperez",
   "license": "MIT",
   "author": {
@@ -387,7 +387,7 @@
         "hyperez.run.saveBeforeRun": {
           "type": "boolean",
           "default": true,
-          "description": "Guardar el archivo antes de ejecutarlo."
+          "description": "Guardar el archivo antes de ejecutarlo. Si lo desactivas, F5 ejecuta el texto tal como está, sin guardarlo (los archivos sin título se ejecutan siempre sin guardar)."
         },
         "hyperez.run.reuseTerminal": {
           "type": "boolean",
@@ -538,7 +538,7 @@
   "scripts": {
     "bundle": "node tools/bundle.js",
     "vscode:prepublish": "node tools/bundle.js",
-    "package": "vsce package --no-dependencies --allow-missing-repository --allow-star-activation -o hyperez-0.8.1.vsix",
+    "package": "vsce package --no-dependencies --allow-missing-repository --allow-star-activation -o hyperez-0.8.2.vsix",
     "test": "node test/grammar.test.js",
     "test:vscode": "node test/runTest.js"
   },

@@ -25,6 +25,7 @@ Todo HyperEZ está en un solo ejecutable: `hyper` (`hyper.exe` en Windows).
 
 | Opción | |
 |---|---|
+| `--as <ruta>` | ejecuta el archivo como si estuviera en `<ruta>`: las importaciones, `System.scriptDir` y los errores usan esa ruta. Lo usan HyperEZ Editor, VS Code y el editor web para **ejecutar sin guardar** |
 | `--pause` | espera una tecla al terminar (lo usan el doble clic en Windows y F5 en VS Code); también vale para `hyper check` y `hyper test` |
 | `--` | todo lo que sigue se pasa al programa aunque empiece por `-` |
 

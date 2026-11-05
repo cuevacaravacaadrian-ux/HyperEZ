@@ -1,0 +1,9 @@
+// Una web: rutas, HTML y una API JSON con la biblioteca web
+import web
+
+var app = web.App()
+app.get("/", req => web.html("<h1>¡Hola desde HyperEZ!</h1>"))
+app.get("/api/saludo/:nombre", req => ({ saludo: "Hola, " + req.params.nombre }))
+
+print(app.handle(web.request("GET", "/api/saludo/Ana")))
+// app.listen(8080, { open: true }) la sirve de verdad y abre el navegador

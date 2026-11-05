@@ -197,9 +197,29 @@ function runInTerminal(context, args, cwd, title) {
   runTerminal.show(false);
 }
 
+// Ejecutar sin guardar (hyper 0.8.2 o posterior): el texto del editor va a un archivo temporal y hyper lo ejecuta
+// como si fuera el de verdad (hyper run --as), con sus importaciones y System.scriptDir.
+function runUnsaved(context, doc) {
+  const exe = hyperPath(context);
+  if (!exe || !hyperAtLeast(exe, [0, 8, 2])) return false;
+  const real = doc.isUntitled ? path.join(defaultProgramsDir(), 'sin-titulo.hez') : doc.uri.fsPath;
+  const dir = path.join(os.tmpdir(), 'hyperez-vscode');
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = path.join(dir, `${process.pid}-${Date.now()}-${path.basename(real)}`);
+  fs.writeFileSync(tmp, doc.getText(), 'utf8');
+  runInTerminal(context, ['run', '--pause', '--as', real, tmp], path.dirname(real), 'HyperEZ: ' + path.basename(real) + ' (sin guardar)');
+  return true;
+}
+
 async function cmdRun(context, uri) {
   let file = targetFile(uri);
   if (!file) { vscode.window.showWarningMessage('Abre un archivo .hez o .hz para ejecutarlo.'); return; }
+  const doc = vscode.workspace.textDocuments.find((d) => d.uri.fsPath === file || d.uri.toString() === file);
+  const guardarAntes = vscode.workspace.getConfiguration('hyperez').get('run.saveBeforeRun');
+  if (doc && (doc.isUntitled || (doc.isDirty && !guardarAntes))) {
+    if (!vscode.workspace.isTrusted) { vscode.window.showWarningMessage('Este espacio de trabajo no es de confianza: no se ejecutan programas.'); return; }
+    if (runUnsaved(context, doc)) return;
+  }
   if (!(file = await ensureSaved(file))) return;
   if (!vscode.workspace.isTrusted) { vscode.window.showWarningMessage('Este espacio de trabajo no es de confianza: no se ejecutan programas.'); return; }
   runInTerminal(context, ['run', '--pause', file], path.dirname(file), 'HyperEZ: ' + path.basename(file));

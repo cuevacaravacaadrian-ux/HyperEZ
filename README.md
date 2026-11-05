@@ -10,10 +10,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest"><img src="https://img.shields.io/badge/%E2%AC%87%20Descargar%20HyperEZ%20para%20Windows-2f81f7?style=for-the-badge" alt="Descargar HyperEZ para Windows"></a>
+  <a href="https://cuevacaravacaadrian.github.io/HyperEZ/descargar.html"><img src="https://img.shields.io/badge/%E2%AC%87%20Descargar%20HyperEZ-2f9a3a?style=for-the-badge" alt="Descargar HyperEZ"></a>
+  <a href="https://cuevacaravacaadrian.github.io/HyperEZ/editor/index.html"><img src="https://img.shields.io/badge/%E2%96%B6%20Pru%C3%A9balo%20en%20el%20navegador-0f1424?style=for-the-badge" alt="Pruébalo en el navegador"></a>
 </p>
 
 <p align="center">
+  <a href="https://cuevacaravacaadrian.github.io/HyperEZ/"><b>La web</b></a> ·
   <a href="docs/empezar/instalacion.md"><b>Instalar</b></a> ·
   <a href="docs/empezar/primeros-pasos.md"><b>Primeros pasos</b></a> ·
   <a href="docs/GUIA.md"><b>Guía</b></a> ·
@@ -26,7 +28,7 @@
 
 ## 🚀 Empieza en un minuto
 
-1. Descarga **[HyperEZ-Setup-0.8.1.exe](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest)** y pulsa **Instalar** (no necesita administrador).
+1. Descarga **[HyperEZ-Setup-0.8.2.exe](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest)** y pulsa **Instalar** (no necesita administrador).
 2. Al terminar se abre **HyperEZ Editor** con tu primer programa.
 3. Pulsa **F5**. Ya está.
 
@@ -64,9 +66,9 @@ error[E0205]: No existe nada llamado 'pirnt'
 
 | Sistema | Cómo |
 |---|---|
-| **Windows** | **`HyperEZ-Setup-0.8.1.exe`** de la [última versión](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest): HyperEZ, HyperEZ Editor, ejemplos, documentación y la extensión de VS Code. |
-| **Linux / macOS** | `HyperEZ-0.8.1-linux-x64.tar.gz` (o `macos-arm64`): descomprímelo y ejecuta `sh install.sh`. |
-| **VS Code** | Lo instala el instalador de Windows; también `code --install-extension hyperez-0.8.1.vsix`. |
+| **Windows** | **`HyperEZ-Setup-0.8.2.exe`** de la [última versión](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest): HyperEZ, HyperEZ Editor, ejemplos, documentación y la extensión de VS Code. |
+| **Linux / macOS** | `HyperEZ-0.8.2-linux-x64.tar.gz` (o `macos-arm64`): descomprímelo y ejecuta `sh install.sh`. |
+| **VS Code** | Lo instala el instalador de Windows; también `code --install-extension hyperez-0.8.2.vsix`. |
 
 En Windows, los `.hez` y `.hz` se abren **siempre** con HyperEZ (doble clic = ejecutar) y el clic derecho ofrece *Editar con HyperEZ Editor*, *Editar con VS Code*, *Comprobar errores* y *Ejecutar y repetir al guardar*; en cualquier carpeta, *Nuevo → Programa HyperEZ* y *Abrir HyperEZ aquí*. Detalles en la [guía de instalación](docs/empezar/instalacion.md).
 
@@ -284,6 +286,7 @@ Requisitos y detalles en [CONTRIBUTING.md](CONTRIBUTING.md). Cómo está hecho p
 | [`src/editor`](src/editor) | HyperEZ Editor (Windows) |
 | [`editors`](editors) | extensión de VS Code, colores para Notepad++, Sublime y Vim, highlight.js y el kit para GitHub Linguist |
 | [`actions`](actions/setup-hyperez) | la acción `setup-hyperez` para usar HyperEZ en GitHub Actions |
+| [`projects/web`](projects/web) | la web de HyperEZ y el editor en el navegador (HyperEZ en WebAssembly), generados con HyperEZ |
 | [`packaging`](packaging) | instalador de Windows, paquetes de Linux y macOS, iconos |
 | [`examples`](examples) | ejemplos por áreas: juegos, algoritmos, IA, datos, web, gráficos, audio, sistema... |
 | [`tests`](tests) | pruebas del lenguaje, las bibliotecas, la consola, el formato y los errores |

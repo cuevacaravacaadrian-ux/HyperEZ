@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{titulo}}</title>
+<meta name="description" content="{{descripcion}}">
+<meta property="og:title" content="{{titulo}}">
+<meta property="og:description" content="{{descripcion}}">
+<meta property="og:image" content="{{url}}img/banner.png">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0a0e1a">
+<link rel="icon" href="{{raiz}}img/hyperez-256.png">
+<link rel="stylesheet" href="{{raiz}}estilos.css">
+</head>
+<body>
+<header class="cabecera">
+  <div class="envoltura">
+    <a class="logo" href="{{raiz}}index.html"><img src="{{raiz}}img/hyperez-128.png" alt="">HyperEZ <span class="ver">{{version}}</span></a>
+    <nav class="nav" aria-label="Secciones">
+{{#each nav}}
+      <a href="{{raiz}}{{url}}"{{#if activo}} class="activo"{{/if}}>{{texto}}</a>
+{{/each}}
+    </nav>
+    <a class="btn btn-verde" href="{{raiz}}descargar.html" data-descarga-principal>Descargar</a>
+    <button class="menu-movil" aria-label="Menú">☰</button>
+  </div>
+</header>
+<main>
+{{{contenido}}}
+</main>
+<footer class="pie">
+  <div class="envoltura">
+    <div class="columnas">
+      <div>
+        <div class="marca-pie"><img src="{{raiz}}img/hyperez-128.png" alt="">HyperEZ</div>
+        <p>Un lenguaje de programación en español, sencillo y rápido, para aprender y para hacer de todo: juegos, webs, inteligencia artificial, datos, gráficos y sistemas.</p>
+      </div>
+      <div>
+        <h4>Empezar</h4>
+        <a href="{{raiz}}descargar.html">Descargar</a>
+        <a href="{{raiz}}editor/index.html">Editor en el navegador</a>
+        <a href="{{raiz}}docs/empezar/instalacion.html">Instalación</a>
+        <a href="{{raiz}}docs/empezar/primeros-pasos.html">Primeros pasos</a>
+        <a href="{{raiz}}docs/empezar/tutorial-juego.html">Tutorial: un juego</a>
+      </div>
+      <div>
+        <h4>Aprender</h4>
+        <a href="{{raiz}}docs/GUIA.html">Guía del lenguaje</a>
+        <a href="{{raiz}}docs/lenguaje/README.html">Referencia del lenguaje</a>
+        <a href="{{raiz}}docs/biblioteca/API.html">Todas las funciones (API)</a>
+        <a href="{{raiz}}ejemplos.html">Ejemplos</a>
+        <a href="{{raiz}}docs/preguntas.html">Preguntas frecuentes</a>
+      </div>
+      <div>
+        <h4>El proyecto</h4>
+        <a href="https://github.com/cuevacaravacaadrian/HyperEZ">Código en GitHub</a>
+        <a href="{{raiz}}versiones.html">Versiones</a>
+        <a href="https://marketplace.visualstudio.com/items?itemName=hyperez.hyperezprogramminglanguagevscodeextension">Extensión de VS Code</a>
+        <a href="https://github.com/cuevacaravacaadrian/HyperEZ/blob/main/CONTRIBUTING.md">Colaborar</a>
+        <a href="{{raiz}}creditos.html">Créditos y licencias</a>
+      </div>
+    </div>
+    <div class="legal">
+      <span>© 2026 Adrián Cueva Caravaca · HyperEZ es software libre con licencia MIT</span>
+      <span>Esta web está hecha con HyperEZ {{version}} (bibliotecas site, markdown y template) · {{fecha}}</span>
+    </div>
+  </div>
+</footer>
+<script src="{{raiz}}sitio.js"></script>
+</body>
+</html>
