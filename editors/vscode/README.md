@@ -3,6 +3,8 @@
 </p>
 
 <p align="center">
+  <a href="https://cuevacaravacaadrian.github.io/HyperEZ/"><img src="https://img.shields.io/badge/web-HyperEZ-62d962" alt="La web de HyperEZ"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=hyperez.hyperezprogramminglanguagevscodeextension"><img src="https://vsmarketplacebadges.dev/installs-short/hyperez.hyperezprogramminglanguagevscodeextension.svg?label=instalaciones&color=2f81f7" alt="Instalaciones"></a>
   <a href="https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest"><img src="https://img.shields.io/github/v/release/cuevacaravacaadrian/HyperEZ?label=HyperEZ&color=e8572a" alt="Última versión"></a>
   <img src="https://img.shields.io/badge/idioma-espa%C3%B1ol-c8102e" alt="En español">
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20Linux%20%C2%B7%20macOS-0f1424" alt="Windows, Linux y macOS">
@@ -15,6 +17,8 @@
 **HyperEZ** es un lenguaje de programación **en español**, sencillo y rápido, para aprender y para hacer de todo: **juegos, webs, inteligencia artificial, análisis de datos, gráficos, sonido y herramientas**. Esta extensión convierte VS Code en un entorno completo para HyperEZ: colores, errores en vivo, autocompletado, **F5 para ejecutar**, formato, pruebas, consola interactiva, un tema propio y un tutorial.
 
 > En Windows no necesitas instalar nada más: la extensión trae `hyper.exe`. Abre o crea un archivo `.hez` y pulsa **F5**.
+>
+> ¿Sin instalar nada? Prueba HyperEZ en el **[editor del navegador](https://cuevacaravacaadrian.github.io/HyperEZ/editor/index.html)**. Todo lo demás está en **[la web de HyperEZ](https://cuevacaravacaadrian.github.io/HyperEZ/)**.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/cuevacaravacaadrian/HyperEZ/main/docs/img/vscode-ejecutar.png" alt="Un programa de HyperEZ en VS Code con el tema HyperEZ Noche, los botones Ejecutar, Repetir al guardar y Comprobar, y su resultado en la terminal" width="92%">
@@ -43,7 +47,8 @@
 | 📐 **Formato** | **Mayús+Alt+F** ordena la sangría y los espacios (`hyper fmt`); opcional al guardar |
 | 🧪 **Pruebas** | `test(...)` en tus archivos y *HyperEZ: Ejecutar pruebas* para todo el proyecto |
 | 💬 **Consola interactiva** | escribe código y ve el resultado al momento |
-| 🚀 **Proyectos** | juego, aplicación, IA, herramienta, **web** o **sitio**, con carpetas y pruebas |
+| 🚀 **Proyectos** | juego, aplicación, IA, herramienta, **web** o **sitio**, con las carpetas de HyperEZ: `hypersettings`, `hypercode`, `hypertests`... |
+| 📁 **Iconos de HyperEZ** | un tema de iconos con cada carpeta del proyecto (`hypersettings` ⚙, `hypercode` &lt;/&gt;, `hypertests` ✓, `hyperlibs`, `hypertools`, `hyperdata`...) y los archivos `.hez` |
 | 🔬 **Bytecode** | *Ver el bytecode del archivo*: las instrucciones que genera el compilador |
 | 📝 **HyperEZ Editor** | *Abrir en HyperEZ Editor*: el editor clásico que se instala con HyperEZ (Windows) |
 | ✂️ **54 fragmentos** | `clase`, `funcion`, `para`, `hacer`, `segun`, `formato`, `servidor`, `web`, `comprension`, `imagen`, `sonido`, `db`, `regex`... |
@@ -107,7 +112,7 @@ print(red.predict([1, 0]).get(0, 0))           // ≈ 1
 | HyperEZ: Comprobar errores | Ctrl+Mayús+F5 |
 | HyperEZ: Dar formato al archivo | Mayús+Alt+F |
 | HyperEZ: Abrir consola interactiva · Ejecutar pruebas · Ejecutar las pruebas de este archivo | |
-| HyperEZ: Nuevo proyecto · Nuevo archivo HyperEZ | |
+| HyperEZ: Nuevo proyecto · Nuevo archivo HyperEZ · Usar los iconos de HyperEZ | |
 | HyperEZ: Ver el bytecode del archivo · Abrir en HyperEZ Editor | |
 | HyperEZ: Empezar con HyperEZ (tutorial) · Abrir la guía · la referencia de la API · los ejemplos | |
 
@@ -123,8 +128,22 @@ print(red.predict([1, 0]).get(0, 0))           // ≈ 1
 | `hyperez.formatOnSave` | dar formato al guardar |
 | `hyperez.colorDecorators` | muestras de color |
 
+## 📁 Las carpetas de un proyecto
+
+*HyperEZ: Nuevo proyecto* (o `hyper new`) crea un proyecto con carpetas propias del lenguaje, cada una con su icono:
+
+| Carpeta | Para qué |
+|---|---|
+| `hypersettings/` | `proyecto.json`: nombre, versión y programa principal (`hyper run` sin archivo lo ejecuta) |
+| `hypercode/` | los módulos: se importan por su nombre, `from tienda import Carrito` |
+| `hypertests/` | las pruebas: `hyper test` sin carpeta las ejecuta |
+| `hyperlibs/` | librerías de otros, también por su nombre |
+| `hypertools/` | herramientas del proyecto: `hyper tool <nombre>` |
+| `hyperdata/` · `hyperassets/` · `hyperdocs/` | datos, imágenes y sonidos, documentación (`System.projectDir` da la raíz) |
+
 ## 💻 Más allá de VS Code
 
+- **[La web de HyperEZ](https://cuevacaravacaadrian.github.io/HyperEZ/)**: documentación, descargas, ejemplos y el **editor en el navegador** (sin instalar nada).
 - **Instalador para Windows** con el lenguaje, **HyperEZ Editor** (un editor clásico con pestañas, panel de salida e impresión), ejemplos y la documentación en HTML: [descargar](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest).
 - **Linux y macOS**: un paquete con `sh install.sh`.
 - **Otros editores**: colores para Notepad++, Sublime Text, Vim/Neovim y highlight.js, y `hyper lsp` para cualquier editor con servidor de lenguaje.

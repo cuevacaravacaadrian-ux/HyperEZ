@@ -1,7 +1,7 @@
 <section class="portada">
   <div class="envoltura">
     <div>
-      <a class="etiqueta" href="versiones.html"><b>Nuevo</b> HyperEZ {{version}}: editor en el navegador, textos con formato y mucho más →</a>
+      <a class="etiqueta" href="versiones.html"><b>Nuevo</b> HyperEZ {{version}}: carpetas de proyecto con iconos, pruebas en el navegador y tema oscuro →</a>
       <h1>Programa en <span class="verde">español</span>.<br>Haz de todo.</h1>
       <p class="lema">HyperEZ es un lenguaje de programación sencillo y rápido para aprender y para crear juegos, webs, inteligencia artificial, análisis de datos, gráficos y herramientas. Con errores que se entienden y todo incluido.</p>
       <div class="acciones">
@@ -113,6 +113,17 @@
       <div class="paso"><h3>Descarga</h3><p>El instalador para Windows (no necesita administrador) o el paquete para Linux y macOS.</p></div>
       <div class="paso"><h3>Escribe</h3><p>Abre HyperEZ Editor y escribe <code>print("¡Hola, mundo!")</code>. O empieza por un ejemplo.</p></div>
       <div class="paso"><h3>Pulsa F5</h3><p>Tu programa se ejecuta. Si hay un error, te dice cuál, dónde y cómo arreglarlo.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="seccion gris" id="preguntas">
+  <div class="envoltura estrecha">
+    <h2 class="centrado">Preguntas frecuentes</h2>
+    <div class="faq">
+{{#each faq}}
+      <details{{#if primera}} open{{/if}}><summary>{{pregunta}}</summary><p>{{{respuesta}}}</p></details>
+{{/each}}
     </div>
   </div>
 </section>

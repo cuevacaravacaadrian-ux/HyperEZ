@@ -23,9 +23,9 @@ Se desinstala desde *Configuración → Aplicaciones → HyperEZ* (o con el acce
 ### Instalación silenciosa
 
 ```text
-HyperEZ-Setup-0.8.2.exe /S                  sin preguntas
-HyperEZ-Setup-0.8.2.exe /S /D=C:\HyperEZ    en otra carpeta
-HyperEZ-Setup-0.8.2.exe /S /OPENEDITOR      y abre el editor al terminar
+HyperEZ-Setup-0.8.3.exe /S                  sin preguntas
+HyperEZ-Setup-0.8.3.exe /S /D=C:\HyperEZ    en otra carpeta
+HyperEZ-Setup-0.8.3.exe /S /OPENEDITOR      y abre el editor al terminar
 ```
 
 Opciones: `/NOASSOC` (no asociar archivos), `/NOPATH`, `/NOSHORTCUTS`, `/NODESKTOP`, `/NOVSCODE`, `/NOEDITOR` (solo el lenguaje), `/OPENEDITOR`.
@@ -36,8 +36,8 @@ Opciones: `/NOASSOC` (no asociar archivos), `/NOPATH`, `/NOSHORTCUTS`, `/NODESKT
 2. Descomprímelo e instala para tu usuario (sin `sudo`):
 
 ```text
-tar xzf HyperEZ-0.8.2-linux-x64.tar.gz
-cd HyperEZ-0.8.2-linux-x64
+tar xzf HyperEZ-0.8.3-linux-x64.tar.gz
+cd HyperEZ-0.8.3-linux-x64
 sh install.sh
 ```
 
@@ -50,7 +50,7 @@ En cualquier sistema, `hyper register` asocia los archivos con el `hyper` que lo
 La instala el instalador de Windows. También se puede instalar a mano: en VS Code, *Extensiones → ⋯ → Instalar desde VSIX…* y elige `hyperez-<versión>.vsix`, o desde la terminal:
 
 ```text
-code --install-extension hyperez-0.8.2.vsix
+code --install-extension hyperez-0.8.3.vsix
 ```
 
 ## Desde el código fuente

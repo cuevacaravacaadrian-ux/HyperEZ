@@ -12,6 +12,10 @@
 
 namespace hz {
 
+// exit() / Process.exit() en el navegador (WebAssembly): no se puede terminar el proceso, así que se
+// lanza esto y hz_run lo recoge como el código de salida del programa
+struct ProgramExit { int code; };
+
 struct Program;
 struct ModuleUnit;
 class Analyzer;
@@ -55,6 +59,8 @@ public:
     std::function<double()> clock;                    // tiempo para wait() (juego o real)
     bool gameMode = false;
     std::string projectRoot;
+    // Carpeta del proyecto: la primera que tiene hypersettings/ subiendo desde projectRoot (si no, projectRoot)
+    std::string projectHome();
     std::vector<std::string> searchPaths;
     std::vector<std::string> warnings;
     std::vector<std::string> scriptArgs;  // System.args

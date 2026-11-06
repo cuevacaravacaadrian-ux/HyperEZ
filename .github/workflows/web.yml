@@ -53,6 +53,9 @@ jobs:
           node projects/web/tests/nucleo.test.js
 
       - name: Generar la web
+        env: # códigos de Google Search Console y Bing Webmaster Tools (variables del repositorio; opcionales)
+          HZ_GOOGLE_VERIFICACION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
+          HZ_BING_VERIFICACION: ${{ vars.BING_SITE_VERIFICATION }}
         run: build/hyper projects/web/construir.hez projects/web/dist --wasm build-web
 
       - name: Probar el editor en Chrome
@@ -75,3 +78,17 @@ jobs:
     steps:
       - id: despliegue
         uses: actions/deploy-pages@v4
+
+      - name: Avisar a los buscadores (IndexNow: Bing, Yandex, Seznam, Naver)
+        continue-on-error: true
+        env:
+          WEB: ${{ steps.despliegue.outputs.page_url }}
+          CLAVE: ea7183867bbcf24ffb3bed860715189a
+        run: |
+          sleep 20
+          urls=$(curl -sf "${WEB}sitemap.xml" | grep -o '<loc>[^<]*' | sed 's/<loc>//' | jq -R . | jq -sc .)
+          host=$(echo "$WEB" | sed -E 's#https?://([^/]+)/.*#\1#')
+          jq -nc --arg host "$host" --arg key "$CLAVE" --arg loc "${WEB}${CLAVE}.txt" --argjson urls "$urls" \
+            '{host: $host, key: $key, keyLocation: $loc, urlList: $urls}' > indexnow.json
+          curl -s -o /dev/null -w "IndexNow: %{http_code}\n" -X POST https://api.indexnow.org/indexnow \
+            -H 'Content-Type: application/json; charset=utf-8' --data @indexnow.json

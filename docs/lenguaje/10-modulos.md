@@ -25,9 +25,12 @@ print(VELOCIDAD, enemigos.VELOCIDAD)
 
 Sin comillas, `import nombre` busca, por este orden:
 
-1. `nombre.hz` junto al archivo que importa;
-2. en la carpeta del proyecto: `src/nombre.hz`, `nombre.hz` y `hz_packages/nombre/`;
-3. las **bibliotecas incluidas** con HyperEZ.
+1. `nombre.hez` (o `.hz`) junto al archivo que importa;
+2. en la raíz del proyecto (la carpeta con `hypersettings/`): `hypercode/nombre.hez` y `hyperlibs/nombre/main.hez`;
+3. en la carpeta del proyecto: `src/nombre.hez`, `nombre.hez` y `hz_packages/nombre/`;
+4. las **bibliotecas incluidas** con HyperEZ.
+
+Así, las pruebas de `hypertests/` importan los módulos de `hypercode/` igual que `main.hez`. Más en [Proyectos y carpetas](../herramientas/proyectos.md).
 
 Un punto separa carpetas: `import juego.enemigos` busca `juego/enemigos.hz`.
 

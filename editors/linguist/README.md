@@ -57,13 +57,12 @@ Cada vez que cambie la gramática, `python tools/linguist_kit.py` actualiza `gra
 
 ## La pull request (cuando se cumpla el requisito de uso)
 
-1. Comprueba la cifra con `python tools/linguist_kit.py --progress` y con la búsqueda de GitHub `NOT is:fork path:*.hez`.
-2. Haz un *fork* de [github-linguist/linguist](https://github.com/github-linguist/linguist) y sigue su [CONTRIBUTING.md](https://github.com/github-linguist/linguist/blob/main/CONTRIBUTING.md#adding-a-language).
-3. Copia la entrada de `languages.yml` en orden alfabético (sin `language_id`).
-4. Añade la gramática: `script/add-grammar https://github.com/cuevacaravacaadrian/hyperez-grammar`.
-5. Copia los archivos de `samples/` en `samples/HyperEZ/`.
-6. Ejecuta `script/update-ids` (pone el `language_id`) y las pruebas: `bundle exec rake test`.
-7. Abre la *pull request* con el texto de [`PULL_REQUEST.md`](PULL_REQUEST.md), con las cifras del día.
+`tools/linguist_pr.py` hace los pasos del [CONTRIBUTING.md de Linguist](https://github.com/github-linguist/linguist/blob/main/CONTRIBUTING.md#adding-a-language) sin Ruby ni Docker: clona Linguist, crea la rama `hyperez`, añade la entrada a `lib/linguist/languages.yml` en su sitio y con su `language_id` (el cálculo de `script/update-ids`), copia las muestras a `samples/HyperEZ/`, añade la gramática como submódulo con su entrada en `grammars.yml`, `vendor/README.md` y `vendor/licenses` (lo de `script/add-grammar`) y lo guarda en un commit.
+
+1. En GitHub, crea el repositorio público **`hyperez-grammar`** con lo que hay en [`grammar/`](grammar) (arriba) y haz un **fork** de [github-linguist/linguist](https://github.com/github-linguist/linguist).
+2. `python tools/linguist_pr.py` lo prepara en `build-linguist/` (sin subir nada) y `python tools/linguist_pr.py --push` lo sube a tu fork.
+3. Comprueba la cifra con `python tools/linguist_kit.py --progress` y con la búsqueda de GitHub `NOT is:fork path:*.hez`.
+4. Abre la *pull request* desde el enlace que muestra `--push`, con el texto de [`PULL_REQUEST.md`](PULL_REQUEST.md) y las cifras del día. Las pruebas de Linguist (`bundle exec rake test`) se ejecutan solas en la pull request; las que dependen de HyperEZ (campos, muestras que compilan, intérprete, gramática con licencia) ya las comprueba `ctest -R linguist`.
 
 ## Mientras tanto
 

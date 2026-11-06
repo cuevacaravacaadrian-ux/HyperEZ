@@ -103,7 +103,7 @@ if not jugador.vivo {
 }
 
 std::string projectTemplateModule() {
-    return R"HZ(// Lógica del jugador: separada de main.hez para poder probarla en tests/.
+    return R"HZ(// Lógica del jugador: separada de main.hez para poder probarla en hypertests/.
 
 /// Direcciones en las que se puede mover el jugador.
 enum Direccion { Quieto, Arriba, Abajo, Izquierda, Derecha }
@@ -181,7 +181,7 @@ std::string projectTemplateReadme(const std::string& title) {
            "| `hyper run` | Ejecuta `main.hez` |\n"
            "| `hyper watch` | Ejecuta `main.hez` y lo repite cada vez que guardas |\n"
            "| `hyper check` | Busca errores sin ejecutar |\n"
-           "| `hyper test` | Ejecuta las pruebas de `tests/` |\n"
+           "| `hyper test` | Ejecuta las pruebas de `hypertests/` |\n"
            "| `hyper` | Consola interactiva para probar código |\n\n"
            "En VS Code, abre `main.hez` y pulsa **F5** (o el botón ▶) para ejecutarlo, o **Ctrl+Alt+F5** para que\n"
            "se repita cada vez que guardas.\n";

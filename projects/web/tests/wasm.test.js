@@ -14,7 +14,8 @@ function check(name, cond, extra) {
 (async () => {
   let out = '';
   const createHyperEZ = require(modPath);
-  const hz = await createHyperEZ({ print: (t) => { out += t + '\n'; }, printErr: (t) => { out += t + '\n'; } });
+  const hz = await createHyperEZ({ print: (t) => { out += t + '\n'; }, printErr: (t) => { out += t + '\n'; },
+    stdin: () => null }); // sin teclado: input() lee el final de la entrada
   hz.ENV.NO_COLOR = '1';
   const run = hz.cwrap('hz_run', 'number', ['string']);
   const lsp = hz.cwrap('hz_lsp', 'string', ['string']);
@@ -40,6 +41,11 @@ function check(name, cond, extra) {
   out = '';
   code = run('/proyecto/lanza.hez');
   check('un error en ejecución devuelve 1', code === 1 && out.includes('fallo a propósito'), out);
+
+  hz.FS.writeFile('/proyecto/sale.hez', 'print("antes")\nProcess.exit(3)\nprint("después")\n');
+  out = '';
+  code = run('/proyecto/sale.hez');
+  check('Process.exit(3) termina el programa con el código 3', code === 3 && out.includes('antes') && !out.includes('después'), `código ${code}\n${out}`);
 
   hz.FS.writeFile('/proyecto/libs.hez',
     'import validate\nimport collections\nprint(validate.dni("12345678Z"))\nvar p = collections.Stack()\np.push(7)\nprint("cima", p.pop())\n');
@@ -68,6 +74,29 @@ function check(name, cond, extra) {
   const f = fmt('if true {\nprint(1)\n}\n');
   check('formato', f === 'if true {\n    print(1)\n}\n', JSON.stringify(f));
   check('no formatea un texto sin cerrar', fmt('print("hola\n').charCodeAt(0) === 1);
+
+  // ---- proyectos con las carpetas de HyperEZ (hyper new en WebAssembly) ----
+  const nuevo = hz.cwrap('hz_new_project', 'string', ['string', 'string']);
+  const archivos = JSON.parse(nuevo('app', 'mi-app'));
+  const rutas = archivos.map((a) => a.path);
+  check('hyper new en el navegador', ['main.hez', 'hypersettings/proyecto.json', 'hypercode/tareas.hez', 'hypertests/test_tareas.hez'].every((r) => rutas.includes(r)),
+    rutas.join(', '));
+  check('un tipo de proyecto que no existe', nuevo('nave', 'x') === '');
+  for (const a of archivos) { hz.FS.mkdirTree('/proyecto/mi-app/' + a.path.split('/').slice(0, -1).join('/')); hz.FS.writeFile('/proyecto/mi-app/' + a.path, a.content); }
+  out = '';
+  code = run('/proyecto/mi-app/hypertests/test_tareas.hez');
+  const pasan = hz.ccall('hz_tests_passed', 'number', [], []), fallan = hz.ccall('hz_tests_failed', 'number', [], []);
+  check('las pruebas de hypertests importan de hypercode por el nombre', code === 0 && pasan > 0 && fallan === 0, `código ${code}, ${pasan}/${fallan}\n${out}`);
+  out = '';
+  code = run('/proyecto/mi-app/main.hez');
+  check('System.projectDir y los datos en hyperdata', code === 0, out);
+
+  // el servidor de lenguaje también encuentra hypercode/ desde hypertests/ (con las carpetas creadas)
+  const test = '/proyecto/mi-app/hypertests/test_tareas.hez';
+  const abierto = JSON.parse(lsp(JSON.stringify({ jsonrpc: '2.0', method: 'textDocument/didOpen', params: { textDocument: {
+    uri: 'file://' + test, languageId: 'hyperez', version: 1, text: archivos.find((a) => a.path === 'hypertests/test_tareas.hez').content } } })));
+  const d2 = abierto.find((m) => m.method === 'textDocument/publishDiagnostics' && m.params.uri === 'file://' + test);
+  check('sin errores al importar por el nombre', d2 && d2.params.diagnostics.filter((d) => d.severity === 1).length === 0, JSON.stringify(d2).slice(0, 400));
 
   console.log(`\n${ok} comprobaciones correctas, ${fail} fallidas`);
   process.exit(fail ? 1 : 0);

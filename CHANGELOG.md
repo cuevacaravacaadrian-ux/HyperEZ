@@ -2,6 +2,51 @@
 
 Todas las versiones de HyperEZ. El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.8.3] - 2026-11-06
+
+Las carpetas de HyperEZ (`hypersettings`, `hypercode`, `hypertests`...) con sus iconos, y los dos editores, el de Windows y el del navegador, con las mismas funciones.
+
+### Añadido
+
+**Las carpetas de un proyecto HyperEZ** ([Proyectos y carpetas](docs/herramientas/proyectos.md))
+- `hyper new` crea los proyectos con `hypersettings/proyecto.json` (nombre, versión, programa principal...), `hypercode/` (los módulos), `hypertests/` (las pruebas) y `hyperdata/`. También se reconocen `hyperlibs/`, `hypertools/`, `hyperassets/`, `hyperdocs/` y `hyperbuild/` (que el `.gitignore` ya excluye).
+- **Importar por nombre** desde cualquier carpeta del proyecto: `from jugador import Jugador` encuentra `hypercode/jugador.hez` (y `hyperlibs/<nombre>/main.hez`), también desde las pruebas de `hypertests/`.
+- `hyper run` sin archivo ejecuta el `principal` de `proyecto.json`; `hyper test` sin carpeta, las pruebas de `hypertests/` (o `tests/` en los proyectos de antes), desde cualquier subcarpeta.
+- `hyper tool`: lista las herramientas de `hypertools/` (con su primer comentario) y `hyper tool <nombre> [args]` ejecuta una.
+- `System.projectDir`: la raíz del proyecto (la carpeta con `hypersettings/`), para llegar a `hyperdata/` y `hyperassets/` se ejecute desde donde se ejecute.
+- **Iconos de HyperEZ** para cada carpeta (cerrada y abierta) y para `.hez`, `proyecto.json`, Markdown, JSON, imágenes, datos, HTML, CSS y JavaScript: en HyperEZ Editor, en el editor del navegador y como tema de iconos de VS Code. Los dibuja `tools/gen_iconos.js` (`assets/icons/tema`).
+
+**HyperEZ Editor**
+- **Tema oscuro HyperEZ Noche** (*Ver → Tema oscuro*), con los colores de VS Code y del navegador y la barra de título oscura; al imprimir se usan los claros.
+- **Nuevo proyecto** (Ctrl+Mayús+N): juego, aplicación, IA, herramienta, web o sitio, en `Documentos\HyperEZ`, abierto en el Explorador.
+- El Explorador muestra los iconos de HyperEZ y, al abrir un archivo de un proyecto, el proyecto entero con su nombre.
+- **Ir a la definición** (F12 o Ctrl+clic), también en otros archivos del proyecto, con el servidor de lenguaje de VS Code y del navegador.
+- **Compartir en el editor web**: un enlace con el programa, que se abre y ejecuta en el navegador.
+- *Ayuda → La web de HyperEZ* y *HyperEZ en el navegador*.
+
+**Editor en el navegador**
+- Los iconos de HyperEZ y un proyecto de bienvenida con `hypersettings`, `hypercode` y `hypertests`.
+- **Nuevo proyecto** (Ctrl+Mayús+N): los mismos de `hyper new`, generados por HyperEZ en WebAssembly (`hz_new_project`).
+- **Ejecutar las pruebas** (Ctrl+Mayús+T), **repetir al cambiar** (Ctrl+F5), **imprimir** (Ctrl+P), elegir la **fuente**, zoom con **Ctrl+rueda** e **INS/SOB**, como en HyperEZ Editor.
+- F5 sobre un archivo que no es código ejecuta el programa principal del proyecto.
+
+**La web**
+- Preguntas frecuentes en la portada; canónicas, Open Graph y Twitter en todas las páginas; datos estructurados (schema.org) del lenguaje, el programa, el editor web, el autor y las preguntas; `sitemap.xml` con fechas y prioridades, `manifest.webmanifest` y `humans.txt`.
+- Aviso a los buscadores con **IndexNow** en cada publicación, y verificación de Google Search Console y Bing Webmaster Tools con las variables del repositorio `GOOGLE_SITE_VERIFICATION` y `BING_SITE_VERIFICATION`.
+- Página *Proyectos y carpetas* en la documentación.
+
+**VS Code** (extensión 0.8.3)
+- Tema de iconos **HyperEZ** y la orden *HyperEZ: Usar los iconos de HyperEZ*, que se ofrece una vez al abrir un proyecto con `hypersettings/`.
+- F5 y *Ejecutar pruebas* reconocen la raíz del proyecto por `hypersettings/` o `hypertests/`; enlaces a la web.
+
+### Cambiado
+- El servidor de lenguaje vuelve a analizar los archivos abiertos cuando se abre otro (o cambia, en el navegador): los errores de una importación que aún no estaba abierta desaparecen solos.
+- Herramientas de la extensión al día (`@vscode/vsce` 4.1) y GitHub Actions con Node 22.
+
+### Arreglado
+- En el navegador, `Process.exit(código)` y `exit()` terminaban con un «error interno»: ahora acaban el programa con ese código.
+- Vulnerabilidad de `minimatch` en las herramientas de publicación de la extensión (Dependabot).
+
 ## [0.8.2] - 2026-11-05
 
 La web de HyperEZ, con el editor en el navegador, y un HyperEZ Editor con Explorador que ejecuta sin guardar.

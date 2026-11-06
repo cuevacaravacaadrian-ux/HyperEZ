@@ -1,8 +1,9 @@
-// Tipos de proyecto de 'hyper new': cada uno con la misma estructura de carpetas
-//   main.hez      punto de entrada
-//   src/         módulos del proyecto (se importan con from "./src/modulo.hez" import ...)
-//   tests/       pruebas (hyper test)
-//   datos/       archivos que usa el programa (solo si hacen falta)
+// Tipos de proyecto de 'hyper new': cada uno con las carpetas de HyperEZ (docs/herramientas/proyectos.md)
+//   main.hez          punto de entrada
+//   hypersettings/    proyecto.json: nombre, versión, programa principal...
+//   hypercode/        módulos del proyecto (se importan por su nombre: from tablero import ...)
+//   hypertests/       pruebas (hyper test)
+//   hyperdata/        archivos que usa el programa (solo si hacen falta)
 #include "tools/tools.h"
 
 namespace hz {
@@ -14,12 +15,13 @@ static std::string readme(const std::string& title, const std::string& what, con
            what + "\n\nProyecto creado con [HyperEZ](" HYPEREZ_REPO_URL ") " HYPEREZ_VERSION ".\n\n"
            "## Carpetas\n\n| Carpeta | Contenido |\n|---|---|\n"
            "| `main.hez` | Punto de entrada del programa |\n"
-           "| `src/` | Módulos del proyecto |\n"
-           "| `tests/` | Pruebas (`hyper test`) |\n" + extra +
+           "| `hypersettings/` | `proyecto.json`: nombre, versión y programa principal |\n"
+           "| `hypercode/` | Módulos del proyecto: se importan por su nombre (`from modulo import ...`) |\n"
+           "| `hypertests/` | Pruebas (`hyper test`) |\n" + extra +
            "\n## Comandos\n\n| Comando | Qué hace |\n|---|---|\n"
            "| `hyper run` | Ejecuta `main.hez` |\n"
            "| `hyper watch` | Ejecuta `main.hez` y lo repite cada vez que guardas |\n"
-           "| `hyper test` | Ejecuta las pruebas de `tests/` |\n"
+           "| `hyper test` | Ejecuta las pruebas de `hypertests/` |\n"
            "| `hyper check` | Busca errores sin ejecutar |\n"
            "| `hyper` | Consola interactiva para probar código |\n\n"
            "En VS Code: **F5** ejecuta y **Ctrl+Alt+F5** ejecuta cada vez que guardas.\n\n"
@@ -38,12 +40,12 @@ static std::vector<ProjectFile> gameProject(const std::string& title) {
         size_t p = s.find(from);
         if (p != std::string::npos) s.replace(p, from.size(), to);
     };
-    fix(main, "from \"./jugador.hez\"", "from \"./src/jugador.hez\"");
-    fix(test, "from \"../jugador.hez\"", "from \"../src/jugador.hez\"");
+    fix(main, "from \"./jugador.hez\"", "from jugador");
+    fix(test, "from \"../jugador.hez\"", "from jugador");
     return {
         {"main.hez", main},
-        {"src/jugador.hez", projectTemplateModule()},
-        {"tests/test_jugador.hez", test},
+        {"hypercode/jugador.hez", projectTemplateModule()},
+        {"hypertests/test_jugador.hez", test},
         {"README.md", readme(title, "Un juego de consola: lleva al héroe hasta el tesoro esquivando las trampas.", "")},
     };
 }
@@ -52,11 +54,11 @@ static std::vector<ProjectFile> gameProject(const std::string& title) {
 
 static std::vector<ProjectFile> appProject(const std::string& title) {
     return {
-        {"main.hez", "// " + title + R"HZ( — aplicación de consola: lista de tareas que se guarda en datos/tareas.json
+        {"main.hez", "// " + title + R"HZ( — aplicación de consola: lista de tareas que se guarda en hyperdata/tareas.json
 import cli
-from "./src/tareas.hez" import ListaTareas
+from tareas import ListaTareas
 
-var lista = ListaTareas(Path.join(System.scriptDir, "datos/tareas.json"))
+var lista = ListaTareas(Path.join(System.projectDir, "hyperdata/tareas.json"))
 
 if not Console.interactive {
     // sin teclado (por ejemplo en las pruebas): una pequeña demostración
@@ -77,7 +79,7 @@ while seguir {
     }
 }
 )HZ"},
-        {"src/tareas.hez", R"HZ(// Lógica de la lista de tareas (separada de main.hez para poder probarla).
+        {"hypercode/tareas.hez", R"HZ(// Lógica de la lista de tareas (separada de main.hez para poder probarla).
 
 struct Tarea { var texto: text = ""; var hecha: bool = false }
 
@@ -127,7 +129,7 @@ class ListaTareas {
     }
 }
 )HZ"},
-        {"tests/test_tareas.hez", R"HZ(from "../src/tareas.hez" import ListaTareas
+        {"hypertests/test_tareas.hez", R"HZ(from tareas import ListaTareas
 
 test("añadir, completar y limpiar", () => {
     var ruta = Path.join(Path.temp, "tareas_prueba.json")
@@ -143,9 +145,9 @@ test("añadir, completar y limpiar", () => {
     File.delete(ruta)
 })
 )HZ"},
-        {"datos/.gitkeep", ""},
+        {"hyperdata/.gitkeep", ""},
         {"README.md", readme(title, "Aplicación de consola: una lista de tareas que se guarda en un archivo JSON.",
-                             "| `datos/` | Archivos del programa (`tareas.json`) |\n")},
+                             "| `hyperdata/` | Archivos del programa (`tareas.json`) |\n")},
     };
 }
 
@@ -155,10 +157,10 @@ static std::vector<ProjectFile> aiProject(const std::string& title) {
     return {
         {"main.hez", "// " + title + R"HZ( — inteligencia artificial: una red neuronal aprende a clasificar flores.
 import ai
-from "./src/datos.hez" import cargar
+from datos import cargar
 
 randomSeed(1)
-var datos = cargar(Path.join(System.scriptDir, "datos/flores.csv"))
+var datos = cargar(Path.join(System.projectDir, "hyperdata/flores.csv"))
 print("Ejemplos: ${datos.entradas.length}, clases: ${datos.nombres}")
 
 var red = ai.NeuralNetwork([2, 8, datos.nombres.length], "relu", "softmax")
@@ -170,7 +172,7 @@ foreach nueva in [[1.4, 0.2], [4.5, 1.5], [6.0, 2.2]] {
     print("Una flor con pétalo ${nueva[0]} x ${nueva[1]} cm es: ${datos.nombres[red.classify([datos.escalar(nueva)])[0]]}")
 }
 )HZ"},
-        {"src/datos.hez", R"HZ(// Carga y prepara los datos: entradas escaladas a [0, 1] y clases como números.
+        {"hypercode/datos.hez", R"HZ(// Carga y prepara los datos: entradas escaladas a [0, 1] y clases como números.
 import csv
 
 class Datos {
@@ -198,20 +200,20 @@ function cargar(ruta: text): Datos {
     return d
 }
 )HZ"},
-        {"datos/flores.csv", "largo,ancho,especie\n1.4,0.2,setosa\n1.3,0.2,setosa\n1.5,0.3,setosa\n1.7,0.4,setosa\n1.6,0.2,setosa\n"
+        {"hyperdata/flores.csv", "largo,ancho,especie\n1.4,0.2,setosa\n1.3,0.2,setosa\n1.5,0.3,setosa\n1.7,0.4,setosa\n1.6,0.2,setosa\n"
                              "4.7,1.4,versicolor\n4.5,1.5,versicolor\n4.0,1.3,versicolor\n4.9,1.5,versicolor\n4.2,1.2,versicolor\n"
                              "6.0,2.5,virginica\n5.6,2.2,virginica\n5.8,1.8,virginica\n6.1,2.3,virginica\n5.1,1.9,virginica\n"},
-        {"tests/test_datos.hez", R"HZ(from "../src/datos.hez" import cargar
+        {"hypertests/test_datos.hez", R"HZ(from datos import cargar
 
 test("los datos se cargan y se escalan", () => {
-    var d = cargar(Path.join(System.scriptDir, "../datos/flores.csv"))
+    var d = cargar(Path.join(System.projectDir, "hyperdata/flores.csv"))
     assertEqual(d.nombres, ["setosa", "versicolor", "virginica"])
     assertEqual(d.entradas.length, 15)
     foreach e in d.entradas { assert(e.all(v => v >= 0 and v <= 1), "entre 0 y 1") }
 })
 )HZ"},
         {"README.md", readme(title, "Inteligencia artificial: una red neuronal (biblioteca `ai`) aprende a clasificar flores a partir de un CSV.",
-                             "| `datos/` | Datos de entrenamiento (`flores.csv`) |\n")},
+                             "| `hyperdata/` | Datos de entrenamiento (`flores.csv`) |\n")},
     };
 }
 
@@ -223,7 +225,7 @@ static std::vector<ProjectFile> scriptProject(const std::string& title) {
 // Uso:  hyper main.hez <carpeta> [--ext .hez] [--top 5]
 // Muestra cuántas líneas tiene cada archivo de una carpeta, de más a menos.
 import cli
-from "./src/contar.hez" import contarLineas
+from contar import contarLineas
 
 var a = cli.parseArgs(System.args)
 var carpeta = a.positional.length > 0 ? a.positional[0] : System.scriptDir
@@ -234,14 +236,14 @@ var filas = [["archivo", "líneas"]] + resultado.take(top).map(r => [r.archivo, 
 print(cli.table(filas))
 print("Total: ${resultado.map(r => r.lineas).sum()} líneas en ${resultado.length} archivos")
 )HZ"},
-        {"src/contar.hez", R"HZ(/// Lista de {archivo, lineas} de una carpeta (y subcarpetas), ordenada de más a menos líneas.
+        {"hypercode/contar.hez", R"HZ(/// Lista de {archivo, lineas} de una carpeta (y subcarpetas), ordenada de más a menos líneas.
 function contarLineas(carpeta: text, extension: text = ""): list {
     var archivos = File.listAll(carpeta, extension)
     var cuentas = archivos.map(f => ({ archivo: f, lineas: File.readLines(Path.join(carpeta, f)).length }))
     return cuentas.sortBy(r => -r.lineas)
 }
 )HZ"},
-        {"tests/test_contar.hez", R"HZ(from "../src/contar.hez" import contarLineas
+        {"hypertests/test_contar.hez", R"HZ(from contar import contarLineas
 
 test("cuenta las líneas de cada archivo", () => {
     var dir = Path.join(Path.temp, "prueba_contar")
@@ -264,11 +266,11 @@ static std::vector<ProjectFile> webProject(const std::string& title) {
     return {
         {"main.hez", "// " + title + R"HZ( — aplicación web: páginas con plantillas, un formulario, una API JSON y archivos estáticos.
 // Ejecuta:  hyper main.hez   y abre http://localhost:8080   (Ctrl+C para pararla)
-from "./src/app.hez" import crearApp
+from app import crearApp
 
 crearApp(System.scriptDir).listen(8080, { open: System.args.contains("--abrir") })
 )HZ"},
-        {"src/app.hez", R"HZ(import web
+        {"hypercode/app.hez", R"HZ(import web
 
 var mensajes: list = []
 
@@ -341,10 +343,10 @@ input { flex: 1; padding: .55rem .7rem; border: 1px solid #d0d7de; border-radius
 button { padding: .55rem 1.2rem; border: 0; border-radius: 8px; background: #2f81f7; color: white; font: inherit; cursor: pointer; }
 li { margin: .4rem 0; }
 )CSS"},
-        {"tests/test_app.hez", R"HZ(import web
-from "../src/app.hez" import crearApp
+        {"hypertests/test_app.hez", R"HZ(import web
+from app import crearApp
 
-var proyecto = Path.join(System.scriptDir, "..")
+var proyecto = System.projectDir
 
 test("la página de inicio responde", () => {
     var r = crearApp(proyecto).handle(web.request("GET", "/"))
@@ -410,11 +412,11 @@ print("¡Hola desde HyperEZ!")
 |---|---|
 | HyperEZ | mucho |
 )MD"},
-        {"tests/test_web.hez", R"HZ(import site
+        {"hypertests/test_web.hez", R"HZ(import site
 
 test("se generan las páginas con su menú", () => {
     var destino = Path.join(Path.temp, "prueba-sitio-" + Hash.uuid())
-    var hechos = site.build(Path.join(System.scriptDir, "../contenido"), destino, { title: "Prueba" })
+    var hechos = site.build(Path.join(System.projectDir, "contenido"), destino, { title: "Prueba" })
     assertEqual(hechos.length, 2)
     var inicio = File.read(Path.join(destino, "index.html"))
     assert(inicio.contains("sobre-mi.html"))
@@ -439,8 +441,14 @@ std::vector<ProjectFile> projectFiles(const std::string& kind, const std::string
     else if (kind == "sitio") files = siteProject(title);
     else files = gameProject(title);
     bool hasIgnore = false;
-    for (auto& f : files) if (f.path == ".gitignore") { f.content = "*.tmp\n" + f.content; hasIgnore = true; }
-    if (!hasIgnore) files.push_back({".gitignore", "*.tmp\n"});
+    for (auto& f : files) if (f.path == ".gitignore") { f.content = "*.tmp\nhyperbuild/\n" + f.content; hasIgnore = true; }
+    if (!hasIgnore) files.push_back({".gitignore", "*.tmp\nhyperbuild/\n"});
+    // hypersettings/proyecto.json: lo leen hyper run, hyper test y los editores
+    std::string nombre;
+    for (char c : title) nombre += c == '"' || c == '\\' ? '_' : c;
+    files.push_back({"hypersettings/proyecto.json", "{\n  \"nombre\": \"" + nombre + "\",\n  \"version\": \"0.1.0\",\n"
+                     "  \"descripcion\": \"\",\n  \"autor\": \"\",\n  \"principal\": \"main.hez\",\n  \"tipo\": \"" + kind + "\",\n"
+                     "  \"hyperez\": \"" HYPEREZ_VERSION "\"\n}\n"});
     // Pruebas en GitHub Actions con la acción setup-hyperez del repositorio de HyperEZ
     files.push_back({".github/workflows/pruebas.yml", R"YML(# Pruebas en GitHub: con cada cambio que subes, GitHub instala HyperEZ y ejecuta las pruebas.
 name: Pruebas

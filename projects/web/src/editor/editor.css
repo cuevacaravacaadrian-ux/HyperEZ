@@ -28,6 +28,15 @@
 }
 
 * { box-sizing: border-box; }
+.tipos { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0; }
+.tipo-proyecto { display: flex; gap: 8px; align-items: flex-start; padding: 7px 9px; border: 1px solid var(--borde); border-radius: 6px; cursor: pointer; }
+.tipo-proyecto:has(input:checked) { border-color: var(--acento); background: var(--arbol-sel); }
+.tipo-proyecto input { margin-top: 3px; }
+.tipo-proyecto b { display: block; }
+.tipo-proyecto small { color: var(--suave); }
+.campo { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+.campo input, .campo select { flex: 1; }
+.ico.tema { width: 16px; height: 16px; }
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; }
 body { font: 12px/1.4 var(--letra-ui); color: var(--texto-ui); background: var(--fondo); overflow: hidden; }

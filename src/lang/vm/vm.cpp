@@ -1051,13 +1051,30 @@ void VM::printDiagnostics(ModuleUnit* unit, FILE* out, bool includeWarnings) {
     }
 }
 
+std::string VM::projectHome() {
+    std::string start = projectRoot.empty() ? currentDir() : projectRoot;
+    std::string d = start;
+    for (int i = 0; i < 16 && !d.empty(); i++) {
+        if (dirExists(pathJoin(d, "hypersettings"))) return d;
+        std::string up = pathDir(d);
+        if (up.empty() || up == d) break;
+        d = up;
+    }
+    return start;
+}
+
 ModuleUnit* VM::resolveImport(const std::string& path, bool isFile, const std::string& fromFile, std::string& error) {
     std::vector<std::string> candidates;
     std::string fromDir = pathDir(fromFile);
     auto addExt = [&](const std::string& base) {
         std::string ext = pathExt(base);
         if (ext == ".hz" || ext == ".hez") candidates.push_back(base);
-        else { candidates.push_back(base + ".hz"); candidates.push_back(base + ".hez"); candidates.push_back(pathJoin(base, "main.hz")); }
+        else {
+            candidates.push_back(base + ".hez");
+            candidates.push_back(base + ".hz");
+            candidates.push_back(pathJoin(base, "main.hez"));
+            candidates.push_back(pathJoin(base, "main.hz"));
+        }
     };
     if (isFile) {
         addExt(pathJoin(fromDir, path));
@@ -1066,6 +1083,10 @@ ModuleUnit* VM::resolveImport(const std::string& path, bool isFile, const std::s
         std::string rel = path;
         for (auto& c : rel) if (c == '.') c = '/';
         addExt(pathJoin(fromDir, rel));
+        // Las carpetas de un proyecto HyperEZ: hypercode (los módulos del programa) y hyperlibs (bibliotecas de otros)
+        std::string home = projectHome();
+        addExt(pathJoin(pathJoin(home, "hypercode"), rel));
+        addExt(pathJoin(pathJoin(home, "hyperlibs"), rel));
         if (!projectRoot.empty()) {
             addExt(pathJoin(pathJoin(projectRoot, "src"), rel));
             addExt(pathJoin(projectRoot, rel));

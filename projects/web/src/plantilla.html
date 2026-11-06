@@ -5,12 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{titulo}}</title>
 <meta name="description" content="{{descripcion}}">
+<meta name="author" content="Adrián Cueva Caravaca">
+<meta name="keywords" content="HyperEZ, lenguaje de programación, lenguaje de programación en español, programar en español, aprender a programar, Adrián Cueva Caravaca">
+<meta name="robots" content="{{#if noindex}}noindex{{else}}index, follow, max-image-preview:large{{/if}}">
+<link rel="canonical" href="{{canonica}}">
+<meta property="og:site_name" content="HyperEZ">
+<meta property="og:locale" content="es_ES">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{canonica}}">
 <meta property="og:title" content="{{titulo}}">
 <meta property="og:description" content="{{descripcion}}">
 <meta property="og:image" content="{{url}}img/banner.png">
-<meta property="og:type" content="website">
+<meta property="og:image:alt" content="HyperEZ: programa en español">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{titulo}}">
+<meta name="twitter:description" content="{{descripcion}}">
+<meta name="twitter:image" content="{{url}}img/banner.png">
 <meta name="theme-color" content="#0a0e1a">
-<link rel="icon" href="{{raiz}}img/hyperez-256.png">
+{{{verificacion}}}<link rel="icon" href="{{raiz}}img/hyperez-256.png">
+<link rel="apple-touch-icon" href="{{raiz}}img/hyperez-256.png">
+<link rel="manifest" href="{{raiz}}manifest.webmanifest">
+<link rel="sitemap" type="application/xml" href="{{raiz}}sitemap.xml">
+{{{jsonld}}}
 <link rel="stylesheet" href="{{raiz}}estilos.css">
 </head>
 <body>
@@ -62,7 +78,7 @@
       </div>
     </div>
     <div class="legal">
-      <span>© 2026 Adrián Cueva Caravaca · HyperEZ es software libre con licencia MIT</span>
+      <span>© 2026 <a href="https://github.com/cuevacaravacaadrian" rel="author">Adrián Cueva Caravaca</a>, creador de HyperEZ · software libre con licencia MIT</span>
       <span>Esta web está hecha con HyperEZ {{version}} (bibliotecas site, markdown y template) · {{fecha}}</span>
     </div>
   </div>

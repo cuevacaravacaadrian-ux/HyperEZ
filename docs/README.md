@@ -45,7 +45,9 @@
 
 ## Herramientas
 
+- [Proyectos y carpetas](herramientas/proyectos.md): `hypersettings`, `hypercode`, `hypertests`, `hyperlibs`, `hypertools`... y `proyecto.json`.
 - [HyperEZ Editor](herramientas/editor.md): el editor clásico que se instala con HyperEZ.
+- [El editor en el navegador](herramientas/editor-web.md): HyperEZ sin instalar nada, en la [web](https://cuevacaravacaadrian.github.io/HyperEZ/).
 - [La orden `hyper`](herramientas/cli.md): ejecutar, comprobar, probar, formatear, servir webs, bytecode...
 - [Otros editores](../editors/README.md): Notepad++, Sublime Text, Vim, Neovim, Helix, highlight.js y GitHub.
 - [Consola interactiva](herramientas/consola-interactiva.md)

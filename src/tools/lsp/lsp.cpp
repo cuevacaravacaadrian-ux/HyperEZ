@@ -990,7 +990,7 @@ void Server::handle(const json& msg) {
             d.path = uriToPath(d.uri);
             d.text = td["text"];
             d.version = td.value("version", 0);
-            d.dirty = true;
+            for (auto& [u, o] : docs) o.dirty = true; // los que importan este archivo ya lo encuentran
         } else if (method == "textDocument/didChange") {
             auto itd = docs.find(p["textDocument"]["uri"].get<std::string>());
             if (itd != docs.end() && !p["contentChanges"].empty()) {
@@ -1025,7 +1025,12 @@ std::string Server::handleText(const std::string& text) {
     std::vector<std::string> out;
     io.outbox = &out;
     json msg = json::parse(text, nullptr, false);
-    if (msg.is_object()) handle(msg);
+    if (msg.is_object()) {
+        handle(msg);
+        // en memoria (el editor web) no hay "guardar": un cambio puede afectar a los que importan ese archivo
+        if (msg.value("method", "") == "textDocument/didChange" && docs.size() > 1)
+            for (auto& [u, d] : docs) d.dirty = true;
+    }
     for (auto& [u, d] : docs) if (d.dirty) ensure(d); // los diagnósticos, al momento
     io.outbox = nullptr;
     std::string r = "[";

@@ -2,6 +2,8 @@
 // firmas, ir a la definición y formato. Recibe {wasm: WebAssembly.Module} una vez y después mensajes:
 //   {id, lsp: "<mensaje JSON-RPC>"}  → {id, out: [respuestas y notificaciones]}
 //   {id, format: "<código>"}        → {id, text} o {id, error}
+//   {id, nuevoProyecto: {tipo, nombre}} → {id, archivos: [{path, content}]} (los de hyper new)
+//   {carpetas: [...]}                 las carpetas del proyecto (así se encuentra hypersettings/ y se importa de hypercode/)
 'use strict';
 importScripts('hyperez.js');
 
@@ -13,6 +15,18 @@ function atender(m) {
     let out = [];
     try { out = JSON.parse(hz.lsp(m.lsp)); } catch (e) { out = []; }
     postMessage({ id: m.id, out });
+  } else if (m.carpetas) {
+    const FS = hz.FS;
+    const borrar = (d) => { for (const n of FS.readdir(d)) if (n !== '.' && n !== '..') { borrar(d + '/' + n); FS.rmdir(d + '/' + n); } };
+    try { FS.mkdir('/proyecto'); } catch (e) { /* ya está */ }
+    try { borrar('/proyecto'); } catch (e) { /* vacía */ }
+    for (const c of m.carpetas) {
+      let p = '/proyecto';
+      for (const s of c.split('/')) { if (!s) continue; p += '/' + s; try { FS.mkdir(p); } catch (e) { /* ya existe */ } }
+    }
+  } else if (m.nuevoProyecto) {
+    const r = hz.nuevo(m.nuevoProyecto.tipo, m.nuevoProyecto.nombre);
+    postMessage({ id: m.id, archivos: r ? JSON.parse(r) : null });
   } else if (m.format !== undefined) {
     const r = hz.format(m.format);
     if (r.charCodeAt(0) === 1) postMessage({ id: m.id, error: r.slice(1) });
@@ -28,7 +42,8 @@ onmessage = (e) => {
       print: () => {}, printErr: () => {},
     }).then((mod) => {
       mod.ENV.NO_COLOR = '1';
-      hz = { lsp: mod.cwrap('hz_lsp', 'string', ['string']), format: mod.cwrap('hz_format', 'string', ['string']),
+      hz = { lsp: mod.cwrap('hz_lsp', 'string', ['string']), format: mod.cwrap('hz_format', 'string', ['string']), FS: mod.FS,
+        nuevo: mod.cwrap('hz_new_project', 'string', ['string', 'string']),
         version: mod.ccall('hz_version', 'string', [], []) };
       postMessage({ listo: true, version: hz.version });
       while (cola.length) atender(cola.shift());

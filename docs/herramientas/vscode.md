@@ -31,6 +31,7 @@ La extensión de HyperEZ convierte VS Code en un entorno completo para el lengua
 | Muestras de color | `"#ff8800"`, `Color(255, 136, 0)` con selector |
 | Bienvenida | *Ayuda → Tutoriales → Empezar con HyperEZ* |
 | Tema de colores | *HyperEZ Noche* (Archivo → Preferencias → Tema de color) |
+| Iconos de HyperEZ | las carpetas de un proyecto (`hypersettings`, `hypercode`, `hypertests`...) y los `.hez` con su icono: *HyperEZ: Usar los iconos de HyperEZ*, o *Preferencias → Tema de iconos de archivo → HyperEZ*. Se ofrece una vez al abrir un proyecto con `hypersettings/` |
 
 ## Ajustes
 

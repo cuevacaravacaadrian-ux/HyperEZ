@@ -28,7 +28,7 @@
 
 ## 🚀 Empieza en un minuto
 
-1. Descarga **[HyperEZ-Setup-0.8.2.exe](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest)** y pulsa **Instalar** (no necesita administrador).
+1. Descarga **[HyperEZ-Setup-0.8.3.exe](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest)** y pulsa **Instalar** (no necesita administrador).
 2. Al terminar se abre **HyperEZ Editor** con tu primer programa.
 3. Pulsa **F5**. Ya está.
 
@@ -66,9 +66,9 @@ error[E0205]: No existe nada llamado 'pirnt'
 
 | Sistema | Cómo |
 |---|---|
-| **Windows** | **`HyperEZ-Setup-0.8.2.exe`** de la [última versión](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest): HyperEZ, HyperEZ Editor, ejemplos, documentación y la extensión de VS Code. |
-| **Linux / macOS** | `HyperEZ-0.8.2-linux-x64.tar.gz` (o `macos-arm64`): descomprímelo y ejecuta `sh install.sh`. |
-| **VS Code** | Lo instala el instalador de Windows; también `code --install-extension hyperez-0.8.2.vsix`. |
+| **Windows** | **`HyperEZ-Setup-0.8.3.exe`** de la [última versión](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest): HyperEZ, HyperEZ Editor, ejemplos, documentación y la extensión de VS Code. |
+| **Linux / macOS** | `HyperEZ-0.8.3-linux-x64.tar.gz` (o `macos-arm64`): descomprímelo y ejecuta `sh install.sh`. |
+| **VS Code** | Lo instala el instalador de Windows; o búscala en el [Marketplace](https://marketplace.visualstudio.com/items?itemName=hyperez.hyperezprogramminglanguagevscodeextension): `code --install-extension hyperez.hyperezprogramminglanguagevscodeextension`. |
 
 En Windows, los `.hez` y `.hz` se abren **siempre** con HyperEZ (doble clic = ejecutar) y el clic derecho ofrece *Editar con HyperEZ Editor*, *Editar con VS Code*, *Comprobar errores* y *Ejecutar y repetir al guardar*; en cualquier carpeta, *Nuevo → Programa HyperEZ* y *Abrir HyperEZ aquí*. Detalles en la [guía de instalación](docs/empezar/instalacion.md).
 
@@ -89,6 +89,23 @@ hz> precios.map(p => round(p * 1.21, 2))
 ```
 
 Y además `hyper watch juego.hez` (vuelve a ejecutar cada vez que guardas) y `hyper new mi-juego --tipo juego|app|ia|script` (un proyecto ordenado que funciona desde el primer momento).
+
+## 📁 Proyectos con carpetas propias
+
+Los proyectos de HyperEZ tienen **sus propias carpetas**, cada una con su icono en HyperEZ Editor, en el navegador y en VS Code:
+
+```text
+mi-juego/
+  main.hez            hyper run (o F5)
+  hypersettings/      proyecto.json: nombre, versión, programa principal
+  hypercode/          los módulos: from jugador import Jugador, sin rutas
+  hypertests/         las pruebas: hyper test
+  hyperlibs/          bibliotecas de otros
+  hypertools/         herramientas del proyecto: hyper tool <nombre>
+  hyperdata/  hyperassets/  hyperdocs/  hyperbuild/
+```
+
+Todo en [Proyectos y carpetas](docs/herramientas/proyectos.md).
 
 ## 🌐 Hacer webs
 
@@ -250,6 +267,7 @@ Toda la sintaxis está en la [referencia del lenguaje](docs/lenguaje/README.md),
 | `hyper test` | ejecuta las pruebas (`test(...)` y salidas esperadas `.out`) |
 | `hyper fmt` | ordena la sangría y los espacios sin cambiar lo que hace el código |
 | `hyper new <nombre> --tipo T` | crea un proyecto: juego, app, ia, script, web o sitio |
+| `hyper tool [nombre]` | ejecuta una herramienta del proyecto (`hypertools/`) |
 | `hyper bytecode archivo` | enseña las instrucciones que genera el compilador |
 | `hyper docs` | genera la referencia de la API |
 | `hyper lsp` | servidor de lenguaje para cualquier editor |

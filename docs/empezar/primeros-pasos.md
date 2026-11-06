@@ -74,16 +74,19 @@ hyper new mi-ia --tipo ia          red neuronal que aprende de un CSV
 hyper new mi-script --tipo script  herramienta de línea de órdenes
 ```
 
-Todos los proyectos tienen la misma estructura:
+Todos los proyectos tienen las carpetas de HyperEZ, cada una con su icono en los editores:
 
 ```text
 mi-juego/
-  main.hez       punto de entrada (hyper run lo ejecuta)
-  src/           módulos del proyecto
-  tests/         pruebas (hyper test)
-  datos/         archivos que usa el programa (si hacen falta)
+  main.hez          punto de entrada (hyper run lo ejecuta)
+  hypersettings/    proyecto.json: nombre, versión y programa principal
+  hypercode/        módulos del proyecto (se importan por su nombre)
+  hypertests/       pruebas (hyper test)
+  hyperdata/        archivos que usa el programa (si hacen falta)
   README.md
 ```
+
+Todo sobre ellas (y `hyperlibs`, `hypertools`, `hyperassets`...): [Proyectos y carpetas](../herramientas/proyectos.md).
 
 ## Y ahora
 

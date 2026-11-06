@@ -1,6 +1,7 @@
 // Ejecuta un programa de HyperEZ en un Worker (así ■ Detener puede pararlo aunque sea un bucle infinito).
-// Recibe {wasm, files: {ruta: texto}, entry: ruta, stdin: texto}. Envía la salida al momento ({out} y {err}),
-// los archivos que el programa crea o cambia ({files}) y, al terminar, {done, code, ms}.
+// Recibe {wasm, files: {ruta: texto}, folders: [...], entry: ruta, stdin: texto} (o entries: [rutas] para ejecutar
+// las pruebas una tras otra). Envía la salida al momento ({out} y {err}), los archivos que el programa crea o
+// cambia ({files}) y, al terminar, {done, code, ms, tests: {passed, failed, files}}.
 'use strict';
 importScripts('hyperez.js');
 
@@ -26,7 +27,7 @@ function recorrer(FS, dir, out) {
 const TEXTO = /\.(hez|hz|txt|md|json|csv|html|htm|css|js|svg|xml|ini|cfg|log|yml|yaml|toml)$/i;
 
 onmessage = (e) => {
-  const { wasm, files, entry, stdin } = e.data;
+  const { wasm, files, folders, entry, entries, stdin } = e.data;
   const entrada = new TextEncoder().encode(stdin || '');
   let pos = 0;
   // la salida se agrupa un poco para no saturar la página con miles de mensajes
@@ -58,11 +59,26 @@ onmessage = (e) => {
       } else FS.writeFile(p, texto);
       antes.set(p, texto);
     }
+    for (const c of folders || []) crearCarpetas(FS, RAIZ + c + '/x');
     FS.chdir(RAIZ);
     const t0 = performance.now();
     let code = 1;
-    try { code = hz.ccall('hz_run', 'number', ['string'], [RAIZ + entry]); }
-    catch (err) { escribir('error interno: ' + err, true); }
+    const tests = { passed: 0, failed: 0, files: 0 };
+    const lista = entries || [entry];
+    let peor = 0;
+    for (const ent of lista) {
+      if (entries) escribir('── ' + ent.slice(1), false);
+      let c = 1;
+      try { c = hz.ccall('hz_run', 'number', ['string'], [RAIZ + ent]); }
+      catch (err) { escribir('error interno: ' + err, true); }
+      const p = hz.ccall('hz_tests_passed', 'number', [], []), f = hz.ccall('hz_tests_failed', 'number', [], []);
+      tests.passed += p;
+      tests.failed += f + (c !== 0 && f === 0 ? 1 : 0); // un archivo que no compila cuenta como fallo
+      tests.files++;
+      peor = Math.max(peor, c);
+      if (entries) escribir('', false);
+    }
+    code = peor;
     const ms = performance.now() - t0;
     vaciar();
     // archivos nuevos o cambiados por el programa (imágenes, CSV, HTML...): vuelven al explorador
@@ -81,6 +97,6 @@ onmessage = (e) => {
       if (antes.get(p) !== valor) cambiados[p.slice(RAIZ.length)] = valor;
     }
     if (Object.keys(cambiados).length) postMessage({ files: cambiados });
-    postMessage({ done: true, code, ms });
+    postMessage({ done: true, code, ms, tests });
   }, (err) => postMessage({ err: 'No se pudo cargar HyperEZ: ' + err + '\n', done: true, code: 1, ms: 0 }));
 };

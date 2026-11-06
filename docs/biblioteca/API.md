@@ -1,4 +1,4 @@
-# Referencia de la API de HyperEZ 0.8.2
+# Referencia de la API de HyperEZ 0.8.3
 
 > Generada automáticamente con `hyper docs` a partir del catálogo de la máquina virtual.
 
@@ -2369,6 +2369,7 @@ Información del sistema y del programa.
 | `System.exe` | `text` | Ruta del ejecutable de HyperEZ. *(solo lectura)* |
 | `System.hostname` | `text` | Nombre del equipo. *(solo lectura)* |
 | `System.platform` | `text` | "windows", "linux" o "macos". *(solo lectura)* |
+| `System.projectDir` | `text` | Carpeta del proyecto: la que tiene hypersettings/ (subiendo desde la del programa); si no hay, la del programa. *(solo lectura)* |
 | `System.scriptDir` | `text` | Carpeta del programa que se está ejecutando. *(solo lectura)* |
 | `System.user` | `text` | Nombre del usuario. *(solo lectura)* |
 | `System.version` | `text` | Versión de HyperEZ. *(solo lectura)* |

@@ -7,6 +7,7 @@
 <meta name="description" content="Escribe y ejecuta HyperEZ en el navegador: el editor clásico de HyperEZ con explorador de archivos, errores en vivo, autocompletado y consola. Sin instalar nada.">
 <link rel="icon" href="../img/hyperez-256.png">
 <link rel="stylesheet" href="editor.css">
+<!--seo-->
 </head>
 <body class="tema-clasico">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -40,6 +41,7 @@
     <symbol id="i-flecha" viewBox="0 0 16 16"><path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
   </defs>
 </svg>
+<!--iconos-tema-->
 
 <div id="app">
   <header class="titulo">
@@ -53,12 +55,14 @@
       <div class="desplegable">
         <button data-cmd="nuevo">Nuevo archivo<kbd>Ctrl+N</kbd></button>
         <button data-cmd="nueva-carpeta">Nueva carpeta</button>
+        <button data-cmd="nuevo-proyecto">Nuevo proyecto…<kbd>Ctrl+Mayús+N</kbd></button>
         <hr>
         <button data-cmd="abrir">Abrir archivos del equipo…<kbd>Ctrl+O</kbd></button>
         <button data-cmd="guardar">Descargar el archivo<kbd>Ctrl+S</kbd></button>
         <button data-cmd="zip">Descargar el proyecto (.zip)</button>
         <hr>
         <button data-cmd="compartir">Copiar enlace para compartir</button>
+        <button data-cmd="imprimir">Imprimir…<kbd>Ctrl+P</kbd></button>
         <button data-cmd="cerrar-pestana">Cerrar la pestaña<kbd>Ctrl+W</kbd></button>
         <hr>
         <button data-cmd="reiniciar">Empezar de cero…</button>
@@ -86,6 +90,8 @@
         <button data-cmd="ejecutar">Ejecutar<kbd>F5</kbd></button>
         <button data-cmd="detener">Detener<kbd>Mayús+F5</kbd></button>
         <button data-cmd="comprobar">Comprobar errores<kbd>Ctrl+Mayús+F5</kbd></button>
+        <button data-cmd="repetir" data-check>Repetir al cambiar (watch)<kbd>Ctrl+F5</kbd></button>
+        <button data-cmd="pruebas">Ejecutar las pruebas del proyecto<kbd>Ctrl+Mayús+T</kbd></button>
         <hr>
         <button data-cmd="entrada">Escribir la entrada del programa…</button>
         <button data-cmd="limpiar-salida">Limpiar la salida</button>
@@ -103,6 +109,7 @@
         <button data-cmd="zoom-mas">Aumentar la letra<kbd>Ctrl++</kbd></button>
         <button data-cmd="zoom-menos">Reducir la letra<kbd>Ctrl+-</kbd></button>
         <button data-cmd="zoom-normal">Tamaño normal<kbd>Ctrl+0</kbd></button>
+        <button data-cmd="fuente">Fuente…</button>
       </div>
     </div>
     <div class="menu-item" data-menu="ejemplos">Ejemplos

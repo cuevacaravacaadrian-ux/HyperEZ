@@ -145,7 +145,11 @@ NATIVE(n_assert) {
 }
 NATIVE(n_exit) {
     vm.flushOutput();
+#ifdef __EMSCRIPTEN__
+    throw ProgramExit{argc > 0 && args[0].isNum() ? (int)args[0].n : 0};
+#else
     std::exit(argc > 0 && args[0].isNum() ? (int)args[0].n : 0);
+#endif
 }
 NATIVE(n_range) {
     double a = argNum(vm, args, argc, 0, "range");

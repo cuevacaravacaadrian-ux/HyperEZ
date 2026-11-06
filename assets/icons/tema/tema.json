@@ -1,0 +1,56 @@
+{
+  "carpetas": [
+    "hypersettings",
+    "hypercode",
+    "hypertests",
+    "hyperlibs",
+    "hypertools",
+    "hyperassets",
+    "hyperdata",
+    "hyperdocs",
+    "hyperbuild"
+  ],
+  "extensiones": {
+    "hez": "hez",
+    "hz": "hez",
+    "md": "md",
+    "markdown": "md",
+    "json": "json",
+    "png": "imagen",
+    "jpg": "imagen",
+    "jpeg": "imagen",
+    "gif": "imagen",
+    "svg": "imagen",
+    "webp": "imagen",
+    "ico": "imagen",
+    "bmp": "imagen",
+    "csv": "datos",
+    "tsv": "datos",
+    "db": "datos",
+    "sqlite": "datos",
+    "html": "html",
+    "htm": "html",
+    "css": "css",
+    "js": "js",
+    "mjs": "js",
+    "txt": "texto",
+    "log": "texto",
+    "ini": "texto",
+    "out": "texto"
+  },
+  "nombres": {
+    "proyecto.json": "proyecto"
+  },
+  "descripciones": {
+    "carpeta": "una carpeta cualquiera",
+    "hypersettings": "configuración del proyecto (proyecto.json)",
+    "hypercode": "los módulos del programa",
+    "hypertests": "las pruebas (hyper test)",
+    "hyperlibs": "bibliotecas de otros (import por nombre)",
+    "hypertools": "herramientas del proyecto (hyper tool)",
+    "hyperassets": "imágenes, sonidos y fuentes",
+    "hyperdata": "datos del programa (CSV, JSON...)",
+    "hyperdocs": "la documentación del proyecto",
+    "hyperbuild": "lo que se genera (no se sube a git)"
+  }
+}

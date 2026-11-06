@@ -13,8 +13,9 @@
 
   const BIENVENIDA = `// ¡Bienvenido a HyperEZ en el navegador!
 // Pulsa F5 (o ▶ Ejecutar) y mira el resultado abajo, en "Salida". No hace falta guardar:
-// tu proyecto se queda en este navegador. A la izquierda, el Explorador con tus archivos.
-from "./src/tienda.hez" import Objeto, conDescuento
+// tu proyecto se queda en este navegador. A la izquierda, el Explorador con las carpetas de HyperEZ:
+// hypercode (tus módulos, se importan por su nombre), hypertests (las pruebas) e hypersettings.
+from tienda import Objeto, conDescuento
 
 var tienda = [
     Objeto("Espada", 120, "arma"),
@@ -30,8 +31,23 @@ foreach o in tienda {
 }
 
 // Prueba a escribir "tienda[0]." para ver el autocompletado, o a equivocarte en un nombre:
-// los errores salen al momento, en español.
+// los errores salen al momento, en español. Ctrl+Mayús+T ejecuta las pruebas de hypertests/.
 `;
+  const PRUEBAS = `// Pruebas de la tienda: Ejecutar → Ejecutar las pruebas (Ctrl+Mayús+T), o hyper test en tu equipo
+from tienda import Objeto, conDescuento
+
+test("el descuento se redondea", () => {
+    assertEqual(conDescuento(120, 20), 96)
+    assertEqual(conDescuento(15, 20), 12)
+})
+
+test("los objetos de 100 monedas o más son caros", () => {
+    assert(Objeto("Espada", 120, "arma").caro)
+    assert(not Objeto("Poción", 15, "magia").caro)
+})
+`;
+  const PROYECTO_JSON = JSON.stringify({ nombre: 'mi-tienda', version: '0.1.0', descripcion: 'Mi primer proyecto de HyperEZ',
+    autor: '', principal: 'main.hez', tipo: 'app' }, null, 2) + '\n';
   const TIENDA = `/// Un objeto de la tienda del juego
 class Objeto {
     var nombre: text
@@ -55,8 +71,13 @@ function conDescuento(precio: number, porcentaje: number): number {
   function proyectoInicial() {
     const fs = new VFS();
     fs.write('/main.hez', BIENVENIDA);
-    fs.write('/src/tienda.hez', TIENDA);
-    fs.write('/LEEME.md', '# Mi proyecto\n\nCreado con HyperEZ en el navegador. Descárgalo con *Archivo → Descargar el proyecto (.zip)*\ny ejecútalo en tu equipo con `hyper run main.hez`.\n');
+    fs.write('/hypercode/tienda.hez', TIENDA);
+    fs.write('/hypertests/test_tienda.hez', PRUEBAS);
+    fs.write('/hypersettings/proyecto.json', PROYECTO_JSON);
+    fs.write('/LEEME.md', '# Mi proyecto\n\nCreado con HyperEZ en el navegador. Descárgalo con *Archivo → Descargar el proyecto (.zip)*\n' +
+      'y ejecútalo en tu equipo con `hyper run` (y sus pruebas con `hyper test`).\n\n' +
+      '| Carpeta | Para qué |\n|---|---|\n| `hypersettings/` | `proyecto.json`: nombre, versión y programa principal |\n' +
+      '| `hypercode/` | Los módulos: se importan por su nombre (`from tienda import Objeto`) |\n| `hypertests/` | Las pruebas |\n');
     return fs;
   }
 
@@ -67,12 +88,13 @@ function conDescuento(precio: number, porcentaje: number): number {
   try { guardado = JSON.parse(localStorage.getItem(CLAVE) || 'null'); } catch (e) { guardado = null; }
   const estado = Object.assign({
     abiertos: ['/main.hez'], activo: '/main.hez', tema: 'clasico', explorador: true, panel: true, numeros: true,
-    tam: 14, anchoExp: 230, altoPanel: 190, carpetasAbiertas: ['/src'], entrada: '',
+    tam: 14, anchoExp: 230, altoPanel: 190, carpetasAbiertas: ['/hypercode', '/hypertests'], entrada: '', repetir: false, fuente: '',
   }, guardado || {});
   const fs = guardado && guardado.vfs ? new VFS(guardado.vfs) : proyectoInicial();
   const vistas = new Map(); // ruta → {selStart, selEnd, scrollTop, scrollLeft}
   let temporizadorGuardar = 0;
   function guardar() {
+    if (typeof lspCarpetas === 'function') lspCarpetas();
     clearTimeout(temporizadorGuardar);
     temporizadorGuardar = setTimeout(() => {
       try {
@@ -146,8 +168,19 @@ function conDescuento(precio: number, porcentaje: number): number {
     lsp.worker.postMessage({ wasm: await moduloListo });
     await lspPedir('initialize', { processId: null, rootUri: RAIZ_URI, capabilities: {} });
     await lspAvisar('initialized', {});
+    lspCarpetas();
     for (const ruta of fs.files.keys()) if (ES_CODIGO.test(ruta)) await lspAbrir(ruta);
     lsp.listo = true;
+  }
+  // el servidor de lenguaje necesita las carpetas (hypersettings/ marca la raíz del proyecto)
+  let carpetasLsp = '';
+  function lspCarpetas() {
+    if (!lsp.worker) return;
+    const lista = [...fs.folders].sort();
+    const clave = lista.join('|');
+    if (clave === carpetasLsp) return;
+    carpetasLsp = clave;
+    lsp.worker.postMessage({ carpetas: lista });
   }
   async function lspAbrir(ruta) {
     if (!lsp.worker || lsp.versiones.has(ruta)) return;
@@ -319,7 +352,20 @@ function conDescuento(precio: number, porcentaje: number): number {
     } else pintarPestanas();
     guardar();
   }
+  // los iconos de HyperEZ (los mete la web en index.html: assets/icons/tema); si no están, los de siempre
+  const TEMA = window.HZ_ICONOS || null;
   function icono(ruta, esCarpeta, abierta) {
+    if (TEMA) {
+      const nombre = VFS.name(ruta).toLowerCase();
+      let t;
+      if (esCarpeta) t = (TEMA.carpetas.includes(nombre) ? nombre : 'carpeta') + (abierta ? '-abierta' : '');
+      else if (TEMA.nombres[nombre]) t = 'archivo-' + TEMA.nombres[nombre];
+      else {
+        const ext = (/\.([^.]+)$/.exec(nombre) || [])[1];
+        t = ext && TEMA.extensiones[ext] ? 'archivo-' + TEMA.extensiones[ext] : 'archivo';
+      }
+      return `<svg class="ico tema"><use href="#t-${t}"/></svg>`;
+    }
     let id = 'i-archivo';
     if (esCarpeta) id = abierta ? 'i-carpeta-abierta' : 'i-carpeta';
     else if (ES_CODIGO.test(ruta)) id = 'i-hez';
@@ -580,6 +626,7 @@ function conDescuento(precio: number, porcentaje: number): number {
     programarPintar();
     lspCambio(actual);
     guardar();
+    repetirSiToca();
     if (e.inputType === 'insertText' && e.data) {
       if (e.data === '.' || /[\p{L}_]/u.test(e.data)) programarSugerencias(e.data === '.');
       else ocultarSugerencias();
@@ -589,6 +636,15 @@ function conDescuento(precio: number, porcentaje: number): number {
       if (!sugerencias.hidden) programarSugerencias(false);
     }
   });
+  let sobrescribir = false;
+  $('estado-modo').title = 'Insert: insertar (INS) o sobrescribir (SOB)';
+  $('estado-modo').addEventListener('click', () => { sobrescribir = !sobrescribir; $('estado-modo').textContent = sobrescribir ? 'SOB' : 'INS'; ta.focus(); });
+  // Ctrl+rueda: tamaño de la letra (como en la aplicación)
+  $('editor').addEventListener('wheel', (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    comando(e.deltaY < 0 ? 'zoom-mas' : 'zoom-menos');
+  }, { passive: false });
   ta.addEventListener('keydown', (e) => {
     if (!sugerencias.hidden && teclaSugerencias(e)) return;
     const a = ta.selectionStart, b = ta.selectionEnd, texto = ta.value;
@@ -626,6 +682,12 @@ function conDescuento(precio: number, porcentaje: number): number {
           return;
         }
       }
+    }
+    if (e.key === 'Insert' && !ctrl && !e.shiftKey) { e.preventDefault(); sobrescribir = !sobrescribir; $('estado-modo').textContent = sobrescribir ? 'SOB' : 'INS'; return; }
+    if (sobrescribir && e.key.length === 1 && !ctrl && !e.altKey && a === b && a < texto.length && texto[a] !== '\n') {
+      e.preventDefault();
+      aplicar({ from: a, to: a + 1, insert: e.key, selStart: a + 1, selEnd: a + 1 });
+      return;
     }
     if (e.key.length === 1 && !ctrl && !e.altKey) {
       const c = N.outdentOnClose(texto, a, e.key) || N.autoPair(texto, a, b, e.key);
@@ -901,17 +963,31 @@ function conDescuento(precio: number, porcentaje: number): number {
     if (!fs.files.has(ruta)) ruta = [...fs.files.keys()].find((f) => f.endsWith('/' + VFS.name(m[1]))) || ruta;
     irA(ruta, +m[2] - 1, m[3] ? +m[3] - 1 : 0);
   }
-  async function ejecutar() {
-    if (actual === null) { avisoEstado('Abre un archivo .hez para ejecutarlo'); return; }
+  // La raíz del proyecto de una ruta: la carpeta con hypersettings/ (como hyper run), o '/'
+  function raizProyecto(ruta) {
+    for (let d = ruta && fs.isDir(ruta) ? ruta : ruta ? VFS.dir(ruta) : '/'; ; d = VFS.dir(d)) {
+      if (fs.isDir(unir(d, 'hypersettings'))) return d;
+      if (d === '/') return '/';
+    }
+  }
+  // El programa principal del proyecto: "principal" de hypersettings/proyecto.json, o main.hez
+  function principalDe(raiz) {
+    let p = 'main.hez';
+    try { p = JSON.parse(fs.read(unir(raiz, 'hypersettings/proyecto.json')) || '{}').principal || p; } catch (e) { /* proyecto.json mal escrito */ }
+    const r = unir(raiz, p);
+    return fs.files.has(r) ? r : null;
+  }
+  async function ejecutar(entradas) {
     let entrada = actual;
-    if (!ES_CODIGO.test(entrada)) {
-      entrada = fs.files.has('/main.hez') ? '/main.hez' : [...fs.files.keys()].find((f) => ES_CODIGO.test(f));
+    if (!entradas && (entrada === null || !ES_CODIGO.test(entrada))) {
+      entrada = principalDe(raizProyecto(actual)) || (fs.files.has('/main.hez') ? '/main.hez' : [...fs.files.keys()].find((f) => ES_CODIGO.test(f)));
       if (!entrada) { avisoEstado('No hay ningún archivo .hez que ejecutar'); return; }
     }
     if (ejecucion) detener(true);
     paginaPanel('salida');
     salida.innerHTML = '';
-    escribirSalida(`▶ ${entrada.slice(1)}   (sin guardar: se ejecuta lo que ves en el editor)\n\n`, 'fin');
+    if (entradas) escribirSalida(`▶ Pruebas: ${entradas.length} archivo${entradas.length === 1 ? '' : 's'}   (sin guardar: lo que ves en el editor)\n\n`, 'fin');
+    else escribirSalida(`▶ ${entrada.slice(1)}   (sin guardar: se ejecuta lo que ves en el editor)\n\n`, 'fin');
     const wasm = modulo || await moduloListo;
     const w = new Worker('run-worker.js');
     const yo = { worker: w, inicio: performance.now() };
@@ -931,7 +1007,11 @@ function conDescuento(precio: number, porcentaje: number): number {
       }
       if (m.done) {
         const s = (m.ms / 1000).toLocaleString('es', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
-        escribirSalida(m.code === 0 ? `\n■ Terminó bien (código 0) en ${s} s\n` : `\n■ Terminó con errores (código ${m.code}) en ${s} s\n`,
+        if (entradas && m.tests) {
+          const t = m.tests, total = t.passed + t.failed;
+          escribirSalida(t.failed ? `\n■ ${total} prueba${total === 1 ? '' : 's'}: ${t.passed} correcta${t.passed === 1 ? '' : 's'}, ${t.failed} fallida${t.failed === 1 ? '' : 's'} (${s} s)\n`
+            : `\n■ ✓ Las ${total} prueba${total === 1 ? '' : 's'} pasan (${t.files} archivo${t.files === 1 ? '' : 's'}, ${s} s)\n`, t.failed ? 'fin err' : 'fin bien');
+        } else escribirSalida(m.code === 0 ? `\n■ Terminó bien (código 0) en ${s} s\n` : `\n■ Terminó con errores (código ${m.code}) en ${s} s\n`,
           m.code === 0 ? 'fin bien' : 'fin err');
         w.terminate();
         ejecucion = null;
@@ -941,7 +1021,88 @@ function conDescuento(precio: number, porcentaje: number): number {
     const archivos = {};
     for (const [ruta, valor] of fs.files) archivos[ruta] = valor;
     if (actual && ES_CODIGO.test(actual)) archivos[actual] = ta.value;
-    w.postMessage({ wasm, files: archivos, entry: entrada, stdin: $('entrada').value });
+    w.postMessage({ wasm, files: archivos, folders: [...fs.folders], entry: entrada, entries: entradas || null, stdin: $('entrada').value });
+  }
+  // Ejecutar → Ejecutar las pruebas: los .hez de hypertests/ (o tests/) del proyecto, uno tras otro (como hyper test)
+  function ejecutarPruebas() {
+    const raiz = raizProyecto(actual);
+    const dir = fs.isDir(unir(raiz, 'hypertests')) ? unir(raiz, 'hypertests') : unir(raiz, 'tests');
+    const lista = [...fs.files.keys()].filter((f) => f.startsWith(dir + '/') && ES_CODIGO.test(f)).sort();
+    if (!lista.length) { avisoEstado('Este proyecto no tiene pruebas: créalas en hypertests/'); return; }
+    ejecutar(lista);
+  }
+  // Ejecutar → Repetir al cambiar: vuelve a ejecutar el programa cuando dejas de escribir
+  let temporizadorRepetir = 0;
+  function repetirSiToca() {
+    if (!estado.repetir) return;
+    clearTimeout(temporizadorRepetir);
+    temporizadorRepetir = setTimeout(() => ejecutar(), 900);
+  }
+
+  // Archivo → Nuevo proyecto: los mismos de hyper new (juego, app, ia...), en una carpeta nueva
+  const TIPOS = [['juego', '🎮 Juego de consola', 'con teclado (para jugarlo, en tu equipo)'], ['app', '📋 Aplicación', 'menú y datos guardados'],
+    ['ia', '🧠 Inteligencia artificial', 'una red neuronal que aprende de un CSV'], ['script', '🛠 Herramienta', 'de línea de órdenes, con argumentos'],
+    ['web', '🌐 Aplicación web', 'plantillas, formulario y API (hyper serve)'], ['sitio', '📰 Sitio web', 'escrito en Markdown']];
+  function nuevoProyecto() {
+    dialogo(`<h2>Nuevo proyecto</h2><p>Con las carpetas de HyperEZ: <b>hypersettings</b> (el proyecto), <b>hypercode</b> (los módulos) y <b>hypertests</b> (las pruebas).</p>
+      <div class="tipos">${TIPOS.map(([t, n, d], i) => `<label class="tipo-proyecto"><input type="radio" name="tipo" value="${t}"${i === 1 ? ' checked' : ''}><span><b>${n}</b><small>${d}</small></span></label>`).join('')}</div>
+      <label class="campo">Nombre <input type="text" id="d-nombre" value="${escHtml(fs.freeName('/', 'mi-proyecto', ''))}"></label>
+      <p class="error" id="d-error" hidden></p>
+      <div class="botones"><button data-cerrar>Cancelar</button><button class="principal" id="d-crear">Crear</button></div>`, (d, cerrar) => {
+      const nombre = d.querySelector('#d-nombre');
+      const crear = async () => {
+        const n = nombre.value.trim(), tipo = d.querySelector('input[name=tipo]:checked').value;
+        const error = (t) => { const e = d.querySelector('#d-error'); e.textContent = t; e.hidden = false; };
+        if (!VFS.validName(n)) { error('Escribe un nombre sin \\ / : * ? " < > |'); return; }
+        if (fs.exists('/' + n)) { error('Ya hay algo llamado ' + n); return; }
+        if (!lsp.worker) { error('HyperEZ aún se está cargando'); return; }
+        const r = await lspEnviar({ nuevoProyecto: { tipo, nombre: n } });
+        if (!r.archivos) { error('No se pudo crear el proyecto'); return; }
+        cerrar();
+        for (const f of r.archivos) fs.write('/' + n + '/' + f.path, f.content);
+        for (const c of ['/' + n, '/' + n + '/hypercode']) if (!estado.carpetasAbiertas.includes(c)) estado.carpetasAbiertas.push(c);
+        lspCarpetas();
+        for (const f of r.archivos) if (ES_CODIGO.test(f.path)) await lspAbrir('/' + n + '/' + f.path);
+        abrir('/' + n + '/main.hez');
+        avisoEstado(`Proyecto ${n} creado: F5 lo ejecuta, Ctrl+Mayús+T sus pruebas`);
+      };
+      d.querySelector('#d-crear').onclick = crear;
+      nombre.onkeydown = (e) => { if (e.key === 'Enter') crear(); };
+      nombre.select();
+    });
+  }
+
+  // Archivo → Imprimir: el código con sus colores, en una ventana aparte
+  function imprimir() {
+    if (actual === null || $('codigo').hidden) { avisoEstado('Abre un archivo para imprimirlo'); return; }
+    const w = open('', '_blank');
+    if (!w) { avisoEstado('El navegador no dejó abrir la ventana para imprimir'); return; }
+    const cuerpo = ES_CODIGO.test(actual) ? N.highlightHtml(ta.value, []) : escHtml(ta.value);
+    w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${escHtml(VFS.name(actual))}</title><style>
+      body{margin:14mm;font:10.5pt/1.45 Consolas,"Cascadia Mono",monospace;color:#1f2328}h1{font:600 10pt "Segoe UI",sans-serif;color:#666;margin:0 0 8px}
+      pre{margin:0;white-space:pre-wrap;word-break:break-word;font:inherit}.t-kw,.t-const,.t-interp{color:#0000dc}.t-str{color:#a31515}.t-num,.t-fmt{color:#098658}
+      .t-com{color:#008000;font-style:italic}.t-doc{color:#3b7f3b;font-style:italic}.t-type{color:#267f99}.t-fn,.t-builtin{color:#795e26}.t-esc{color:#e00}</style></head>
+      <body><h1>${escHtml(actual.slice(1))} · HyperEZ</h1><pre>${cuerpo}</pre></body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 200);
+  }
+
+  // Ver → Fuente
+  const FUENTES = [['', 'Consolas (la de siempre)'], ['"Cascadia Code", "Cascadia Mono"', 'Cascadia Code'], ['"Courier New"', 'Courier New'],
+    ['"Fira Code", "Fira Mono"', 'Fira Code'], ['"JetBrains Mono"', 'JetBrains Mono'], ['"Source Code Pro"', 'Source Code Pro'], ['monospace', 'La del sistema']];
+  function elegirFuente() {
+    dialogo(`<h2>Fuente del código</h2><label class="campo">Fuente <select id="d-fuente">${FUENTES.map(([v, n]) =>
+      `<option value="${escHtml(v)}"${v === estado.fuente ? ' selected' : ''}>${escHtml(n)}</option>`).join('')}</select></label>
+      <label class="campo">Tamaño <input type="number" id="d-tam" min="9" max="28" value="${estado.tam}"></label>
+      <div class="botones"><button data-cerrar>Cancelar</button><button class="principal" id="d-ok">Aceptar</button></div>`, (d, cerrar) => {
+      d.querySelector('#d-ok').onclick = () => {
+        estado.fuente = d.querySelector('#d-fuente').value;
+        estado.tam = Math.max(9, Math.min(28, parseInt(d.querySelector('#d-tam').value, 10) || 14));
+        cerrar();
+        aplicarVista();
+      };
+    });
   }
   function detener(silencio) {
     if (!ejecucion) return;
@@ -1043,6 +1204,7 @@ function conDescuento(precio: number, porcentaje: number): number {
     marca('ver-numeros', estado.numeros);
     marca('tema-clasico', estado.tema === 'clasico');
     marca('tema-noche', estado.tema === 'noche');
+    marca('repetir', estado.repetir);
   }
   document.querySelector('.herramientas').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-cmd]');
@@ -1170,6 +1332,8 @@ function conDescuento(precio: number, porcentaje: number): number {
     document.querySelector('.centro').style.setProperty('--alto-panel', estado.altoPanel + 'px');
     $('editor').classList.toggle('sin-numeros', !estado.numeros);
     document.documentElement.style.setProperty('--tam', estado.tam + 'px');
+    if (estado.fuente) document.documentElement.style.setProperty('--letra-codigo', estado.fuente + ', Consolas, monospace');
+    else document.documentElement.style.removeProperty('--letra-codigo');
     document.documentElement.style.setProperty('--alto-linea', Math.round(estado.tam * 1.45) + 'px');
     medir();
     programarPintar();
@@ -1191,6 +1355,17 @@ function conDescuento(precio: number, porcentaje: number): number {
     switch (cmd) {
       case 'nuevo': nuevoArchivo(); break;
       case 'nueva-carpeta': nuevaCarpeta(); break;
+      case 'nuevo-proyecto': nuevoProyecto(); break;
+      case 'imprimir': imprimir(); break;
+      case 'pruebas': ejecutarPruebas(); break;
+      case 'repetir':
+        estado.repetir = !estado.repetir;
+        marcarMenus();
+        guardar();
+        avisoEstado(estado.repetir ? '⟳ Repetir al cambiar: el programa se ejecuta cada vez que dejas de escribir' : 'Repetir al cambiar: desactivado');
+        if (estado.repetir) ejecutar();
+        break;
+      case 'fuente': elegirFuente(); break;
       case 'abrir': $('abrir-archivos').click(); break;
       case 'guardar': if (actual) descargarArchivo(actual); break;
       case 'zip': {
@@ -1255,7 +1430,9 @@ function conDescuento(precio: number, porcentaje: number): number {
       case 'ayuda-api': open('../docs/biblioteca/API.html', '_blank'); break;
       case 'ayuda-descargar': location.href = '../descargar.html'; break;
       case 'ayuda-atajos': dialogo(`<h2>Atajos de teclado</h2><table>${[
-        ['F5', 'Ejecutar (sin guardar)'], ['Mayús+F5', 'Detener'], ['Ctrl+Mayús+F5', 'Comprobar errores'], ['Ctrl+Espacio', 'Autocompletar'],
+        ['F5', 'Ejecutar (sin guardar)'], ['Mayús+F5', 'Detener'], ['Ctrl+Mayús+F5', 'Comprobar errores'], ['Ctrl+F5', 'Repetir al cambiar'],
+        ['Ctrl+Mayús+T', 'Ejecutar las pruebas'], ['Ctrl+Mayús+N', 'Nuevo proyecto'], ['Ctrl+P', 'Imprimir'], ['Insert', 'Insertar o sobrescribir'],
+        ['Ctrl+rueda', 'Tamaño de la letra'], ['Ctrl+Espacio', 'Autocompletar'],
         ['Ctrl+clic', 'Ir a la definición'], ['Mayús+Alt+F', 'Dar formato'], ['Ctrl+/', 'Comentar o descomentar'], ['Ctrl+D', 'Duplicar la línea'],
         ['Tab / Mayús+Tab', 'Sangrar / quitar sangría'], ['Ctrl+F / Ctrl+H', 'Buscar / reemplazar'], ['Ctrl+G', 'Ir a la línea'],
         ['Ctrl+N / Ctrl+O', 'Nuevo archivo / abrir del equipo'], ['Ctrl+S', 'Descargar el archivo'], ['Ctrl+W', 'Cerrar la pestaña'],
@@ -1279,13 +1456,16 @@ function conDescuento(precio: number, porcentaje: number): number {
     const k = e.key.toLowerCase();
     let cmd = null;
     if (e.key === 'F5' && ctrl && e.shiftKey) cmd = 'comprobar';
+    else if (e.key === 'F5' && ctrl) cmd = 'repetir';
+    else if (ctrl && e.shiftKey && k === 'n') cmd = 'nuevo-proyecto';
+    else if (ctrl && e.shiftKey && k === 't') cmd = 'pruebas';
     else if (e.key === 'F5' && e.shiftKey) cmd = 'detener';
     else if (e.key === 'F5') cmd = 'ejecutar';
     else if (e.key === 'F12') { e.preventDefault(); irADefinicion(ta.selectionStart); return; }
     else if (ctrl && e.shiftKey && k === 'e') cmd = 'ver-explorador';
     else if (ctrl && !e.shiftKey && !e.altKey) {
       cmd = { n: 'nuevo', o: 'abrir', s: 'guardar', w: 'cerrar-pestana', f: 'buscar', h: 'reemplazar', g: 'ir-linea', '/': 'comentar', d: 'duplicar',
-        j: 'ver-panel', '+': 'zoom-mas', '=': 'zoom-mas', '-': 'zoom-menos', '0': 'zoom-normal', y: 'rehacer' }[k] || null;
+        j: 'ver-panel', '+': 'zoom-mas', '=': 'zoom-mas', '-': 'zoom-menos', '0': 'zoom-normal', y: 'rehacer', p: 'imprimir' }[k] || null;
       if ((k === 'y') && document.activeElement !== ta) cmd = null;
     } else if (e.altKey && e.shiftKey && k === 'f') cmd = 'formato';
     if (cmd) { e.preventDefault(); comando(cmd); }

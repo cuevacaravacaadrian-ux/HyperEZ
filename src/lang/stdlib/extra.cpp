@@ -245,6 +245,7 @@ NATIVE(sys_platform) {
 NATIVE(sys_version) { UNUSED; return vm.str(HYPEREZ_VERSION); }
 NATIVE(sys_cwd) { UNUSED; return vm.str(currentDir()); }
 NATIVE(sys_scriptDir) { UNUSED; return vm.str(vm.projectRoot); }
+NATIVE(sys_projectDir) { UNUSED; return vm.str(vm.projectHome()); }
 NATIVE(sys_env) {
     std::string n = argStr(vm, args, argc, 0, "System.env");
 #ifdef _WIN32
@@ -822,6 +823,7 @@ void registerStdlibExtra(VM& vm) {
     vm.defineProp(sys, "version", "text", "Versión de HyperEZ.", sys_version);
     vm.defineProp(sys, "cwd", "text", "Carpeta de trabajo actual.", sys_cwd);
     vm.defineProp(sys, "scriptDir", "text", "Carpeta del programa que se está ejecutando.", sys_scriptDir);
+    vm.defineProp(sys, "projectDir", "text", "Carpeta del proyecto: la que tiene hypersettings/ (subiendo desde la del programa); si no hay, la del programa.", sys_projectDir);
     vm.defineFn(sys, "env", "(nombre: text): text?", "Valor de una variable de entorno (o null).", sys_env);
     vm.defineFn(sys, "date", "(): map", "Fecha y hora actuales: {year, month, day, hour, minute, second, weekday, text}.", sys_date);
     vm.defineFn(sys, "sleep", "(segundos: number): void", "Detiene el programa unos segundos (bloquea; dentro de async usa await wait()).", sys_sleep);

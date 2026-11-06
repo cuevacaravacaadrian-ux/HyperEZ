@@ -68,6 +68,12 @@ code, pre { font-family: var(--codigo); }
 
 /* ---- secciones ---- */
 .seccion { padding: 84px 0; }
+.estrecha { max-width: 860px; }
+.faq { margin-top: 26px; display: grid; gap: 10px; }
+.faq details { background: var(--fondo, #fff); border: 1px solid var(--borde); border-radius: 10px; padding: 14px 18px; }
+.faq summary { cursor: pointer; font-weight: 650; font-size: 17px; list-style-position: inside; }
+.faq details[open] summary { margin-bottom: 8px; }
+.faq p { margin: 0; color: var(--suave, #57606a); line-height: 1.6; }
 .seccion.gris { background: var(--panel); border-top: 1px solid var(--borde); border-bottom: 1px solid var(--borde); }
 .seccion.oscura { background: var(--noche); color: #d6deeb; }
 .seccion.oscura h2 { color: #fff; } .seccion.oscura .sub { color: #9fb0d4; }

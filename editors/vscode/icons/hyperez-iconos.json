@@ -1,0 +1,166 @@
+{
+  "iconDefinitions": {
+    "_carpeta": {
+      "iconPath": "./tema/carpeta.svg"
+    },
+    "_carpeta-abierta": {
+      "iconPath": "./tema/carpeta-abierta.svg"
+    },
+    "_hypersettings": {
+      "iconPath": "./tema/hypersettings.svg"
+    },
+    "_hypersettings-abierta": {
+      "iconPath": "./tema/hypersettings-abierta.svg"
+    },
+    "_hypercode": {
+      "iconPath": "./tema/hypercode.svg"
+    },
+    "_hypercode-abierta": {
+      "iconPath": "./tema/hypercode-abierta.svg"
+    },
+    "_hypertests": {
+      "iconPath": "./tema/hypertests.svg"
+    },
+    "_hypertests-abierta": {
+      "iconPath": "./tema/hypertests-abierta.svg"
+    },
+    "_hyperlibs": {
+      "iconPath": "./tema/hyperlibs.svg"
+    },
+    "_hyperlibs-abierta": {
+      "iconPath": "./tema/hyperlibs-abierta.svg"
+    },
+    "_hypertools": {
+      "iconPath": "./tema/hypertools.svg"
+    },
+    "_hypertools-abierta": {
+      "iconPath": "./tema/hypertools-abierta.svg"
+    },
+    "_hyperassets": {
+      "iconPath": "./tema/hyperassets.svg"
+    },
+    "_hyperassets-abierta": {
+      "iconPath": "./tema/hyperassets-abierta.svg"
+    },
+    "_hyperdata": {
+      "iconPath": "./tema/hyperdata.svg"
+    },
+    "_hyperdata-abierta": {
+      "iconPath": "./tema/hyperdata-abierta.svg"
+    },
+    "_hyperdocs": {
+      "iconPath": "./tema/hyperdocs.svg"
+    },
+    "_hyperdocs-abierta": {
+      "iconPath": "./tema/hyperdocs-abierta.svg"
+    },
+    "_hyperbuild": {
+      "iconPath": "./tema/hyperbuild.svg"
+    },
+    "_hyperbuild-abierta": {
+      "iconPath": "./tema/hyperbuild-abierta.svg"
+    },
+    "_archivo": {
+      "iconPath": "./tema/archivo.svg"
+    },
+    "_archivo-hez": {
+      "iconPath": "./tema/archivo-hez.svg"
+    },
+    "_archivo-proyecto": {
+      "iconPath": "./tema/archivo-proyecto.svg"
+    },
+    "_archivo-md": {
+      "iconPath": "./tema/archivo-md.svg"
+    },
+    "_archivo-json": {
+      "iconPath": "./tema/archivo-json.svg"
+    },
+    "_archivo-imagen": {
+      "iconPath": "./tema/archivo-imagen.svg"
+    },
+    "_archivo-datos": {
+      "iconPath": "./tema/archivo-datos.svg"
+    },
+    "_archivo-html": {
+      "iconPath": "./tema/archivo-html.svg"
+    },
+    "_archivo-css": {
+      "iconPath": "./tema/archivo-css.svg"
+    },
+    "_archivo-js": {
+      "iconPath": "./tema/archivo-js.svg"
+    },
+    "_archivo-texto": {
+      "iconPath": "./tema/archivo-texto.svg"
+    }
+  },
+  "folder": "_carpeta",
+  "folderExpanded": "_carpeta-abierta",
+  "rootFolder": "_carpeta",
+  "rootFolderExpanded": "_carpeta-abierta",
+  "file": "_archivo",
+  "folderNames": {
+    "hypersettings": "_hypersettings",
+    "hypercode": "_hypercode",
+    "hypertests": "_hypertests",
+    "hyperlibs": "_hyperlibs",
+    "hypertools": "_hypertools",
+    "hyperassets": "_hyperassets",
+    "hyperdata": "_hyperdata",
+    "hyperdocs": "_hyperdocs",
+    "hyperbuild": "_hyperbuild"
+  },
+  "folderNamesExpanded": {
+    "hypersettings": "_hypersettings-abierta",
+    "hypercode": "_hypercode-abierta",
+    "hypertests": "_hypertests-abierta",
+    "hyperlibs": "_hyperlibs-abierta",
+    "hypertools": "_hypertools-abierta",
+    "hyperassets": "_hyperassets-abierta",
+    "hyperdata": "_hyperdata-abierta",
+    "hyperdocs": "_hyperdocs-abierta",
+    "hyperbuild": "_hyperbuild-abierta"
+  },
+  "fileExtensions": {
+    "hez": "_archivo-hez",
+    "hz": "_archivo-hez",
+    "md": "_archivo-md",
+    "markdown": "_archivo-md",
+    "json": "_archivo-json",
+    "png": "_archivo-imagen",
+    "jpg": "_archivo-imagen",
+    "jpeg": "_archivo-imagen",
+    "gif": "_archivo-imagen",
+    "svg": "_archivo-imagen",
+    "webp": "_archivo-imagen",
+    "ico": "_archivo-imagen",
+    "bmp": "_archivo-imagen",
+    "csv": "_archivo-datos",
+    "tsv": "_archivo-datos",
+    "db": "_archivo-datos",
+    "sqlite": "_archivo-datos",
+    "html": "_archivo-html",
+    "htm": "_archivo-html",
+    "css": "_archivo-css",
+    "js": "_archivo-js",
+    "mjs": "_archivo-js",
+    "txt": "_archivo-texto",
+    "log": "_archivo-texto",
+    "ini": "_archivo-texto",
+    "out": "_archivo-texto"
+  },
+  "fileNames": {
+    "proyecto.json": "_archivo-proyecto"
+  },
+  "languageIds": {
+    "hyperez": "_archivo-hez",
+    "markdown": "_archivo-md",
+    "json": "_archivo-json",
+    "jsonc": "_archivo-json",
+    "html": "_archivo-html",
+    "css": "_archivo-css",
+    "javascript": "_archivo-js",
+    "plaintext": "_archivo-texto"
+  },
+  "hidesExplorerArrows": false
+}

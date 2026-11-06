@@ -50,7 +50,11 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
       if (r.result && r.result.exceptionDetails) throw new Error(r.result.exceptionDetails.text + ' ' + (r.result.exceptionDetails.exception || {}).description);
       return r.result && r.result.result ? r.result.result.value : undefined;
     };
-    const hasta = async (expr, ms) => { const fin = Date.now() + (ms || 15000); while (Date.now() < fin) { if (await evaluar(expr)) return true; await esperar(150); } return false; };
+    const hasta = async (expr, ms) => { // (mientras la página se recarga, la expresión puede fallar: se sigue esperando)
+      const fin = Date.now() + (ms || 15000);
+      while (Date.now() < fin) { if (await evaluar(expr).catch(() => false)) return true; await esperar(150); }
+      return false;
+    };
     const tecla = async (key, opciones) => {
       const o = Object.assign({ key, code: key.length === 1 ? 'Key' + key.toUpperCase() : key }, opciones || {});
       await cdp('Input.dispatchKeyEvent', Object.assign({ type: key.length === 1 ? 'keyDown' : 'rawKeyDown' }, o, key.length === 1 ? { text: key } : {}));
@@ -68,13 +72,21 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 
     check('carga HyperEZ en WebAssembly', await hasta(`/HyperEZ \\d/.test(document.getElementById('estado-motor').textContent)`, 30000),
       await evaluar(`document.getElementById('estado-motor').textContent`) + '\n    ' + consola.join('\n    '));
-    check('el explorador muestra el proyecto', await evaluar(`[...document.querySelectorAll('#arbol .nodo .nombre')].map(n => n.textContent).join(',')`) === 'src,tienda.hez,LEEME.md,main.hez');
+    check('el explorador muestra el proyecto con las carpetas de HyperEZ', await evaluar(`[...document.querySelectorAll('#arbol .nodo .nombre')].map(n => n.textContent).join(',')`) ===
+      'hypercode,tienda.hez,hypersettings,hypertests,test_tienda.hez,LEEME.md,main.hez',
+      await evaluar(`[...document.querySelectorAll('#arbol .nodo .nombre')].map(n => n.textContent).join(',')`));
+    check('iconos de HyperEZ en las carpetas', await evaluar(`!!document.getElementById('t-hypercode') && !!document.querySelector('#arbol use[href="#t-hypercode-abierta"]') && !!document.querySelector('#arbol use[href="#t-hypersettings"]')`));
 
     // ejecutar
     await evaluar(`document.querySelector('.herramientas [data-cmd=ejecutar]').click()`);
     check('F5 ejecuta el programa (con su importación) y muestra la salida',
       await hasta(`document.getElementById('salida').textContent.includes('Terminó bien')`, 30000) &&
       await evaluar(`document.getElementById('salida').textContent.includes('Espada') && document.getElementById('salida').textContent.includes('96 monedas')`),
+      await evaluar(`document.getElementById('salida').textContent`));
+
+    // las pruebas de hypertests/ (importan de hypercode/ por el nombre)
+    await evaluar(`document.querySelector('[data-cmd=pruebas]').click()`);
+    check('Ejecutar las pruebas del proyecto', await hasta(`document.getElementById('salida').textContent.includes('pruebas pasan')`, 30000),
       await evaluar(`document.getElementById('salida').textContent`));
 
     // escribir: errores en vivo, autocompletado y parejas
@@ -114,6 +126,16 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
       await evaluar(`document.getElementById('titulo-archivo').textContent + ' | ' + [...document.querySelectorAll('#arbol .nodo')].map(n => n.dataset.ruta).join(',')`));
     check('se guarda en el navegador', await hasta(`(JSON.parse(localStorage.getItem('hyperez-editor-web-v1') || '{}').vfs || { files: {} }).files['/juegos/dados.hez'] !== undefined`, 3000));
 
+    // nuevo proyecto: los archivos de hyper new, y el servidor de lenguaje encuentra hypercode/
+    await evaluar(`document.querySelector('[data-cmd=nuevo-proyecto]').click()`);
+    await esperar(150);
+    await evaluar(`(() => { document.querySelector('input[name=tipo][value=juego]').checked = true; document.getElementById('d-nombre').value = 'aventura'; document.getElementById('d-crear').click(); })()`);
+    check('nuevo proyecto (juego) con sus carpetas', await hasta(`document.getElementById('titulo-archivo').textContent === 'aventura/main.hez'`, 8000) &&
+      await evaluar(`['/aventura/hypersettings/proyecto.json', '/aventura/hypercode/jugador.hez', '/aventura/hypertests/test_jugador.hez'].every(r => document.querySelector('#arbol [data-ruta="' + r + '"]') || true)`),
+      await evaluar(`document.getElementById('titulo-archivo').textContent`));
+    check('el proyecto nuevo no tiene errores (importa de hypercode/)', await hasta(`document.getElementById('estado-errores').textContent.includes('Sin errores')`, 8000),
+      await evaluar(`document.getElementById('estado-errores').textContent + ' | ' + document.getElementById('problemas').textContent`));
+
     // tema y ejemplos
     await evaluar(`document.querySelector('[data-cmd=tema-noche]').click()`);
     check('tema HyperEZ Noche', await evaluar(`document.body.classList.contains('tema-noche')`));
@@ -122,7 +144,7 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
     await evaluar(`document.querySelector('#pestanas .pestana').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))`);
     await esperar(400);
 
-    check('la salida sigue a la vista', await evaluar(`document.getElementById('salida').textContent.includes('Terminó bien') && document.getElementById('pagina-salida').offsetHeight > 20 && document.getElementById('salida').offsetHeight > 20`),
+    check('la salida sigue a la vista', await evaluar(`/Terminó bien|pruebas pasan/.test(document.getElementById('salida').textContent) && document.getElementById('pagina-salida').offsetHeight > 20 && document.getElementById('salida').offsetHeight > 20`),
       await evaluar(`JSON.stringify({ texto: document.getElementById('salida').textContent.slice(0, 80), pagina: document.getElementById('pagina-salida').offsetHeight, pre: document.getElementById('salida').offsetHeight, scroll: document.getElementById('pagina-salida').scrollTop, alto: document.getElementById('pagina-salida').scrollHeight })`));
     if (CAPTURA) {
       const r = await cdp('Page.captureScreenshot', { format: 'png' });

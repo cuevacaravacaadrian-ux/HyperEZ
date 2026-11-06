@@ -11,6 +11,11 @@ import template
 from "../../tools/docs_menu.hz" import MENU
 
 const REPO_URL = "https://github.com/cuevacaravacaadrian/HyperEZ"
+const AUTOR = "Adrián Cueva Caravaca"
+const AUTOR_URL = "https://github.com/cuevacaravacaadrian"
+const MARKETPLACE = "https://marketplace.visualstudio.com/items?itemName=hyperez.hyperezprogramminglanguagevscodeextension"
+/// IndexNow (Bing, Yandex, Seznam...): la clave se publica en <web>/<clave>.txt y web.yml avisa de cada cambio
+const INDEXNOW = "ea7183867bbcf24ffb3bed860715189a"
 const AQUI = System.scriptDir
 const RAIZ = Path.absolute(Path.join(AQUI, "..", ".."))
 const SRC = Path.join(AQUI, "src")
@@ -20,12 +25,17 @@ var destino = Path.join(AQUI, "dist")
 var wasm = Path.join(RAIZ, "build-web")
 var url = "https://cuevacaravacaadrian.github.io/HyperEZ/"
 var base = "/HyperEZ/"
+// verificación de Google Search Console y Bing Webmaster Tools (el código lo da cada uno; ver projects/web/README.md)
+var google = System.env("HZ_GOOGLE_VERIFICACION") ?? ""
+var bing = System.env("HZ_BING_VERIFICACION") ?? ""
 var i = 0
 while i < System.args.length {
     var a = System.args[i]
     if a == "--wasm" { i += 1; wasm = Path.join(System.cwd, System.args[i]) }
     else if a == "--url" { i += 1; url = System.args[i] }
     else if a == "--base" { i += 1; base = System.args[i] }
+    else if a == "--google" { i += 1; google = System.args[i] }
+    else if a == "--bing" { i += 1; bing = System.args[i] }
     else { destino = Path.join(System.cwd, a) }
     i += 1
 }
@@ -71,17 +81,60 @@ const NAV = [
 var plantilla = File.read(Path.join(SRC, "plantilla.html"))
 var paginasHechas = []
 
-function envolver(raiz: text, activo: text, titulo: text, descripcion: text, contenido: text): text {
+var verificacion = (google != "" ? "<meta name=\"google-site-verification\" content=\"" + google + "\">\n" : "") +
+                   (bing != "" ? "<meta name=\"msvalidate.01\" content=\"" + bing + "\">\n" : "")
+/// Datos estructurados (schema.org) para los buscadores
+function jsonld(datos: map): text {
+    return "<script type=\"application/ld+json\">" + JSON.stringify({ "@context": "https://schema.org", ...datos }).replace("</", "<\\/") + "</script>"
+}
+function envolver(raiz: text, activo: text, titulo: text, descripcion: text, contenido: text, extra: map = {}): text {
     return template.renderHtml(plantilla, {
         titulo: titulo, descripcion: descripcion, raiz: raiz, url: url, version: version, fecha: hoy, contenido: contenido,
         nav: NAV.map(n => ({ url: n.url, texto: n.texto, activo: n.url == activo })),
+        canonica: url + (activo == "index.html" ? "" : activo), verificacion: verificacion, jsonld: "", noindex: false, ...extra,
     })
 }
-function pagina(fragmento: text, salida: text, titulo: text, descripcion: text, datos: map = {}) {
+function pagina(fragmento: text, salida: text, titulo: text, descripcion: text, datos: map = {}, extra: map = {}) {
     var cuerpo = template.renderHtml(File.read(Path.join(SRC, "paginas", fragmento)), { version: version, fecha: hoy, raiz: "", ...datos })
-    escribir(salida, envolver("", salida, titulo, descripcion, cuerpo))
+    escribir(salida, envolver("", salida, titulo, descripcion, cuerpo, extra))
     paginasHechas.add(salida)
 }
+
+// ---- quién y qué es HyperEZ, para los buscadores (la portada) ----
+const DESCRIPCION = "HyperEZ es un lenguaje de programación en español, gratuito y de código abierto, creado por " + AUTOR +
+                    ": sencillo y rápido, para aprender y para hacer juegos, webs, inteligencia artificial, datos y herramientas."
+const FAQ = [
+    { pregunta: "¿Qué es HyperEZ?",
+      respuesta: "Un lenguaje de programación en español, gratuito y de código abierto (licencia MIT), creado por " + AUTOR +
+                 ". Sirve para aprender a programar y para hacer proyectos reales: juegos de consola, webs, inteligencia artificial, análisis de datos, gráficos, sonido y herramientas." },
+    { pregunta: "¿Quién ha creado HyperEZ?",
+      respuesta: AUTOR + ", que lo desarrolla en abierto en GitHub (github.com/cuevacaravacaadrian/HyperEZ): el compilador, la máquina virtual, la biblioteca, HyperEZ Editor, la extensión de VS Code y esta web." },
+    { pregunta: "¿Es gratis? ¿Funciona en mi ordenador?",
+      respuesta: "Sí, es gratis y lo será siempre. Funciona en Windows (con instalador y HyperEZ Editor), Linux y macOS, y también en el navegador, sin instalar nada, con el editor online." },
+    { pregunta: "¿Por qué se dice que es un lenguaje en español?",
+      respuesta: "Los mensajes de error, la documentación, los ejemplos y las herramientas están en español, y tus nombres pueden llevar tildes y eñes (var puntuación). Las palabras clave son las de siempre (if, function, class) para que lo aprendido sirva en cualquier otro lenguaje." },
+    { pregunta: "¿Cómo empiezo a programar con HyperEZ?",
+      respuesta: "Descárgalo, abre HyperEZ Editor, escribe print(\"¡Hola, mundo!\") y pulsa F5. O pruébalo ahora en el editor del navegador. La guía y los tutoriales (un juego, una red neuronal) te llevan paso a paso." },
+    { pregunta: "¿Qué editores puedo usar?",
+      respuesta: "HyperEZ Editor (incluido en Windows), el editor del navegador y Visual Studio Code con la extensión oficial de HyperEZ (colores, errores en vivo, autocompletado y F5 para ejecutar). También hay colores para Notepad++, Sublime Text, Vim y Neovim." },
+]
+FAQ[0].primera = true
+var personaLd = { "@type": "Person", "@id": url + "#autor", name: AUTOR, url: AUTOR_URL, sameAs: [AUTOR_URL],
+                  jobTitle: "Creador de HyperEZ", knowsAbout: ["HyperEZ", "lenguajes de programación", "compiladores", "máquinas virtuales"] }
+var portadaLd = jsonld({ "@graph": [
+    { "@type": "WebSite", "@id": url + "#web", name: "HyperEZ", alternateName: ["HyperEZ, el lenguaje de programación en español", "Hyper EZ"],
+      url: url, inLanguage: "es", description: DESCRIPCION, publisher: { "@id": url + "#autor" }, author: { "@id": url + "#autor" } },
+    personaLd,
+    { "@type": "ComputerLanguage", "@id": url + "#lenguaje", name: "HyperEZ", url: url, description: DESCRIPCION,
+      creator: { "@id": url + "#autor" }, license: REPO_URL + "/blob/main/LICENSE", sameAs: [REPO_URL] },
+    { "@type": "SoftwareApplication", "@id": url + "#programa", name: "HyperEZ", description: DESCRIPCION, url: url,
+      applicationCategory: "DeveloperApplication", applicationSubCategory: "Lenguaje de programación", operatingSystem: "Windows, Linux, macOS",
+      softwareVersion: version, inLanguage: "es", isAccessibleForFree: true, license: REPO_URL + "/blob/main/LICENSE",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, downloadUrl: REPO_URL + "/releases/latest", installUrl: url + "descargar.html",
+      image: url + "img/hyperez-256.png", screenshot: url + "img/banner.png", author: { "@id": url + "#autor" }, sameAs: [REPO_URL, MARKETPLACE] },
+    { "@type": "FAQPage", "@id": url + "#preguntas", mainEntity: FAQ.map(f => ({ "@type": "Question", name: f.pregunta,
+      acceptedAnswer: { "@type": "Answer", text: f.respuesta } })) },
+] })
 
 // ---- 1. archivos estáticos e imágenes ----
 if File.isDir(destino) { File.deleteDir(destino) }
@@ -116,14 +169,17 @@ var cifras = {
     ejemplos: File.listAll(Path.join(RAIZ, "examples"), ".hz").length,
     paginas: File.listAll(Path.join(RAIZ, "docs"), ".md").length,
 }
-pagina("inicio.html", "index.html", "HyperEZ · Programa en español",
-    "HyperEZ es un lenguaje de programación en español, sencillo y rápido, para hacer juegos, webs, IA, datos y herramientas. Descárgalo gratis o pruébalo en el navegador.",
-    { portada: muestra("muestra_portada.hez"), muestras: muestras, cifras: cifras })
+pagina("inicio.html", "index.html", "HyperEZ · El lenguaje de programación en español",
+    "HyperEZ es un lenguaje de programación en español, gratuito y de código abierto, creado por " + AUTOR + ". Haz juegos, webs, IA, datos y herramientas. Descárgalo o pruébalo en el navegador.",
+    { portada: muestra("muestra_portada.hez"), muestras: muestras, cifras: cifras, faq: FAQ }, { jsonld: portadaLd })
 
 // ---- 3. descargas ----
-pagina("descargar.html", "descargar.html", "Descargar HyperEZ " + version,
-    "Descarga HyperEZ para Windows (instalador con HyperEZ Editor), Linux y macOS, y la extensión de Visual Studio Code.",
-    { releases: REPO_URL + "/releases/latest" })
+pagina("descargar.html", "descargar.html", "Descargar HyperEZ " + version + " · Windows, Linux y macOS",
+    "Descarga gratis HyperEZ, el lenguaje de programación en español: instalador para Windows con HyperEZ Editor, Linux, macOS y la extensión de Visual Studio Code.",
+    { releases: REPO_URL + "/releases/latest" },
+    { jsonld: jsonld({ "@type": "SoftwareApplication", name: "HyperEZ", softwareVersion: version, operatingSystem: "Windows, Linux, macOS",
+                       applicationCategory: "DeveloperApplication", downloadUrl: REPO_URL + "/releases/latest", url: url + "descargar.html",
+                       offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: personaLd }) })
 
 // ---- 4. ejemplos (también para el editor: ejemplos.json) ----
 const CATEGORIAS = {
@@ -204,16 +260,16 @@ pagina("creditos.html", "creditos.html", "Créditos y licencias · HyperEZ", "Qu
 
 // ---- 7. página 404 (GitHub Pages la sirve en cualquier dirección: rutas absolutas) ----
 var cuerpo404 = template.renderHtml(File.read(Path.join(SRC, "paginas", "404.html")), { raiz: base })
-escribir("404.html", envolver(base, "", "No encontrado · HyperEZ", "Esta página no existe.", cuerpo404))
+escribir("404.html", envolver(base, "", "No encontrado · HyperEZ", "Esta página no existe.", cuerpo404, { noindex: true, canonica: url }))
 
 // ---- 8. documentación: docs/ con la misma cabecera, un menú lateral y "Probar en el editor" ----
 const MARCA = "@@hz@@"
 var layoutDocs = envolver(MARCA + "../", "docs/index.html", MARCA + "titulo · Documentación de HyperEZ",
-    "Documentación de HyperEZ: guía, tutoriales, referencia del lenguaje y de la biblioteca, herramientas y funcionamiento interno.",
+    "Documentación de HyperEZ, el lenguaje de programación en español: guía, tutoriales, referencia del lenguaje y de la biblioteca, herramientas y funcionamiento interno.",
     "<div class=\"envoltura docs\">\n<aside class=\"docs-menu\"><input class=\"docs-buscar\" placeholder=\"Buscar en el menú…\" aria-label=\"Buscar\"><ul>\n" +
         "@@hz@@menu\n</ul></aside>\n<article class=\"prosa\">@@hz@@contenido\n" +
         "<div class=\"pie-doc\"><a href=\"" + REPO_URL + "/tree/main/docs\">Esta documentación en GitHub</a><a href=\"@@hz@@../editor/index.html\">▶ Probar código en el editor</a></div>" +
-        "</article>\n</div>")
+        "</article>\n</div>", { canonica: MARCA + "canonica" })
 layoutDocs = layoutDocs
     .replace(MARCA + "../", "{{raiz}}../")
     .replace(MARCA + "titulo", "{{titulo}}")
@@ -234,7 +290,7 @@ foreach ruta in hechos {
     var rel = Path.relative(ruta, docsDir).replace("\\", "/")
     var nivel = rel.split("/").length - 1
     var arriba = "../" * (nivel + 1)
-    var html = File.read(ruta)
+    var html = File.read(ruta).replace(MARCA + "canonica", url + "docs/" + rel)
     html = FUERA.replace(html, m => {
         if m.groups[0].length / 3 <= nivel { return m.text }
         var destinoRel = m.groups[1]
@@ -250,6 +306,26 @@ foreach ruta in hechos {
 
 // ---- 9. el editor ----
 foreach f in File.list(Path.join(SRC, "editor")) { copiar(Path.join(SRC, "editor", f), "editor/" + f) }
+// los iconos de HyperEZ (assets/icons/tema, los dibuja tools/gen_iconos.js): hypersettings, hypercode, hypertests...
+var temaDir = Path.join(RAIZ, "assets", "icons", "tema")
+if File.exists(Path.join(temaDir, "sprite.svg")) {
+    var edIndex = Path.join(destino, "editor", "index.html")
+    var iconosTema = File.read(Path.join(temaDir, "sprite.svg")).trim() + "\n<script>window.HZ_ICONOS = " +
+                     JSON.stringify(JSON.parse(File.read(Path.join(temaDir, "tema.json")))) + "</script>"
+    File.write(edIndex, File.read(edIndex).replace("<!--iconos-tema-->", iconosTema))
+}
+var edSeo = "<link rel=\"canonical\" href=\"" + url + "editor/index.html\">\n" +
+    "<meta property=\"og:site_name\" content=\"HyperEZ\">\n<meta property=\"og:type\" content=\"website\">\n" +
+    "<meta property=\"og:url\" content=\"" + url + "editor/index.html\">\n<meta property=\"og:title\" content=\"HyperEZ Editor en el navegador\">\n" +
+    "<meta property=\"og:description\" content=\"Escribe y ejecuta HyperEZ, el lenguaje de programación en español, sin instalar nada.\">\n" +
+    "<meta property=\"og:image\" content=\"" + url + "img/banner.png\">\n<meta name=\"twitter:card\" content=\"summary_large_image\">\n" +
+    "<meta name=\"author\" content=\"" + AUTOR + "\">\n<link rel=\"manifest\" href=\"../manifest.webmanifest\">\n" + verificacion +
+    jsonld({ "@type": "WebApplication", name: "HyperEZ Editor en el navegador", url: url + "editor/index.html", applicationCategory: "DeveloperApplication",
+             operatingSystem: "Cualquiera (en el navegador)", browserRequirements: "WebAssembly", inLanguage: "es", isAccessibleForFree: true,
+             offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: personaLd,
+             description: "El editor de HyperEZ con el lenguaje compilado a WebAssembly: errores en vivo, autocompletado, explorador, proyectos y pruebas." })
+var edIndexHtml = Path.join(destino, "editor", "index.html")
+File.write(edIndexHtml, File.read(edIndexHtml).replace("<!--seo-->", edSeo))
 var conMotor = File.exists(Path.join(wasm, "hyperez.wasm"))
 if conMotor {
     copiar(Path.join(wasm, "hyperez.js"), "editor/hyperez.js")
@@ -260,8 +336,25 @@ if conMotor {
 
 // ---- 10. para los buscadores y GitHub Pages ----
 var todas = paginasHechas + hechos.filter(h => h.endsWith(".html")).map(h => "docs/" + Path.relative(h, docsDir).replace("\\", "/")) + ["editor/index.html"]
+var hoyIso = Time.format(Time.now(), "%Y-%m-%d")
+function prioridad(p: text): text {
+    if p == "index.html" { return "1.0" }
+    if p == "descargar.html" or p == "editor/index.html" { return "0.9" }
+    if not p.startsWith("docs/") { return "0.8" }
+    return p == "docs/GUIA.html" or p == "docs/index.html" or p.startsWith("docs/empezar/") ? "0.7" : "0.5"
+}
 escribir("sitemap.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n" +
-        todas.map(p => "  <url><loc>" + url + p + "</loc></url>").join("\n") + "\n</urlset>\n")
+        todas.map(p => "  <url><loc>" + url + (p == "index.html" ? "" : p) + "</loc><lastmod>" + hoyIso + "</lastmod><priority>" + prioridad(p) +
+                       "</priority></url>").join("\n") + "\n</urlset>\n")
+escribir("manifest.webmanifest", JSON.stringify({
+    name: "HyperEZ", short_name: "HyperEZ", description: DESCRIPCION, lang: "es", start_url: "./", scope: "./", display: "standalone",
+    background_color: "#0a0e1a", theme_color: "#0a0e1a",
+    icons: [{ src: "img/hyperez-128.png", sizes: "128x128", type: "image/png" }, { src: "img/hyperez-256.png", sizes: "256x256", type: "image/png" }],
+    shortcuts: [{ name: "Editor en el navegador", url: "editor/index.html" }, { name: "Descargar", url: "descargar.html" }, { name: "Documentación", url: "docs/index.html" }],
+}))
+escribir(INDEXNOW + ".txt", INDEXNOW)
+escribir("humans.txt", "/* EQUIPO */\nCreador: " + AUTOR + "\nGitHub: " + AUTOR_URL + "\nDesde: España\n\n/* SITIO */\nHecho con: HyperEZ " + version +
+         " (site, markdown y template)\nCódigo: " + REPO_URL + "\nIdioma: español\n")
 escribir("robots.txt", "User-agent: *\nAllow: /\nSitemap: " + url + "sitemap.xml\n")
 escribir(".nojekyll", "")
 

@@ -5,6 +5,8 @@
 #include "lang/compiler/disasm.h"
 #include "tools/tools.h"
 
+#include <nlohmann/json.hpp>
+
 #include <algorithm>
 #include <cstring>
 
@@ -33,13 +35,14 @@ static void printHelp() {
     std::printf("\n");
     section("Ejecutar");
     row("hyper <archivo.hz> [args...]", "ejecuta un programa (args llegan en System.args)");
-    row("hyper run [archivo.hz] [args...]", "igual; sin archivo ejecuta main.hz");
+    row("hyper run [archivo.hz] [args...]", "igual; sin archivo, el principal del proyecto o main.hez");
+    row("hyper tool [nombre] [args...]", "ejecuta una herramienta del proyecto (hypertools/<nombre>.hez)");
     row("hyper watch [archivo.hz]", "ejecuta y repite cada vez que guardas un .hz");
     row("hyper serve [carpeta] [--puerto N]", "sirve una web y recarga el navegador al guardar");
     std::printf("\n");
     section("Comprobar y probar");
     row("hyper check [archivos|carpetas]", "busca errores sin ejecutar");
-    row("hyper test [carpeta] [--update]", "ejecuta las pruebas (por defecto tests/)");
+    row("hyper test [carpeta] [--update]", "ejecuta las pruebas (por defecto hypertests/)");
     row("hyper fmt [archivos|carpetas] [--check]", "ordena la sangría y los espacios del código");
     std::printf("\n");
     section("Herramientas");
@@ -236,6 +239,72 @@ static int cmdRun(const std::string& file, const std::vector<std::string>& args,
 // test
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Carpetas de un proyecto HyperEZ (hypersettings, hypercode, hypertests, hypertools...)
+// ---------------------------------------------------------------------------
+
+// La raíz del proyecto: la primera carpeta con hypersettings/ desde dir hacia arriba ("" si no hay)
+static std::string findProjectHome(std::string dir) {
+    for (int i = 0; i < 16 && !dir.empty(); i++) {
+        if (dirExists(pathJoin(dir, "hypersettings"))) return dir;
+        std::string up = pathDir(dir);
+        if (up.empty() || up == dir) break;
+        dir = up;
+    }
+    return "";
+}
+
+// hypersettings/proyecto.json como mapa (vacío si no hay o no se puede leer)
+static nlohmann::json projectSettings(const std::string& home) {
+    std::string text;
+    if (home.empty() || !readFile(pathJoin(pathJoin(home, "hypersettings"), "proyecto.json"), text)) return nlohmann::json::object();
+    auto j = nlohmann::json::parse(text, nullptr, false);
+    return j.is_object() ? j : nlohmann::json::object();
+}
+
+// Una carpeta del proyecto (hypertests, hypertools...) relativa si el proyecto es la carpeta actual
+static std::string projectFolder(const std::string& home, const char* name) {
+    if (home.empty() || pathAbsolute(home) == pathAbsolute(".")) return name;
+    return pathJoin(home, name);
+}
+
+// hyper tool [nombre] [args]: ejecuta hypertools/<nombre>.hez; sin nombre, lista las herramientas
+static int cmdTool(const std::vector<std::string>& rest) {
+    std::string home = findProjectHome(pathAbsolute("."));
+    std::string dir = projectFolder(home, "hypertools");
+    std::vector<std::string> files;
+    if (dirExists(dir)) collectSources(dir, files);
+    std::sort(files.begin(), files.end());
+    if (rest.empty()) {
+        if (files.empty()) {
+            std::fprintf(stderr, "Este proyecto no tiene herramientas: crea %shypertools/<nombre>.hez%s y ejecútala con %shyper tool <nombre>%s\n",
+                         color::bold(), color::reset(), color::bold(), color::reset());
+            return 2;
+        }
+        std::printf("%sHerramientas del proyecto%s (hyper tool <nombre>):\n", color::bold(), color::reset());
+        for (auto& f : files) {
+            std::string text, first;
+            if (readFile(f, text)) {
+                for (auto& line : splitLines(text)) {
+                    std::string t = trim(line);
+                    if (t.rfind("//", 0) == 0) { first = trim(t.substr(t.rfind("///", 0) == 0 ? 3 : 2)); break; }
+                    if (!t.empty()) break;
+                }
+            }
+            std::printf("  %s%-18s%s %s\n", color::green(), pathStem(f).c_str(), color::reset(), first.c_str());
+        }
+        return 0;
+    }
+    std::string file;
+    for (auto& f : files) if (pathStem(f) == rest[0]) { file = f; break; }
+    if (file.empty()) {
+        std::fprintf(stderr, "%serror:%s no hay ninguna herramienta '%s' en %s/ (hyper tool las lista)\n", color::red(), color::reset(),
+                     rest[0].c_str(), dir.c_str());
+        return 1;
+    }
+    return cmdRun(file, std::vector<std::string>(rest.begin() + 1, rest.end()), false);
+}
+
 static std::string normalizeOutput(std::string s, const std::string& dir) {
     std::string out;
     out.reserve(s.size());
@@ -257,7 +326,11 @@ static std::string normalizeOutput(std::string s, const std::string& dir) {
 
 static int cmdTest(const std::vector<std::string>& paths, bool update) {
     std::vector<std::string> roots = paths;
-    if (roots.empty()) roots.push_back(dirExists("tests") ? "tests" : ".");
+    if (roots.empty()) { // hypertests/ del proyecto (o tests/ si es un proyecto de antes)
+        std::string home = findProjectHome(pathAbsolute("."));
+        std::string ht = projectFolder(home, "hypertests");
+        roots.push_back(dirExists(ht) ? ht : dirExists("tests") ? "tests" : ".");
+    }
     std::vector<std::string> files;
     for (auto& p : roots) collectSources(p, files);
     // los archivos que empiezan por "_" son auxiliares (se importan desde otras pruebas)
@@ -474,9 +547,15 @@ int main(int argc, char** argv) {
             progArgs.push_back(a);
         }
         if (file.empty()) {
-            if (fileExists("main.hz")) file = "main.hz";
+            // el programa principal del proyecto (hypersettings/proyecto.json), o main.hez / main.hz
+            std::string home = findProjectHome(pathAbsolute("."));
+            auto cfg = projectSettings(home);
+            std::string principal = cfg.value("principal", cfg.value("main", std::string()));
+            if (!principal.empty() && fileExists(pathJoin(home, principal))) file = projectFolder(home, principal.c_str());
             else if (fileExists("main.hez")) file = "main.hez";
-            else { std::fprintf(stderr, "Uso: hyper run <archivo.hz>  (no hay main.hz en esta carpeta)\n"); return 2; }
+            else if (fileExists("main.hz")) file = "main.hz";
+            else if (!home.empty() && fileExists(pathJoin(home, "main.hez"))) file = pathJoin(home, "main.hez");
+            else { std::fprintf(stderr, "Uso: hyper run <archivo.hez>  (no hay main.hez aquí ni un principal en hypersettings/proyecto.json)\n"); return 2; }
         }
         if (!fileExists(file)) {
             std::fprintf(stderr, "%serror:%s no existe el archivo '%s'\n", color::red(), color::reset(), file.c_str());
@@ -529,6 +608,7 @@ int main(int argc, char** argv) {
         return r;
     }
     if (cmd == "new") return cmdNew(rest);
+    if (cmd == "tool" || cmd == "herramienta") return cmdTool(rest);
     if (cmd == "fmt" || cmd == "format") return cmdFmt(rest);
     if (cmd == "serve") return cmdServe(rest);
     if (cmd == "bytecode") {

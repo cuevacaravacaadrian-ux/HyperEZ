@@ -75,7 +75,11 @@ NATIVE(proc_exit) {
     int code = (int)argNum(vm, args, argc, 0, "Process.exit", 0);
     vm.flushOutput();
     std::fflush(stderr);
+#ifdef __EMSCRIPTEN__
+    throw ProgramExit{code};
+#else
     std::exit(code);
+#endif
 }
 NATIVE(proc_open) { return Value::boolean(openWithSystem(argStr(vm, args, argc, 0, "Process.open"))); }
 NATIVE(proc_pid) { UNUSED; return Value(currentProcessId()); }

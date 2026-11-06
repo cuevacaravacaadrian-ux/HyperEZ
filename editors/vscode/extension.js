@@ -89,6 +89,26 @@ function hyperAtLeast(exe, wanted) {
 }
 
 // ---------------------------------------------------------------------------
+// Iconos de HyperEZ: las carpetas de un proyecto (hypersettings, hypercode, hypertests...) con su icono
+// ---------------------------------------------------------------------------
+
+async function usarIconos() {
+  await vscode.workspace.getConfiguration('workbench').update('iconTheme', 'hyperez-iconos', vscode.ConfigurationTarget.Global);
+  vscode.window.showInformationMessage('Iconos de HyperEZ activados. Para volver a los de antes: Preferencias → Tema de iconos de archivo.');
+}
+
+// En un proyecto con hypersettings/, ofrecer una vez los iconos de HyperEZ
+function ofrecerIconos(context) {
+  if (process.env.HYPEREZ_NO_WELCOME || context.globalState.get('hyperez.iconosOfrecidos')) return;
+  if (vscode.workspace.getConfiguration('workbench').get('iconTheme') === 'hyperez-iconos') return;
+  const ws = vscode.workspace.workspaceFolders || [];
+  if (!ws.some((f) => fs.existsSync(path.join(f.uri.fsPath, 'hypersettings')))) return;
+  context.globalState.update('hyperez.iconosOfrecidos', true);
+  vscode.window.showInformationMessage('Este proyecto usa las carpetas de HyperEZ (hypersettings, hypercode, hypertests...). ¿Quieres verlas con sus iconos?',
+    'Usar los iconos de HyperEZ', 'No').then((r) => { if (r === 'Usar los iconos de HyperEZ') usarIconos(); });
+}
+
+// ---------------------------------------------------------------------------
 // Servidor de lenguaje
 // ---------------------------------------------------------------------------
 
@@ -263,7 +283,7 @@ async function cmdCheck(context, uri) {
 function projectRootFor(file) {
   let dir = file ? path.dirname(file) : null;
   for (let i = 0; dir && i < 8; i++) {
-    if (['tests', 'main.hez', 'main.hz'].some((n) => fs.existsSync(path.join(dir, n)))) return dir;
+    if (['hypersettings', 'hypertests', 'tests', 'main.hez', 'main.hz'].some((n) => fs.existsSync(path.join(dir, n)))) return dir;
     const up = path.dirname(dir);
     if (up === dir) break;
     dir = up;
@@ -572,6 +592,7 @@ async function activate(context) {
   reg('hyperez.newFile', cmdNewFile);
   reg('hyperez.openGuide', cmdOpenGuide);
   reg('hyperez.openExamples', cmdOpenExamples);
+  reg('hyperez.useIcons', () => usarIconos());
   reg('hyperez.openWalkthrough', () =>
     vscode.commands.executeCommand('workbench.action.openWalkthrough', context.extension.id + '#empezar', false));
   reg('hyperez.watch', cmdWatch);
@@ -628,6 +649,7 @@ async function activate(context) {
   }));
 
   await startClient(context);
+  ofrecerIconos(context);
 
   // La primera vez, la bienvenida con el tutorial
   if (!context.globalState.get('hyperez.welcomed')) {

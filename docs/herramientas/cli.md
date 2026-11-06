@@ -7,10 +7,11 @@ Todo HyperEZ está en un solo ejecutable: `hyper` (`hyper.exe` en Windows).
 | `hyper` | Consola interactiva (si se ejecuta en una terminal; si no, muestra la ayuda) |
 | `hyper repl` | Consola interactiva |
 | `hyper archivo.hz [args...]` | Ejecuta un programa; `System.args` recibe los argumentos |
-| `hyper run [archivo.hez] [args...]` | Igual; sin archivo ejecuta `main.hez` (o `main.hz`) de la carpeta actual |
+| `hyper run [archivo.hez] [args...]` | Igual; sin archivo ejecuta el programa principal del proyecto (`hypersettings/proyecto.json`) o `main.hez` |
+| `hyper tool [nombre] [args...]` | Ejecuta una herramienta del proyecto (`hypertools/<nombre>.hez`); sin nombre, las lista |
 | `hyper watch [archivo.hz] [args...]` | Ejecuta y vuelve a ejecutar cada vez que se guarda un `.hz` de la carpeta (o subcarpetas) |
 | `hyper check [archivos o carpetas]` | Busca errores sin ejecutar |
-| `hyper test [carpeta o archivos] [--update]` | Ejecuta las pruebas (por defecto `tests/`); `--update` regraba los `.out` |
+| `hyper test [carpeta o archivos] [--update]` | Ejecuta las pruebas (por defecto `hypertests/` del proyecto, o `tests/`); `--update` regraba los `.out` |
 | `hyper new <nombre> [--tipo juego\|app\|ia\|script\|web\|sitio]` | Crea un proyecto |
 | `hyper serve [carpeta] [--puerto N] [--abrir] [--red]` | Sirve una web y recarga el navegador al guardar ([webs](../biblioteca/web.md#hyper-serve-servidor-para-desarrollar)) |
 | `hyper fmt [archivos o carpetas] [--check]` | Ordena la sangría y los espacios (`--check`: solo dice qué archivos lo necesitan) |

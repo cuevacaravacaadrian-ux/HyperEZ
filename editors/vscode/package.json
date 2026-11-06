@@ -1,8 +1,8 @@
 {
   "name": "hyperezprogramminglanguagevscodeextension",
-  "displayName": "HyperEZ",
+  "displayName": "HyperEZ (Programación en español)",
   "description": "Lenguaje de programación en español para hacer de todo: juegos, webs, IA, datos, gráficos y sistemas. Colores, errores en vivo, autocompletado, F5 para ejecutar, formato, pruebas, consola interactiva, tema propio y tutorial.",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "publisher": "hyperez",
   "license": "MIT",
   "author": {
@@ -16,7 +16,7 @@
   "bugs": {
     "url": "https://github.com/cuevacaravacaadrian/HyperEZ/issues"
   },
-  "homepage": "https://github.com/cuevacaravacaadrian/HyperEZ#readme",
+  "homepage": "https://cuevacaravacaadrian.github.io/HyperEZ/",
   "icon": "icons/hyperez-128.png",
   "galleryBanner": {
     "color": "#0f1424",
@@ -58,9 +58,21 @@
     "compilador",
     "intérprete",
     "formatter",
-    "lsp"
+    "lsp",
+    "hypersettings",
+    "editor online"
   ],
   "badges": [
+    {
+      "url": "https://img.shields.io/badge/web-HyperEZ-62d962",
+      "href": "https://cuevacaravacaadrian.github.io/HyperEZ/",
+      "description": "La web de HyperEZ: documentación, descargas y editor en el navegador"
+    },
+    {
+      "url": "https://vsmarketplacebadges.dev/installs-short/hyperez.hyperezprogramminglanguagevscodeextension.svg?label=instalaciones",
+      "href": "https://marketplace.visualstudio.com/items?itemName=hyperez.hyperezprogramminglanguagevscodeextension",
+      "description": "Instalaciones desde el Marketplace"
+    },
     {
       "url": "https://img.shields.io/github/v/release/cuevacaravacaadrian/HyperEZ?label=HyperEZ&color=e8572a",
       "href": "https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest",
@@ -237,6 +249,11 @@
         "title": "Ejecutar las pruebas de este archivo",
         "category": "HyperEZ",
         "icon": "$(beaker)"
+      },
+      {
+        "command": "hyperez.useIcons",
+        "title": "Usar los iconos de HyperEZ (carpetas y archivos)",
+        "category": "HyperEZ"
       }
     ],
     "menus": {
@@ -533,12 +550,19 @@
           }
         ]
       }
+    ],
+    "iconThemes": [
+      {
+        "id": "hyperez-iconos",
+        "label": "HyperEZ (carpetas y archivos)",
+        "path": "./icons/hyperez-iconos.json"
+      }
     ]
   },
   "scripts": {
     "bundle": "node tools/bundle.js",
     "vscode:prepublish": "node tools/bundle.js",
-    "package": "vsce package --no-dependencies --allow-missing-repository --allow-star-activation -o hyperez-0.8.2.vsix",
+    "package": "vsce package --no-dependencies --allow-missing-repository --allow-star-activation -o hyperez-0.8.3.vsix",
     "test": "node test/grammar.test.js",
     "test:vscode": "node test/runTest.js"
   },
@@ -547,11 +571,16 @@
   },
   "devDependencies": {
     "@vscode/test-electron": "^3.1.0",
-    "@vscode/vsce": "^3.2.0",
+    "@vscode/vsce": "^4.1.0",
     "esbuild": "^0.28.2",
     "vscode-oniguruma": "^2.0.1",
     "vscode-textmate": "^9.1.0"
   },
   "pricing": "Free",
-  "qna": "https://github.com/cuevacaravacaadrian/HyperEZ/issues"
+  "qna": "https://github.com/cuevacaravacaadrian/HyperEZ/issues",
+  "overrides": {
+    "@vscode/vsce": {
+      "minimatch": "^11.0.1"
+    }
+  }
 }

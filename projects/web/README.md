@@ -46,3 +46,10 @@ node projects/web/tests/navegador.test.js http://localhost:8080/editor/index.htm
 ## Publicarla
 
 Cada `push` a `main` la publica sola. La primera vez hay que activar GitHub Pages: *Settings → Pages → Source: GitHub Actions*.
+
+## Que la encuentren los buscadores
+
+La web ya lleva lo que miran Google, Bing y compañía: título y descripción de cada página, dirección canónica, Open Graph y Twitter (la vista previa al compartir un enlace), datos estructurados de schema.org (el lenguaje, el programa, el editor web, el autor y las preguntas frecuentes), `sitemap.xml` con fechas, `robots.txt`, `manifest.webmanifest` y `humans.txt`.
+
+- **IndexNow** (Bing, Yandex, Seznam, Naver): al publicar, `web.yml` les avisa de todas las páginas del `sitemap.xml`. La clave está en `construir.hez` (`INDEXNOW`) y se publica como `<clave>.txt`.
+- **Google Search Console** y **Bing Webmaster Tools**: añade la propiedad `https://cuevacaravacaadrian.github.io/HyperEZ/`, elige la verificación por *etiqueta HTML* y copia solo el código (`content="..."`) en una variable del repositorio (*Settings → Secrets and variables → Actions → Variables*): `GOOGLE_SITE_VERIFICATION` o `BING_SITE_VERIFICATION`. En la siguiente publicación la web lleva la etiqueta; entonces pulsa *Verificar* y envía el `sitemap.xml`. En tu equipo: `construir.hez --google <código> --bing <código>`.

@@ -34,6 +34,9 @@
 #include "lang/sema/analyzer.h"
 #include "lang/syntax/lexer.h"
 #include "lang/syntax/format.h"
+#include "tools/tools.h"
+
+#include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <filesystem>
@@ -45,6 +48,14 @@
 
 using namespace hz;
 namespace fs = std::filesystem;
+
+// El servidor de lenguaje (ir a la definición) prepara sus máquinas virtuales como hyper
+void hz::setupVM(VM& vm) {
+    registerStdlib(vm);
+    registerMathTypes(vm);
+    buildWorld(vm);
+    vm.loadPrelude();
+}
 
 namespace {
 
@@ -66,6 +77,7 @@ enum : int {
     CMD_CLEAROUTPUT, CMD_EXAMPLESMENU, CMD_CLOSEOTHERS,
     CMD_EXPLORER, CMD_OPENDIR, CMD_TREE_OPEN, CMD_TREE_NEWFILE, CMD_TREE_NEWDIR, CMD_TREE_RENAME, CMD_TREE_DELETE,
     CMD_TREE_REVEAL, CMD_TREE_COPYPATH, CMD_TREE_REFRESH,
+    CMD_THEME, CMD_NEWPROJECT, CMD_SHARE, CMD_HELP_WEB, CMD_HELP_WEBEDITOR, CMD_DEFINITION,
     CMD_RECENT = 2000,  // 2000..2009
     CMD_EXAMPLE = 3000, // 3000..3999
     CMD_TEMPLATE = 4000 // 4000..4099
@@ -86,6 +98,8 @@ int g_splitTop = -1, g_splitBottom = -1; // franja del separador arrastrable (en
 HWND g_tree = nullptr, g_treeHeader = nullptr;
 HIMAGELIST g_treeImages = nullptr;
 bool g_showExplorer = true;
+bool g_dark = false;                       // tema oscuro HyperEZ Noche (Ver → Tema oscuro)
+HBRUSH g_brPanel = nullptr, g_brHeader = nullptr;
 int g_explorerWidth = 230;
 std::wstring g_explorerRoot;
 int g_vsplitLeft = -1, g_vsplitRight = -1, g_vsplitTop = 0, g_vsplitBottom = 0;
@@ -222,6 +236,7 @@ void loadSettings() {
     g_panelHeight = (int)std::clamp<DWORD>(readDword(L"PanelHeight", 170), 60, 2000);
     g_showExplorer = readDword(L"Explorer", 1) != 0;
     g_explorerWidth = (int)std::clamp<DWORD>(readDword(L"ExplorerWidth", 230), 120, 800);
+    g_dark = readDword(L"TemaOscuro", 0) != 0;
     {
         wchar_t dir[MAX_PATH * 2];
         DWORD dsz = sizeof dir;
@@ -250,6 +265,7 @@ void saveSettings() {
     writeDword(L"PanelHeight", (DWORD)g_panelHeight);
     writeDword(L"Explorer", g_showExplorer);
     writeDword(L"ExplorerWidth", (DWORD)g_explorerWidth);
+    writeDword(L"TemaOscuro", g_dark);
     HKEY k;
     if (RegCreateKeyExW(HKEY_CURRENT_USER, kKey, 0, nullptr, 0, KEY_WRITE, nullptr, &k, nullptr) == ERROR_SUCCESS) {
         for (int i = 0; i < 10; i++) {
@@ -307,9 +323,25 @@ void buildCatalog() {
 // Colores de sintaxis
 // ---------------------------------------------------------------------------
 
-const COLORREF C_TEXT = RGB(31, 35, 40), C_KEYWORD = RGB(0, 0, 220), C_STRING = RGB(163, 21, 21), C_NUMBER = RGB(9, 134, 88),
-               C_COMMENT = RGB(0, 128, 0), C_TYPE = RGB(38, 127, 153), C_BUILTIN = RGB(121, 94, 38), C_ERRORBG = RGB(255, 222, 222),
-               C_GUTTER_BG = RGB(246, 248, 250), C_GUTTER_FG = RGB(140, 149, 159);
+// Los colores del tema clásico (fondo blanco) o de HyperEZ Noche: los mismos que el editor del navegador
+COLORREF C_TEXT, C_KEYWORD, C_STRING, C_NUMBER, C_COMMENT, C_TYPE, C_BUILTIN, C_ERRORBG, C_GUTTER_BG, C_GUTTER_FG,
+         C_INTERP, C_FMT, C_EDIT_BG, C_GUTTER_EDGE, C_GUTTER_CUR, C_ERROR, C_PANEL_BG, C_PANEL_FG, C_HEADER_BG, C_HEADER_FG;
+
+void setThemeColors(bool dark) {
+    if (dark) {
+        C_TEXT = RGB(214, 222, 235); C_KEYWORD = RGB(199, 146, 234); C_STRING = RGB(126, 231, 135); C_NUMBER = RGB(247, 140, 108);
+        C_COMMENT = RGB(95, 112, 153); C_TYPE = RGB(255, 203, 107); C_BUILTIN = RGB(130, 170, 255); C_ERRORBG = RGB(58, 22, 36);
+        C_GUTTER_BG = RGB(15, 20, 36); C_GUTTER_FG = RGB(59, 71, 102); C_INTERP = RGB(255, 158, 100); C_FMT = RGB(247, 140, 108);
+        C_EDIT_BG = RGB(15, 20, 36); C_GUTTER_EDGE = RGB(29, 39, 66); C_GUTTER_CUR = RGB(138, 162, 211); C_ERROR = RGB(255, 107, 129);
+        C_PANEL_BG = RGB(12, 17, 32); C_PANEL_FG = RGB(201, 212, 234); C_HEADER_BG = RGB(10, 14, 26); C_HEADER_FG = RGB(127, 141, 176);
+    } else {
+        C_TEXT = RGB(31, 35, 40); C_KEYWORD = RGB(0, 0, 220); C_STRING = RGB(163, 21, 21); C_NUMBER = RGB(9, 134, 88);
+        C_COMMENT = RGB(0, 128, 0); C_TYPE = RGB(38, 127, 153); C_BUILTIN = RGB(121, 94, 38); C_ERRORBG = RGB(255, 222, 222);
+        C_GUTTER_BG = RGB(246, 248, 250); C_GUTTER_FG = RGB(140, 149, 159); C_INTERP = RGB(0, 0, 220); C_FMT = RGB(9, 134, 88);
+        C_EDIT_BG = RGB(255, 255, 255); C_GUTTER_EDGE = RGB(222, 226, 230); C_GUTTER_CUR = RGB(31, 35, 40); C_ERROR = RGB(207, 34, 46);
+        C_PANEL_BG = RGB(255, 255, 255); C_PANEL_FG = RGB(31, 35, 40); C_HEADER_BG = GetSysColor(COLOR_BTNFACE); C_HEADER_FG = RGB(80, 86, 96);
+    }
+}
 
 const std::set<std::string> kContextual = {"event", "on", "once", "emit", "from", "as", "step", "priority", "do"};
 // Tipos básicos (en minúscula) que se colorean cuando aparecen como anotación de tipo
@@ -335,14 +367,14 @@ void collectSpans(const std::vector<Token>& toks, const Utf8Text& u, std::vector
                     if (!part.isExpr) continue;
                     int end = part.loc.offset + (int)part.text.size(); // fin de la expresión (en bytes)
                     LONG ea = cpAt(part.loc.offset), eb = cpAt(end);
-                    out.push_back({cpAt(part.loc.offset - 2), ea, C_KEYWORD, false}); // ${
+                    out.push_back({cpAt(part.loc.offset - 2), ea, C_INTERP, false}); // ${
                     out.push_back({ea, eb, C_TEXT, false});
                     if (!part.spec.empty()) { // "${precio:.2f}": el formato, como los números
                         int specEnd = end + 1 + (int)part.spec.size();
-                        out.push_back({eb, cpAt(specEnd), C_NUMBER, false});
+                        out.push_back({eb, cpAt(specEnd), C_FMT, false});
                         end = specEnd;
                     }
-                    out.push_back({cpAt(end), cpAt(end + 1), C_KEYWORD, false}); // }
+                    out.push_back({cpAt(end), cpAt(end + 1), C_INTERP, false}); // }
                     DiagnosticBag bag;
                     Lexer sub(part.text, bag, part.loc);
                     collectSpans(sub.tokenize(), u, out, depth + 1);
@@ -563,7 +595,7 @@ LRESULT CALLBACK gutterProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         FillRect(mem, &rc, bg);
         DeleteObject(bg);
         RECT edge = {rc.right - 1, 0, rc.right, rc.bottom};
-        HBRUSH eb = CreateSolidBrush(RGB(222, 226, 230));
+        HBRUSH eb = CreateSolidBrush(C_GUTTER_EDGE);
         FillRect(mem, &edge, eb);
         DeleteObject(eb);
         SetBkMode(mem, TRANSPARENT);
@@ -587,11 +619,11 @@ LRESULT CALLBACK gutterProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             std::wstring num = std::to_wstring(i + 1);
             bool isCur = i == cur;
             SelectObject(mem, isCur ? g_boldGutterFont : g_gutterFont);
-            SetTextColor(mem, errLines.count(i) ? RGB(207, 34, 46) : isCur ? RGB(31, 35, 40) : C_GUTTER_FG);
+            SetTextColor(mem, errLines.count(i) ? C_ERROR : isCur ? C_GUTTER_CUR : C_GUTTER_FG);
             RECT tr = {0, y, rc.right - S(8), y + S(40)};
             DrawTextW(mem, num.c_str(), (int)num.size(), &tr, DT_RIGHT | DT_TOP | DT_SINGLELINE | DT_NOCLIP);
             if (errLines.count(i)) {
-                HBRUSH dot = CreateSolidBrush(RGB(207, 34, 46));
+                HBRUSH dot = CreateSolidBrush(C_ERROR);
                 RECT d = {S(3), y + S(6), S(7), y + S(10)};
                 FillRect(mem, &d, dot);
                 DeleteObject(dot);
@@ -700,7 +732,8 @@ void applyFontTo(HWND edit, ITextDocument* tom) {
     if (!edit) return;
     CHARFORMAT2W cf{};
     cf.cbSize = sizeof cf;
-    cf.dwMask = CFM_FACE | CFM_SIZE | CFM_CHARSET;
+    cf.dwMask = CFM_FACE | CFM_SIZE | CFM_CHARSET | CFM_COLOR;
+    cf.crTextColor = C_TEXT;
     wcsncpy_s(cf.szFaceName, g_fontFace.c_str(), _TRUNCATE);
     cf.yHeight = g_fontPt * 20;
     cf.bCharSet = DEFAULT_CHARSET;
@@ -1322,21 +1355,54 @@ int addStockIcon(SHSTOCKICONID id) {
     return r;
 }
 
+// Los iconos de HyperEZ (assets/icons/tema, recursos 100-140 de editor.rc); si falta uno, el de Windows
+int addResIcon(int id, SHSTOCKICONID fallback) {
+    HICON ic = (HICON)LoadImageW(g_inst, MAKEINTRESOURCEW(id), IMAGE_ICON, S(16), S(16), 0);
+    if (!ic) return addStockIcon(fallback);
+    int r = ImageList_AddIcon(g_treeImages, ic);
+    DestroyIcon(ic);
+    return r;
+}
+
+// Las carpetas de un proyecto HyperEZ, cada una con su icono (cerrada y abierta)
+const wchar_t* const kHyperFolders[] = {L"hypersettings", L"hypercode", L"hypertests", L"hyperlibs", L"hypertools",
+                                        L"hyperassets", L"hyperdata", L"hyperdocs", L"hyperbuild"};
+enum { IMG_FOLDER = 0, IMG_FOLDEROPEN = 1, IMG_HEZ = 2, IMG_FILE = 3, IMG_HYPERFOLDERS = 4, IMG_PROJECT = 22, IMG_MD, IMG_JSON, IMG_IMAGE,
+       IMG_DATA, IMG_HTML, IMG_CSS, IMG_JS, IMG_TEXT };
+
 void initTreeImages() {
-    g_treeImages = ImageList_Create(S(16), S(16), ILC_COLOR32 | ILC_MASK, 8, 8);
-    addStockIcon(SIID_FOLDER);     // 0: carpeta
-    addStockIcon(SIID_FOLDEROPEN); // 1: carpeta abierta
-    HICON hz = (HICON)LoadImageW(g_inst, MAKEINTRESOURCEW(2), IMAGE_ICON, S(16), S(16), 0);
-    ImageList_AddIcon(g_treeImages, hz); // 2: programa de HyperEZ
-    if (hz) DestroyIcon(hz);
-    addStockIcon(SIID_DOCNOASSOC); // 3: archivo sin programa
+    g_treeImages = ImageList_Create(S(16), S(16), ILC_COLOR32 | ILC_MASK, 32, 8);
+    addResIcon(100, SIID_FOLDER);     // 0: carpeta
+    addResIcon(101, SIID_FOLDEROPEN); // 1: carpeta abierta
+    if (addResIcon(131, SIID_DOCNOASSOC) < 0) addResIcon(2, SIID_DOCNOASSOC); // 2: programa de HyperEZ
+    addResIcon(130, SIID_DOCNOASSOC); // 3: archivo
+    for (int k = 0; k < (int)std::size(kHyperFolders); k++) { // 4..21: hypersettings, hypercode...
+        addResIcon(102 + 2 * k, SIID_FOLDER);
+        addResIcon(103 + 2 * k, SIID_FOLDEROPEN);
+    }
+    for (int r = 132; r <= 140; r++) addResIcon(r, SIID_DOCNOASSOC); // 22..30: proyecto.json, md, json, imagen...
     TreeView_SetImageList(g_tree, g_treeImages, TVSIL_NORMAL);
+}
+
+int folderIcon(const fs::path& p, bool open) {
+    std::wstring n = lowerW(p.filename().wstring());
+    for (int k = 0; k < (int)std::size(kHyperFolders); k++)
+        if (n == kHyperFolders[k]) return IMG_HYPERFOLDERS + 2 * k + (open ? 1 : 0);
+    return open ? IMG_FOLDEROPEN : IMG_FOLDER;
 }
 
 int fileIcon(const fs::path& p) {
     std::wstring ext = lowerW(p.extension().wstring());
-    if (ext == L".hez" || ext == L".hz") return 2;
-    if (ext.empty()) return 3;
+    if (ext == L".hez" || ext == L".hz") return IMG_HEZ;
+    if (lowerW(p.filename().wstring()) == L"proyecto.json") return IMG_PROJECT;
+    if (ext.empty()) return IMG_FILE;
+    static const std::map<std::wstring, int> kThemed = {
+        {L".md", IMG_MD}, {L".markdown", IMG_MD}, {L".json", IMG_JSON}, {L".png", IMG_IMAGE}, {L".jpg", IMG_IMAGE}, {L".jpeg", IMG_IMAGE},
+        {L".gif", IMG_IMAGE}, {L".svg", IMG_IMAGE}, {L".webp", IMG_IMAGE}, {L".ico", IMG_IMAGE}, {L".bmp", IMG_IMAGE},
+        {L".csv", IMG_DATA}, {L".tsv", IMG_DATA}, {L".db", IMG_DATA}, {L".sqlite", IMG_DATA}, {L".html", IMG_HTML}, {L".htm", IMG_HTML},
+        {L".css", IMG_CSS}, {L".js", IMG_JS}, {L".mjs", IMG_JS}, {L".txt", IMG_TEXT}, {L".log", IMG_TEXT}, {L".ini", IMG_TEXT}, {L".out", IMG_TEXT}};
+    auto th = kThemed.find(ext);
+    if (th != kThemed.end()) return th->second;
     auto it = g_extIcons.find(ext);
     if (it != g_extIcons.end()) return it->second;
     SHFILEINFOW sfi{};
@@ -1366,7 +1432,7 @@ HTREEITEM treeInsert(HTREEITEM parent, const fs::path& p, bool dir) {
     is.hInsertAfter = TVI_LAST;
     is.item.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_PARAM | TVIF_CHILDREN;
     is.item.pszText = name.data();
-    is.item.iImage = dir ? 0 : fileIcon(p);
+    is.item.iImage = dir ? folderIcon(p, false) : fileIcon(p);
     is.item.iSelectedImage = is.item.iImage;
     is.item.cChildren = dir ? 1 : 0;
     g_treePaths.push_back(p.wstring());
@@ -1471,14 +1537,34 @@ void explorerFollow(const std::wstring& file) {
     if (!g_tree || file.empty()) return;
     if (g_explorerRoot.empty() || g_explorerFollowNext) {
         g_explorerFollowNext = false;
-        explorerSetRoot(fs::path(file).parent_path().wstring());
+        // la raíz del proyecto (la carpeta con hypersettings/) si el archivo está en uno; si no, su carpeta
+        fs::path dir = fs::path(file).parent_path(), root = dir;
+        std::error_code ec;
+        for (fs::path d = dir; !d.empty(); d = d.parent_path()) {
+            if (fs::is_directory(d / L"hypersettings", ec)) { root = d; break; }
+            if (d == d.root_path() || d.parent_path() == d) break;
+        }
+        explorerSetRoot(root.wstring());
     }
     treeSelectPath(file);
+}
+
+// "nombre" de hypersettings/proyecto.json ("" si la carpeta no es un proyecto de HyperEZ)
+std::wstring projectName(const std::wstring& dir) {
+    std::string data;
+    if (!readFile(narrow((fs::path(dir) / L"hypersettings" / L"proyecto.json").wstring()), data)) return L"";
+    std::wstring w = widen(data);
+    size_t k = w.find(L"\"nombre\"");
+    if (k == std::wstring::npos) return L"";
+    size_t a = w.find(L'"', w.find(L':', k));
+    size_t b = a == std::wstring::npos ? a : w.find(L'"', a + 1);
+    return b == std::wstring::npos ? L"" : w.substr(a + 1, b - a - 1);
 }
 
 void explorerSetRoot(const std::wstring& dir) {
     g_explorerRoot = dir;
     std::wstring name = dir.empty() ? L"(ninguna carpeta)" : fs::path(dir).filename().wstring();
+    if (!dir.empty()) { std::wstring pn = projectName(dir); if (!pn.empty()) name = pn; }
     for (auto& c : name) c = (wchar_t)towupper(c);
     SetWindowTextW(g_treeHeader, (L"  EXPLORADOR · " + name).c_str());
     explorerRefresh();
@@ -1639,7 +1725,7 @@ bool treeNotify(NMHDR* n, LRESULT& r) {
             TVITEMW it{};
             it.mask = TVIF_IMAGE | TVIF_SELECTEDIMAGE;
             it.hItem = t->itemNew.hItem;
-            it.iImage = it.iSelectedImage = t->action == TVE_EXPAND ? 1 : 0;
+            it.iImage = it.iSelectedImage = folderIcon(fs::path(treePath(t->itemNew.hItem)), t->action == TVE_EXPAND);
             TreeView_SetItem(g_tree, &it);
             return true;
         }
@@ -1719,8 +1805,11 @@ bool treeNotify(NMHDR* n, LRESULT& r) {
 }
 
 // Teclas especiales dentro del editor
+void gotoDefinition();
+enum : UINT { WM_APP_DEFINITION = WM_APP + 40 };
 LRESULT CALLBACK editProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     bool completing = IsWindowVisible(g_complete);
+    if (msg == WM_LBUTTONUP && (wp & MK_CONTROL)) PostMessageW(g_wnd, WM_APP_DEFINITION, 0, 0); // Ctrl+clic
     if (msg == WM_KEYDOWN) {
         bool ctrl = GetKeyState(VK_CONTROL) < 0, shift = GetKeyState(VK_SHIFT) < 0;
         if (completing) {
@@ -1957,7 +2046,8 @@ Doc makeEditor() {
     SendMessageW(d.edit, EM_EXLIMITTEXT, 0, 64 * 1024 * 1024);
     SendMessageW(d.edit, EM_SETTEXTMODE, TM_RICHTEXT | TM_MULTILEVELUNDO | TM_MULTICODEPAGE, 0);
     SendMessageW(d.edit, EM_SETUNDOLIMIT, 500, 0);
-    SendMessageW(d.edit, EM_SETBKGNDCOLOR, 0, RGB(255, 255, 255));
+    SendMessageW(d.edit, EM_SETBKGNDCOLOR, 0, C_EDIT_BG);
+    if (g_dark) SetWindowTheme(d.edit, L"DarkMode_Explorer", nullptr); // barras de desplazamiento oscuras
     SendMessageW(d.edit, EM_SETMARGINS, EC_LEFTMARGIN, S(6));
     SendMessageW(d.edit, EM_SETTARGETDEVICE, 0, g_wrap ? 0 : 1);
     SendMessageW(d.edit, EM_SETLANGOPTIONS, 0, SendMessageW(d.edit, EM_GETLANGOPTIONS, 0, 0) & ~IMF_AUTOFONT);
@@ -2266,6 +2356,7 @@ void printDocument() {
     pd.hwndOwner = g_wnd;
     pd.Flags = PD_RETURNDC | PD_NOSELECTION | PD_NOPAGENUMS | PD_USEDEVMODECOPIESANDCOLLATE;
     if (!PrintDlgW(&pd)) return;
+    if (g_dark) { setThemeColors(false); highlight(); }
     HDC dc = pd.hDC;
     std::wstring name = docName(g_file);
     DOCINFOW di{sizeof di};
@@ -2305,6 +2396,7 @@ void printDocument() {
         SendMessageW(g_status, SB_SETTEXTW, 1, (LPARAM)(L"  Impreso: " + std::to_wstring(page) + L" página(s)").c_str());
     }
     DeleteDC(dc);
+    if (g_dark) { setThemeColors(true); highlight(); }
     if (pd.hDevMode) GlobalFree(pd.hDevMode);
     if (pd.hDevNames) GlobalFree(pd.hDevNames);
 }
@@ -2362,6 +2454,7 @@ HMENU buildMenu() {
     AppendMenuW(file, MF_STRING, CMD_NEW, L"&Nuevo (pestaña nueva)\tCtrl+N");
     for (size_t i = 0; i < std::size(kTemplates); i++) AppendMenuW(templates, MF_STRING, CMD_TEMPLATE + i, kTemplates[i].name);
     AppendMenuW(file, MF_POPUP, (UINT_PTR)templates, L"Nuevo desde &plantilla");
+    AppendMenuW(file, MF_STRING, CMD_NEWPROJECT, L"Nuevo pro&yecto...\tCtrl+Mayús+N");
     AppendMenuW(file, MF_STRING, CMD_OPEN, L"&Abrir...\tCtrl+O");
     AppendMenuW(file, MF_POPUP, (UINT_PTR)g_recentMenu, L"Abrir &reciente");
     std::map<std::wstring, HMENU> groups;
@@ -2388,6 +2481,7 @@ HMENU buildMenu() {
     AppendMenuW(file, MF_STRING, CMD_CLOSEOTHERS, L"Cerrar las &demás pestañas");
     AppendMenuW(file, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(file, MF_STRING, CMD_PRINT, L"&Imprimir...\tCtrl+P");
+    AppendMenuW(file, MF_STRING, CMD_SHARE, L"Compartir en el editor &web...");
     AppendMenuW(file, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(file, MF_STRING, CMD_EXIT, L"&Salir\tAlt+F4");
 
@@ -2404,6 +2498,7 @@ HMENU buildMenu() {
     AppendMenuW(edit, MF_STRING, CMD_FINDNEXT, L"Buscar &siguiente\tF3");
     AppendMenuW(edit, MF_STRING, CMD_REPLACE, L"Reempla&zar...\tCtrl+H");
     AppendMenuW(edit, MF_STRING, CMD_GOTO, L"&Ir a la línea...\tCtrl+G");
+    AppendMenuW(edit, MF_STRING, CMD_DEFINITION, L"Ir a la &definición\tF12");
     AppendMenuW(edit, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(edit, MF_STRING, CMD_COMPLETE, L"Completar &nombre\tCtrl+Espacio");
     AppendMenuW(edit, MF_STRING, CMD_COMMENT, L"Comentar o descomentar\tCtrl+/");
@@ -2427,6 +2522,7 @@ HMENU buildMenu() {
     AppendMenuW(view, MF_STRING, CMD_ZOOMOUT, L"&Reducir texto\tCtrl+-");
     AppendMenuW(view, MF_STRING, CMD_ZOOMRESET, L"&Tamaño normal\tCtrl+0");
     AppendMenuW(view, MF_STRING, CMD_FONT, L"&Fuente...");
+    AppendMenuW(view, MF_STRING | (g_dark ? MF_CHECKED : 0), CMD_THEME, L"Tema &oscuro (HyperEZ Noche)");
     AppendMenuW(view, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(view, MF_STRING, CMD_NEXTTAB, L"Pestaña &siguiente\tCtrl+Tab");
     AppendMenuW(view, MF_STRING, CMD_PREVTAB, L"Pestaña &anterior\tCtrl+Mayús+Tab");
@@ -2442,6 +2538,9 @@ HMENU buildMenu() {
     AppendMenuW(help, MF_STRING, CMD_HELP_DOCS, L"&Documentación completa");
     AppendMenuW(help, MF_STRING, CMD_HELP_API, L"&Referencia de todas las funciones");
     AppendMenuW(help, MF_STRING, CMD_HELP_KEYS, L"&Atajos de teclado");
+    AppendMenuW(help, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(help, MF_STRING, CMD_HELP_WEB, L"La &web de HyperEZ");
+    AppendMenuW(help, MF_STRING, CMD_HELP_WEBEDITOR, L"HyperEZ en el &navegador (sin instalar)");
     AppendMenuW(help, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(help, MF_STRING, CMD_ABOUT, L"Acerca de &HyperEZ");
 
@@ -2464,6 +2563,233 @@ void openDoc(const wchar_t* html, const wchar_t* md) {
         if (fs::exists(p, ec)) { ShellExecuteW(g_wnd, L"open", p.c_str(), nullptr, nullptr, SW_SHOWNORMAL); return; }
     }
     ShellExecuteW(g_wnd, L"open", widen(std::string(HYPEREZ_REPO_URL) + "/tree/main/docs").c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+}
+
+// ---------------------------------------------------------------------------
+// Tema oscuro (HyperEZ Noche), nuevo proyecto y compartir en el editor web
+// ---------------------------------------------------------------------------
+
+// La barra de título oscura (Windows 10 2004 y posteriores; en los anteriores no hace nada)
+void darkTitle(HWND h, bool dark) {
+    using Fn = HRESULT(WINAPI*)(HWND, DWORD, LPCVOID, DWORD);
+    static Fn fn = (Fn)(void*)GetProcAddress(LoadLibraryW(L"dwmapi.dll"), "DwmSetWindowAttribute");
+    if (!fn) return;
+    BOOL v = dark;
+    if (FAILED(fn(h, 20, &v, sizeof v))) fn(h, 19, &v, sizeof v);
+    SetWindowPos(h, nullptr, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED); // repintar el marco
+}
+
+void applyTheme() {
+    setThemeColors(g_dark);
+    if (g_brPanel) DeleteObject(g_brPanel);
+    if (g_brHeader) DeleteObject(g_brHeader);
+    g_brPanel = CreateSolidBrush(C_PANEL_BG);
+    g_brHeader = CreateSolidBrush(C_HEADER_BG);
+    const wchar_t* theme = g_dark ? L"DarkMode_Explorer" : nullptr;
+    for (auto& d : g_docs) {
+        SendMessageW(d.edit, EM_SETBKGNDCOLOR, 0, C_EDIT_BG);
+        SetWindowTheme(d.edit, theme, nullptr);
+    }
+    if (g_tree) {
+        TreeView_SetBkColor(g_tree, g_dark ? C_PANEL_BG : (COLORREF)-1);
+        TreeView_SetTextColor(g_tree, g_dark ? C_PANEL_FG : (COLORREF)-1);
+        SetWindowTheme(g_tree, g_dark ? L"DarkMode_Explorer" : L"Explorer", nullptr);
+    }
+    for (HWND w : {g_output, g_panel, g_complete}) if (w) SetWindowTheme(w, theme, nullptr);
+    darkTitle(g_wnd, g_dark);
+    applyFont();
+    // cada pestaña con los colores nuevos
+    int cur = g_cur;
+    for (int i = 0; i < (int)g_docs.size(); i++) {
+        if (i == cur) continue;
+        HWND e = g_edit; ITextDocument* t = g_doc;
+        g_edit = g_docs[(size_t)i].edit; g_doc = g_docs[(size_t)i].tom;
+        highlight();
+        g_edit = e; g_doc = t;
+    }
+    highlight();
+    RedrawWindow(g_wnd, nullptr, nullptr, RDW_ERASE | RDW_INVALIDATE | RDW_FRAME | RDW_ALLCHILDREN);
+}
+
+// Ejecuta hyper.exe sin ventana y espera; devuelve el código de salida y lo que escribió
+DWORD runHyperHidden(const std::wstring& args, const std::wstring& cwd, std::string& out) {
+    std::wstring cmd = L"\"" + hyperExe() + L"\" " + args;
+    SECURITY_ATTRIBUTES sa{sizeof sa, nullptr, TRUE};
+    HANDLE rd = nullptr, wr = nullptr;
+    if (!CreatePipe(&rd, &wr, &sa, 0)) return (DWORD)-1;
+    SetHandleInformation(rd, HANDLE_FLAG_INHERIT, 0);
+    STARTUPINFOW si{sizeof si};
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdOutput = si.hStdError = wr;
+    si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    PROCESS_INFORMATION pi{};
+    BOOL ok = CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, TRUE, CREATE_NO_WINDOW, nullptr, cwd.c_str(), &si, &pi);
+    CloseHandle(wr);
+    DWORD code = (DWORD)-1;
+    if (ok) {
+        char buf[4096];
+        DWORD n;
+        while (ReadFile(rd, buf, sizeof buf, &n, nullptr) && n) out.append(buf, n);
+        WaitForSingleObject(pi.hProcess, 30000);
+        GetExitCodeProcess(pi.hProcess, &code);
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+    }
+    CloseHandle(rd);
+    return code;
+}
+
+// Archivo → Nuevo proyecto: el tipo, el nombre y hyper new en Documentos\HyperEZ; luego se abre en el Explorador
+void newProject() {
+    struct Kind { const wchar_t* label; const wchar_t* kind; const wchar_t* name; };
+    static const Kind kinds[] = {
+        {L"&Juego de consola", L"juego", L"mi-juego"}, {L"&Aplicación (menú y datos guardados)", L"app", L"mi-app"},
+        {L"&Inteligencia artificial (red neuronal)", L"ia", L"mi-ia"}, {L"&Herramienta de línea de órdenes", L"script", L"mi-herramienta"},
+        {L"Aplicación &web", L"web", L"mi-web"}, {L"&Sitio web en Markdown", L"sitio", L"mi-sitio"}};
+    HMENU m = CreatePopupMenu();
+    AppendMenuW(m, MF_STRING | MF_GRAYED, 0, L"¿Qué quieres hacer?");
+    AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
+    for (int i = 0; i < (int)std::size(kinds); i++) AppendMenuW(m, MF_STRING, 1 + i, kinds[i].label);
+    POINT pt;
+    GetCursorPos(&pt);
+    RECT wr;
+    GetWindowRect(g_wnd, &wr);
+    if (!PtInRect(&wr, pt)) pt = {wr.left + S(60), wr.top + S(80)};
+    int pick = (int)TrackPopupMenu(m, TPM_RETURNCMD | TPM_NONOTIFY | TPM_LEFTALIGN, pt.x, pt.y, 0, g_wnd, nullptr);
+    DestroyMenu(m);
+    if (pick < 1) return;
+    const Kind& k = kinds[pick - 1];
+    std::wstring parent = projectsDir();
+    std::wstring name = k.name;
+    std::error_code ec;
+    for (int i = 2; fs::exists(fs::path(parent) / name, ec) && i < 100; i++) name = std::wstring(k.name) + L"-" + std::to_wstring(i);
+    if (!askText(L"Nuevo proyecto", L"Nombre del proyecto (se crea en Documentos\\HyperEZ):", name)) return;
+    for (auto& c : name) if (wcschr(L"\\/:*?\"<>|", c)) c = L'-';
+    if (name.empty()) return;
+    std::string out;
+    DWORD code = runHyperHidden(L"new \"" + name + L"\" --tipo " + k.kind, parent, out);
+    fs::path dir = fs::path(parent) / name;
+    if (code != 0 || !fs::exists(dir / L"main.hez", ec)) {
+        std::wstring msg = L"No se pudo crear el proyecto.";
+        if (!out.empty()) msg += L"\n\n" + widen(out);
+        MessageBoxW(g_wnd, msg.c_str(), L"Nuevo proyecto", MB_ICONERROR);
+        return;
+    }
+    if (!g_showExplorer) { g_showExplorer = true; setCheck(CMD_EXPLORER, true); layout(); }
+    explorerSetRoot(dir.wstring());
+    openFile((dir / L"main.hez").wstring());
+    SendMessageW(g_status, SB_SETTEXTW, 0, (LPARAM)(L"Proyecto " + name + L" creado: F5 lo ejecuta").c_str());
+}
+
+// Archivo → Compartir en el editor web: un enlace con el programa dentro (como el botón Compartir del navegador)
+void shareToWeb() {
+    std::wstring text = editorText();
+    for (auto& c : text) if (c == L'\r') c = L'\n';
+    std::string code = narrow(text);
+    static const char* b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    std::string enc;
+    for (size_t i = 0; i < code.size(); i += 3) {
+        unsigned v = (unsigned char)code[i] << 16;
+        if (i + 1 < code.size()) v |= (unsigned char)code[i + 1] << 8;
+        if (i + 2 < code.size()) v |= (unsigned char)code[i + 2];
+        enc += b64[(v >> 18) & 63];
+        enc += b64[(v >> 12) & 63];
+        if (i + 1 < code.size()) enc += b64[(v >> 6) & 63];
+        if (i + 2 < code.size()) enc += b64[v & 63];
+    }
+    std::wstring name = g_file.empty() ? L"programa.hez" : fs::path(g_file).filename().wstring();
+    std::string n8 = narrow(name), qn;
+    for (unsigned char c : n8) {
+        if (isalnum(c) || c == '.' || c == '-' || c == '_') qn += (char)c;
+        else { char h[4]; snprintf(h, sizeof h, "%%%02X", c); qn += h; }
+    }
+    std::wstring url = widen(std::string(HYPEREZ_WEB_URL) + "editor/index.html#c=" + enc + "&n=" + qn);
+    if (OpenClipboard(g_wnd)) {
+        EmptyClipboard();
+        HGLOBAL g = GlobalAlloc(GMEM_MOVEABLE, (url.size() + 1) * sizeof(wchar_t));
+        if (g) {
+            memcpy(GlobalLock(g), url.c_str(), (url.size() + 1) * sizeof(wchar_t));
+            GlobalUnlock(g);
+            if (!SetClipboardData(CF_UNICODETEXT, g)) GlobalFree(g);
+        }
+        CloseClipboard();
+    }
+    if (MessageBoxW(g_wnd, L"El enlace ya está copiado: quien lo abra verá este programa en el editor de HyperEZ del navegador y podrá "
+                           L"ejecutarlo sin instalar nada.\n\n¿Abrirlo ahora en el navegador?",
+                    L"Compartir en el editor web", MB_YESNO | MB_ICONINFORMATION) == IDYES)
+        ShellExecuteW(g_wnd, L"open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+}
+
+// ---------------------------------------------------------------------------
+// Ir a la definición (F12 o Ctrl+clic): el servidor de lenguaje de VS Code y del navegador, aquí en memoria
+// ---------------------------------------------------------------------------
+
+std::string lspUri(const std::wstring& path) {
+    std::string p = narrow(path);
+    for (auto& c : p) if (c == '\\') c = '/';
+    std::string r = "file:///";
+    const char* hex = "0123456789ABCDEF";
+    for (unsigned char c : p) {
+        if (std::isalnum(c) || c == '/' || c == '-' || c == '_' || c == '.' || c == '~') r += (char)c;
+        else { r += '%'; r += hex[c >> 4]; r += hex[c & 15]; }
+    }
+    return r;
+}
+
+std::wstring lspPath(const std::string& uri) {
+    std::string s = uri.rfind("file://", 0) == 0 ? uri.substr(7) : uri, r;
+    for (size_t i = 0; i < s.size(); i++) {
+        if (s[i] == '%' && i + 2 < s.size()) { r += (char)std::strtol(s.substr(i + 1, 2).c_str(), nullptr, 16); i += 2; }
+        else r += s[i];
+    }
+    if (r.size() > 2 && r[0] == '/' && r[2] == ':') r = r.substr(1);
+    for (auto& c : r) if (c == '/') c = '\\';
+    return widen(r);
+}
+
+void gotoDefinition() {
+    if (!g_edit) return;
+    static bool started = false;
+    static int version = 0;
+    if (!started) {
+        languageServerMessage(R"({"jsonrpc":"2.0","id":0,"method":"initialize","params":{"capabilities":{}}})");
+        languageServerMessage(R"({"jsonrpc":"2.0","method":"initialized","params":{}})");
+        started = true;
+    }
+    std::wstring path = g_file.empty() ? runTempDir() + L"\\sin titulo.hez" : g_file;
+    std::wstring text = editorText();
+    for (auto& c : text) if (c == L'\r') c = L'\n';
+    std::string uri = lspUri(path);
+    nlohmann::json open = {{"jsonrpc", "2.0"}, {"method", "textDocument/didOpen"},
+                           {"params", {{"textDocument", {{"uri", uri}, {"languageId", "hyperez"}, {"version", ++version}, {"text", narrow(text)}}}}}};
+    languageServerMessage(open.dump());
+    CHARRANGE sel;
+    SendMessageW(g_edit, EM_EXGETSEL, 0, (LPARAM)&sel);
+    LONG line = (LONG)SendMessageW(g_edit, EM_EXLINEFROMCHAR, 0, sel.cpMin);
+    LONG character = sel.cpMin - (LONG)SendMessageW(g_edit, EM_LINEINDEX, line, 0);
+    nlohmann::json req = {{"jsonrpc", "2.0"}, {"id", 1}, {"method", "textDocument/definition"},
+                          {"params", {{"textDocument", {{"uri", uri}}}, {"position", {{"line", line}, {"character", character}}}}}};
+    auto out = nlohmann::json::parse(languageServerMessage(req.dump()), nullptr, false);
+    nlohmann::json loc;
+    if (out.is_array())
+        for (auto& m : out) if (m.contains("id") && m["id"] == 1 && m.contains("result")) loc = m["result"];
+    if (loc.is_array()) loc = loc.empty() ? nlohmann::json() : loc[0];
+    if (!loc.is_object() || !loc.contains("uri")) {
+        SendMessageW(g_status, SB_SETTEXTW, 0, (LPARAM)L"No hay una definición para esto (pon el cursor sobre el nombre de una variable, función o clase)");
+        MessageBeep(MB_OK);
+        return;
+    }
+    std::wstring target = lspPath(loc["uri"].get<std::string>());
+    int l = loc["range"]["start"]["line"], c0 = loc["range"]["start"]["character"], c1 = loc["range"]["end"]["character"];
+    std::error_code ec;
+    bool same = _wcsicmp(target.c_str(), path.c_str()) == 0 || (fs::exists(target, ec) && fs::exists(path, ec) && fs::equivalent(target, path, ec));
+    if (!same && !openFile(target)) return;
+    LONG base = (LONG)SendMessageW(g_edit, EM_LINEINDEX, l, 0);
+    if (base < 0) return;
+    CHARRANGE cr{base + c0, base + std::max(c0, c1)};
+    SendMessageW(g_edit, EM_EXSETSEL, 0, (LPARAM)&cr);
+    SendMessageW(g_edit, EM_SCROLLCARET, 0, 0);
+    SetFocus(g_edit);
 }
 
 void onCommand(int id) {
@@ -2551,6 +2877,14 @@ void onCommand(int id) {
         case CMD_NEXTTAB: if (!g_docs.empty()) activate((g_cur + 1) % (int)g_docs.size()); break;
         case CMD_PREVTAB: if (!g_docs.empty()) activate((g_cur + (int)g_docs.size() - 1) % (int)g_docs.size()); break;
         case CMD_PRINT: printDocument(); break;
+        case CMD_THEME: g_dark = !g_dark; setCheck(CMD_THEME, g_dark); applyTheme(); break;
+        case CMD_DEFINITION: gotoDefinition(); break;
+        case CMD_NEWPROJECT: newProject(); break;
+        case CMD_SHARE: shareToWeb(); break;
+        case CMD_HELP_WEB: ShellExecuteW(g_wnd, L"open", widen(HYPEREZ_WEB_URL).c_str(), nullptr, nullptr, SW_SHOWNORMAL); break;
+        case CMD_HELP_WEBEDITOR:
+            ShellExecuteW(g_wnd, L"open", widen(std::string(HYPEREZ_WEB_URL) + "editor/index.html").c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+            break;
         case CMD_FONT: chooseFont(); break;
         case CMD_RUNPANEL: runInPanel(); break;
         case CMD_STOP: stopRun(); break;
@@ -2582,10 +2916,10 @@ void onCommand(int id) {
             MessageBoxW(g_wnd,
                         L"F5\tEjecutar en una consola\nMayús+F5\tEjecutar en el panel de salida\nCtrl+Pausa\tDetener el programa del panel\n"
                         L"Ctrl+F5\tEjecutar y repetir al guardar\nF6\tConsola interactiva\nF7\tComprobar errores\n\n"
-                        L"Ctrl+N\tPestaña nueva\nCtrl+W\tCerrar la pestaña\nCtrl+Tab\tPestaña siguiente\nCtrl+P\tImprimir\n"
+                        L"Ctrl+N\tPestaña nueva\nCtrl+Mayús+N\tNuevo proyecto\nCtrl+Mayús+E\tExplorador\nCtrl+W\tCerrar la pestaña\nCtrl+Tab\tPestaña siguiente\nCtrl+P\tImprimir\n"
                         L"Insert\tSobrescribir (SOB) o insertar (INS)\n\n"
                         L"Ctrl+N / O / S\tNuevo / Abrir / Guardar\nCtrl+F / H\tBuscar / Reemplazar\nF3\tBuscar siguiente\n"
-                        L"Ctrl+G\tIr a la línea\nCtrl+Espacio\tCompletar nombre\nCtrl+/\tComentar líneas\nCtrl+D\tDuplicar línea\n"
+                        L"F12 / Ctrl+clic\tIr a la definición\nCtrl+G\tIr a la línea\nCtrl+Espacio\tCompletar nombre\nCtrl+/\tComentar líneas\nCtrl+D\tDuplicar línea\n"
                         L"Ctrl+Mayús+F\tFormatear documento\n"
                         L"Tab / Mayús+Tab\tSangría\nCtrl+rueda, Ctrl++ / Ctrl+-\tTamaño del texto\nF1\tGuía del lenguaje",
                         L"Atajos de teclado", MB_ICONINFORMATION);
@@ -2677,6 +3011,11 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             TreeView_SetIndent(g_tree, S(12));
             initTreeImages();
             explorerSetRoot(g_explorerRoot.empty() ? projectsDir() : g_explorerRoot);
+            if (g_dark) { // el árbol con los colores de HyperEZ Noche
+                TreeView_SetBkColor(g_tree, C_PANEL_BG);
+                TreeView_SetTextColor(g_tree, C_PANEL_FG);
+                SetWindowTheme(g_tree, L"DarkMode_Explorer", nullptr);
+            }
             WNDCLASSW gc{};
             gc.lpfnWndProc = gutterProc;
             gc.hInstance = g_inst;
@@ -2716,6 +3055,7 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             DragAcceptFiles(h, TRUE);
             SetTimer(h, TIMER_GUTTER, 60, nullptr);
             addTab(); // la primera pestaña
+            if (g_dark) applyTheme();
             return 0;
         }
         case WM_SIZE: layout(); return 0;
@@ -2828,12 +3168,31 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
                 if (treeNotify(n, r)) return r;
                 break;
             }
+            if (n->hwndFrom == g_toolbar && n->code == NM_CUSTOMDRAW && g_dark) { // textos claros sobre la barra oscura
+                auto* cd = (NMTBCUSTOMDRAW*)lp;
+                if (cd->nmcd.dwDrawStage == CDDS_PREPAINT) return CDRF_NOTIFYITEMDRAW;
+                if (cd->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
+                    cd->clrText = C_PANEL_FG;
+                    cd->clrTextHighlight = RGB(255, 255, 255);
+                    cd->clrBtnFace = C_HEADER_BG;
+                    cd->clrBtnHighlight = C_GUTTER_EDGE;
+                    cd->clrHighlightHotTrack = C_GUTTER_EDGE;
+                    return TBCDRF_USECDCOLORS | TBCDRF_HILITEHOTTRACK;
+                }
+                return CDRF_DODEFAULT;
+            }
             if (n->hwndFrom == g_edit && n->code == EN_SELCHANGE && !g_formatting) updateStatus();
             if (n->hwndFrom == g_tabs && n->code == TCN_SELCHANGE) activate((int)SendMessageW(g_tabs, TCM_GETCURSEL, 0, 0));
             if (n->hwndFrom == g_bottomTabs && n->code == TCN_SELCHANGE) {
                 g_bottomPage = (int)SendMessageW(g_bottomTabs, TCM_GETCURSEL, 0, 0);
                 layout();
             }
+            return 0;
+        }
+        case WM_APP_DEFINITION: {
+            CHARRANGE sel;
+            SendMessageW(g_edit, EM_EXGETSEL, 0, (LPARAM)&sel);
+            if (sel.cpMin == sel.cpMax) gotoDefinition(); // solo un clic, sin arrastrar una selección
             return 0;
         }
         case WM_APP_TREEREFRESH:
@@ -2845,14 +3204,29 @@ LRESULT CALLBACK wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             break;
         case WM_CTLCOLORSTATIC:
             if ((HWND)lp == g_treeHeader) {
-                SetBkColor((HDC)wp, GetSysColor(COLOR_BTNFACE));
-                SetTextColor((HDC)wp, RGB(80, 86, 96));
-                return (LRESULT)GetSysColorBrush(COLOR_BTNFACE);
+                SetBkColor((HDC)wp, C_HEADER_BG);
+                SetTextColor((HDC)wp, C_HEADER_FG);
+                return (LRESULT)g_brHeader;
             }
-            if ((HWND)lp == g_output) { // la salida, en blanco como el editor aunque sea de solo lectura
-                SetBkColor((HDC)wp, RGB(255, 255, 255));
-                SetTextColor((HDC)wp, RGB(31, 35, 40));
-                return (LRESULT)GetStockObject(WHITE_BRUSH);
+            if ((HWND)lp == g_output) { // la salida, con los colores del editor aunque sea de solo lectura
+                SetBkColor((HDC)wp, C_PANEL_BG);
+                SetTextColor((HDC)wp, C_PANEL_FG);
+                return (LRESULT)g_brPanel;
+            }
+            break;
+        case WM_CTLCOLORLISTBOX:
+            if (g_dark && ((HWND)lp == g_panel || (HWND)lp == g_complete)) {
+                SetBkColor((HDC)wp, C_PANEL_BG);
+                SetTextColor((HDC)wp, C_PANEL_FG);
+                return (LRESULT)g_brPanel;
+            }
+            break;
+        case WM_ERASEBKGND:
+            if (g_dark) { // los huecos entre paneles (separadores), oscuros como el resto
+                RECT rc;
+                GetClientRect(h, &rc);
+                FillRect((HDC)wp, &rc, g_brHeader);
+                return 1;
             }
             break;
         case WM_APP_OUTPUT: {
@@ -2912,6 +3286,9 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int show) {
     g_uiFont = CreateFontIndirectW(&ncm.lfMessageFont);
     g_findMsg = RegisterWindowMessageW(FINDMSGSTRINGW);
     loadSettings();
+    setThemeColors(g_dark);
+    g_brPanel = CreateSolidBrush(C_PANEL_BG);
+    g_brHeader = CreateSolidBrush(C_HEADER_BG);
     buildCatalog();
     collectExamples();
 
@@ -2934,6 +3311,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int show) {
     } else {
         ShowWindow(h, show);
     }
+    if (g_dark) darkTitle(h, true);
     applyFont();
     int argc = 0;
     LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -2965,6 +3343,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int show) {
         {FCONTROL | FVIRTKEY, 'W', CMD_CLOSETAB}, {FCONTROL | FVIRTKEY, VK_TAB, CMD_NEXTTAB}, {FCONTROL | FSHIFT | FVIRTKEY, VK_TAB, CMD_PREVTAB},
         {FCONTROL | FVIRTKEY, 'P', CMD_PRINT}, {FSHIFT | FVIRTKEY, VK_F5, CMD_RUNPANEL}, {FCONTROL | FVIRTKEY, VK_CANCEL, CMD_STOP},
         {FCONTROL | FVIRTKEY, VK_PAUSE, CMD_STOP}, {FCONTROL | FSHIFT | FVIRTKEY, 'E', CMD_EXPLORER},
+        {FCONTROL | FSHIFT | FVIRTKEY, 'N', CMD_NEWPROJECT}, {FVIRTKEY, VK_F12, CMD_DEFINITION},
     };
     HACCEL accel = CreateAcceleratorTableW(keys, (int)std::size(keys));
     MSG m;

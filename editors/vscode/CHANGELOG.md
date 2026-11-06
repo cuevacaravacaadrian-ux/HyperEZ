@@ -1,5 +1,12 @@
 # Cambios
 
+## 0.8.3
+
+- **Tema de iconos de HyperEZ**: las carpetas de un proyecto (`hypersettings`, `hypercode`, `hypertests`, `hyperlibs`, `hypertools`, `hyperdata`, `hyperassets`, `hyperdocs`, `hyperbuild`) y los archivos `.hez` con su propio icono. Se ofrece una vez al abrir un proyecto con `hypersettings/`, y está en el comando *HyperEZ: Usar los iconos de HyperEZ*.
+- Los proyectos nuevos usan las carpetas de HyperEZ; F5 y *Ejecutar pruebas* reconocen la raíz por `hypersettings/` o `hypertests/`.
+- Enlaces a [la web de HyperEZ](https://cuevacaravacaadrian.github.io/HyperEZ/) y al editor en el navegador.
+- Herramientas de publicación actualizadas (`@vscode/vsce` 4.1, sin la vulnerabilidad de `minimatch`).
+
 ## 0.8.2
 
 - El identificador de la extensión es ahora **`hyperez.hyperezprogramminglanguagevscodeextension`**. El instalador de HyperEZ quita las anteriores (`hyperez.hyperez` y `hyperez.hyperezprogramminglanguage`).

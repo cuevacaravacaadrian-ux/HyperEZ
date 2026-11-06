@@ -39,6 +39,7 @@ const MENU = [
     { titulo: "Sistemas operativos", url: "biblioteca/sistemas-operativos.html" },
     { titulo: "Todas las funciones (API)", url: "biblioteca/API.html" },
     { grupo: "Herramientas" },
+    { titulo: "Proyectos y carpetas", url: "herramientas/proyectos.html" },
     { titulo: "HyperEZ Editor", url: "herramientas/editor.html" },
     { titulo: "Editor en el navegador", url: "herramientas/editor-web.html" },
     { titulo: "La orden hyper", url: "herramientas/cli.html" },
