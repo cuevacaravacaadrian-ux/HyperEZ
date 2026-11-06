@@ -79,7 +79,7 @@ jobs:
       - id: despliegue
         uses: actions/deploy-pages@v4
 
-      - name: Avisar a los buscadores (IndexNow: Bing, Yandex, Seznam, Naver)
+      - name: Avisar a los buscadores con IndexNow (Bing, Yandex, Seznam, Naver)
         continue-on-error: true
         env:
           WEB: ${{ steps.despliegue.outputs.page_url }}
