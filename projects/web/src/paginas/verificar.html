@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="aprender/aprender.css">
+
+<section class="titular verificar-titular">
+  <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="envoltura">
+    <h1>Verificar un certificado</h1>
+    <p>Comprueba que un certificado de la Academia HyperEZ es auténtico: escanea su QR o pega aquí su enlace de verificación.</p>
+  </div>
+</section>
+
+<section class="contenido">
+  <div class="envoltura verificar">
+    <form class="verificar-form" id="verificar-form">
+      <label for="verificar-entrada">Enlace de verificación del certificado</label>
+      <div class="cert-fila"><input id="verificar-entrada" placeholder="https://…/verificar.html?c=…" autocomplete="off"><button class="btn btn-verde">Verificar</button></div>
+    </form>
+
+    <div class="veredicto" id="veredicto" hidden></div>
+    <div class="cert-zona"><div class="cert-marco" id="verificar-cert" hidden></div></div>
+
+    <div class="verificar-info">
+      <h2>Cómo funciona</h2>
+      <div class="rejilla">
+        <div class="tarjeta"><div class="emoji">🎓</div><h3>Se gana jugando</h3><p>El certificado se obtiene al completar las 10 misiones de la <a href="aprender.html">Academia HyperEZ</a> y aprobar su examen final.</p></div>
+        <div class="tarjeta"><div class="emoji">🔐</div><h3>Código único</h3><p>Cada certificado tiene un código <code>HZ-AAAA-XXXX-XXXX</code> calculado (SHA-256) a partir del nombre, la nota y la fecha.</p></div>
+        <div class="tarjeta"><div class="emoji">✅</div><h3>A prueba de retoques</h3><p>Esta página recalcula el código con los datos del QR: si alguien cambia el nombre o la nota, el código ya no coincide con el impreso.</p></div>
+      </div>
+      <p class="nota-verificar">Compara siempre el código que muestra esta página con el impreso en el certificado. La web de HyperEZ no tiene servidor: no guarda una lista de los certificados emitidos, y la comprobación se hace en tu navegador.</p>
+    </div>
+  </div>
+</section>
+
+<script src="aprender/qrcode.js"></script>
+<script src="aprender/certificado.js"></script>
+<script src="aprender/verificar.js"></script>

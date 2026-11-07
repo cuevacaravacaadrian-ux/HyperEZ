@@ -32,6 +32,8 @@ std::string generateApiMarkdown(VM& vm);
 int runLanguageServer();
 // El mismo servidor en memoria (editor web): un mensaje JSON-RPC → lista JSON con lo que responde
 std::string languageServerMessage(const std::string& message);
+// hyper build: HyperEZ nativo → código máquina x86-64 (aplicación UEFI o binario plano)
+int nativeBuild(const std::vector<std::string>& args);
 
 #ifdef _WIN32
 // Asociación de .hz/.hez, iconos y menú contextual (HKEY_CURRENT_USER; no requiere administrador).

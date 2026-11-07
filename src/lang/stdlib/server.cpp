@@ -274,6 +274,15 @@ NATIVE(http_serve) {
         if (select((int)s + 1, &set, nullptr, nullptr, &tv) <= 0) continue;
         sock_t c = accept(s, nullptr, nullptr);
         if (c == kBadSock) continue;
+        // los navegadores abren conexiones de reserva que no envían nada: sin un límite, el servidor (que atiende de
+        // una en una) se quedaría esperando en una y no contestaría a las demás
+#ifdef _WIN32
+        DWORD espera = 1500;
+        setsockopt(c, SOL_SOCKET, SO_RCVTIMEO, (const char*)&espera, sizeof espera);
+#else
+        timeval espera{1, 500000};
+        setsockopt(c, SOL_SOCKET, SO_RCVTIMEO, (const char*)&espera, sizeof espera);
+#endif
         Request req;
         Response resp;
         if (!readRequest(c, req)) { closeSock(c); continue; }

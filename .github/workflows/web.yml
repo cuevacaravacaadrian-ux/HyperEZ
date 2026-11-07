@@ -51,11 +51,13 @@ jobs:
         run: |
           node projects/web/tests/wasm.test.js build-web/hyperez.js
           node projects/web/tests/nucleo.test.js
+          node projects/web/tests/aprender.test.js build-web/hyperez.js
 
       - name: Generar la web
         env: # códigos de Google Search Console y Bing Webmaster Tools (variables del repositorio; opcionales)
           HZ_GOOGLE_VERIFICACION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
           HZ_BING_VERIFICACION: ${{ vars.BING_SITE_VERIFICATION }}
+          HZ_DOMINIO: ${{ vars.WEB_DOMINIO }}
         run: build/hyper projects/web/construir.hez projects/web/dist --wasm build-web
 
       - name: Probar el editor en Chrome
@@ -63,6 +65,7 @@ jobs:
           build/hyper serve projects/web/dist --puerto 8123 --sin-recarga > servidor.log 2>&1 &
           for i in $(seq 1 30); do curl -sf http://localhost:8123/index.html > /dev/null && break; sleep 0.5; done
           node projects/web/tests/navegador.test.js http://localhost:8123/editor/index.html
+          node projects/web/tests/aprender-navegador.test.js http://localhost:8123/aprender.html
 
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -22,6 +22,7 @@ const MENU = [
     { titulo: "Eventos y tareas", url: "lenguaje/09-eventos-async.html" },
     { titulo: "Módulos", url: "lenguaje/10-modulos.html" },
     { titulo: "Pruebas", url: "lenguaje/11-pruebas.html" },
+    { titulo: "HyperEZ nativo (sistemas)", url: "lenguaje/12-nativo.html" },
     { titulo: "Gramática", url: "lenguaje/gramatica.html" },
     { grupo: "La biblioteca" },
     { titulo: "Mapa de la biblioteca", url: "biblioteca/README.html" },

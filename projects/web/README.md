@@ -47,6 +47,17 @@ node projects/web/tests/navegador.test.js http://localhost:8080/editor/index.htm
 
 Cada `push` a `main` la publica sola. La primera vez hay que activar GitHub Pages: *Settings → Pages → Source: GitHub Actions*.
 
+## Un dominio propio (gratis)
+
+Con [FreeDomain](https://github.com/DigitalPlatDev/FreeDomain) se consigue gratis un dominio como `hyperez.dpdns.org`:
+
+1. Regístrate en el [panel de DigitalPlat](https://dash.domain.digitalplat.org) y pide el nombre.
+2. FreeDomain no tiene editor de registros: apunta el dominio a un DNS gratuito (por ejemplo, Cloudflare) con sus servidores de nombres.
+3. En ese DNS, crea un registro **CNAME** del dominio hacia `cuevacaravacaadrian.github.io`.
+4. En el repositorio, crea la variable `WEB_DOMINIO` con el dominio (*Settings → Secrets and variables → Actions → Variables*) y, en *Settings → Pages → Custom domain*, escribe el mismo dominio y activa *Enforce HTTPS*.
+
+En la siguiente publicación, la web se genera para ese dominio (enlaces, sitemap, datos para buscadores y `CNAME`).
+
 ## Que la encuentren los buscadores
 
 La web ya lleva lo que miran Google, Bing y compañía: título y descripción de cada página, dirección canónica, Open Graph y Twitter (la vista previa al compartir un enlace), datos estructurados de schema.org (el lenguaje, el programa, el editor web, el autor y las preguntas frecuentes), `sitemap.xml` con fechas, `robots.txt`, `manifest.webmanifest` y `humans.txt`.

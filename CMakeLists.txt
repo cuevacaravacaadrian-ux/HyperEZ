@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 # macOS: std::to_chars con decimales necesita macOS 13.3 o posterior
 set(CMAKE_OSX_DEPLOYMENT_TARGET "13.3" CACHE STRING "Versión mínima de macOS")
-project(HyperEZ VERSION 0.8.3 LANGUAGES C CXX)
+project(HyperEZ VERSION 0.9.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -211,5 +211,8 @@ if(Python3_FOUND)
   # La documentación generada (API, errores, bytecode) debe estar al día con el código
   add_test(NAME documentacion-generada COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/gen_docs.py $<TARGET_FILE:hyper> --check)
   # El kit para GitHub Linguist (editors/linguist) al día y con lo que miran las pruebas de Linguist
+  # El compilador nativo (hyper build): una aplicación UEFI y un binario plano
+  add_test(NAME nativo-uefi COMMAND hyper build ${CMAKE_SOURCE_DIR}/src/tools/native/pruebas/prueba.hez -o ${CMAKE_BINARY_DIR}/nativo-prueba.efi)
+  add_test(NAME nativo-bin COMMAND hyper build ${CMAKE_SOURCE_DIR}/src/tools/native/pruebas/prueba.hez -o ${CMAKE_BINARY_DIR}/nativo-prueba.bin --formato bin)
   add_test(NAME linguist COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/linguist_kit.py --check $<TARGET_FILE:hyper>)
 endif()

@@ -79,3 +79,87 @@
     }
   });
 })();
+
+// ---- animaciones de la web: aparecer al hacer scroll, contadores, brillo de las tarjetas, barra de progreso ----
+(function () {
+  'use strict';
+  const reducido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const yo = document.querySelector('script[src$="sitio.js"]');
+  const raiz = yo ? yo.getAttribute('src').replace(/sitio\.js$/, '') : '';
+
+  // auroras detrás de las portadas que no la tienen
+  for (const el of $$('.portada, .titular, .llamada')) {
+    if (el.querySelector('.aurora')) continue;
+    const a = document.createElement('div');
+    a.className = 'aurora'; a.setAttribute('aria-hidden', 'true'); a.innerHTML = '<i></i><i></i><i></i>';
+    el.insertBefore(a, el.firstChild);
+  }
+
+  // barra de progreso de lectura
+  const barra = document.querySelector('.progreso-scroll');
+  if (barra) {
+    let pendiente = false;
+    const pintar = () => { pendiente = false; const h = document.documentElement; barra.style.transform = 'scaleX(' + (h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight)) + ')'; };
+    addEventListener('scroll', () => { if (!pendiente) { pendiente = true; requestAnimationFrame(pintar); } }, { passive: true });
+    pintar();
+  }
+
+  // aparecer al hacer scroll, uno detrás de otro dentro de cada grupo
+  const candidatos = $$('.seccion h2, .seccion .sub, .tarjeta, .paso, .dos > *, .ventana, .cifras > div, .sistema, .version, .faq details, .llamada, .persona, .ejemplo, .promo-ruta li, .promo-cert, .instrucciones > div')
+    .filter((el) => !el.closest('.mision, .revelar, .portada'));
+  if (!reducido && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((es) => {
+      for (const e of es) if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+    }, { threshold: .1, rootMargin: '0px 0px -40px 0px' });
+    const grupos = new Map();
+    for (const el of candidatos) {
+      const k = el.parentElement;
+      const n = grupos.get(k) || 0;
+      grupos.set(k, n + 1);
+      el.classList.add('revelar');
+      el.style.setProperty('--retardo', Math.min(n, 6) * 80 + 'ms');
+      io.observe(el);
+    }
+  }
+
+  // los números de la portada cuentan hacia arriba
+  const cifras = $$('.cifras b');
+  if (cifras.length && !reducido && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((es) => {
+      for (const e of es) {
+        if (!e.isIntersecting) continue;
+        io.unobserve(e.target);
+        const el = e.target, fin = parseInt(el.textContent.replace(/\D/g, ''), 10);
+        if (!fin) continue;
+        const t0 = performance.now(), dur = 1400;
+        (function paso(t) {
+          const x = Math.min(1, (t - t0) / dur), v = Math.round(fin * (1 - Math.pow(1 - x, 3)));
+          el.textContent = v.toLocaleString('es');
+          if (x < 1) requestAnimationFrame(paso);
+        })(t0);
+      }
+    }, { threshold: .5 });
+    cifras.forEach((c) => io.observe(c));
+  }
+
+  // brillo que sigue al ratón en las tarjetas
+  document.addEventListener('pointermove', (e) => {
+    const t = e.target.closest && e.target.closest('.tarjeta, .sistema');
+    if (!t) return;
+    const r = t.getBoundingClientRect();
+    t.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    t.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  }, { passive: true });
+
+  // la muestra del certificado de la Academia (portada)
+  const muestra = document.querySelector('[data-certificado-muestra]');
+  if (muestra) {
+    const cargar = (src) => new Promise((ok, mal) => { const s = document.createElement('script'); s.src = raiz + src; s.onload = ok; s.onerror = mal; document.head.appendChild(s); });
+    cargar('aprender/qrcode.js').then(() => cargar('aprender/certificado.js')).then(() => {
+      const C = window.HZCertificado;
+      muestra.innerHTML = C.svg({ n: 'Tu nombre aquí', p: 95, id: 'HZ-' + new Date().getFullYear() + '-0000-0000' }, new URL(raiz + 'verificar.html', location.href).href,
+        { logo: raiz + 'aprender/cert-logo.png', firma: raiz + 'aprender/cert-firma.png' });
+    }).catch(() => {});
+  }
+})();

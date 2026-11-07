@@ -3,6 +3,7 @@
 ## Empezar
 
 - [Instalación](empezar/instalacion.md): Windows, Linux, macOS y VS Code.
+- [Academia HyperEZ](https://cuevacaravacaadrian.github.io/HyperEZ/aprender.html): aprende jugando, con misiones, retos y certificado (en el navegador).
 - [Primeros pasos](empezar/primeros-pasos.md): HyperEZ Editor, consola interactiva, VS Code, la terminal y proyectos.
 - [Guía rápida](GUIA.md): todo el lenguaje en una página.
 - [Tutorial: un juego paso a paso](empezar/tutorial-juego.md)

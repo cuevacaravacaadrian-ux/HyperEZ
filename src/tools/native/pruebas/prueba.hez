@@ -1,0 +1,33 @@
+// Prueba del compilador nativo (hyper build): structs, métodos, bucles, constantes, datos y llamadas
+import "./util.hez"
+
+const ANCHO = 64
+enum Color { Rojo, Verde = 10, Azul }
+
+struct Punto {
+    var x: i32
+    var y: i32
+    var siguiente: Punto
+    function suma(): int { return x + y }
+}
+
+var tabla = [1, 2, 3, 4]
+var memoria = buffer(256)
+var texto = "hola"
+
+function main(imagen: int, sistema: int): int {
+    var p: Punto = Punto(memoria)
+    p.x = -3
+    p.y = 10
+    p.siguiente = Punto(memoria + sizeof(Punto))
+    p.siguiente.x = 5
+    var total = 0
+    for i in 0..4 { total += peek64(tabla + i * 8) }
+    for i in 10..=0 step -5 { total += i }
+    repeat 3 { total++ }
+    var n = 0
+    do { n += 1 } while n < 4
+    total += p.suma() + p.siguiente.x + Color.Azul + doble(ANCHO) + largo(texto)
+    if total > 0 and not (total == 7) { fill8(memoria + 64, 0xAB, 16) }
+    return udiv(total, 1)
+}

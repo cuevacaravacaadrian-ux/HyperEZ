@@ -2,6 +2,38 @@
 
 Todas las versiones de HyperEZ. El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [0.9.0] - 2026-11-07
+
+HyperEZ compila a código máquina: ya se puede escribir un sistema operativo en HyperEZ, y HyperEZX es el primero. Además, la Academia HyperEZ para aprender jugando, con certificado verificable, y una web nueva.
+
+### Añadido
+
+**HyperEZ nativo: `hyper build`** ([documentación](docs/lenguaje/12-nativo.md))
+- Compila HyperEZ a **código máquina x86-64** sin máquina virtual: una **aplicación UEFI** (`BOOTX64.EFI`, arranca desde un USB o una ISO en cualquier PC moderno) o un **binario plano** para cargadores propios.
+- El subconjunto de sistemas: enteros de 64 bits, funciones, variables y constantes, `if`, `while`, `do/while`, `for` con paso, `repeat`, `struct` con campos de tamaño fijo (`u8`...`u64`, punteros a otros struct) y métodos, `enum`, textos UTF-8 y UTF-16, tablas, `buffer(n)`, `embed("archivo")` e `import` de varios archivos.
+- Funciones del procesador: memoria (`peek`/`poke`, `copy`, `fill`), puertos de E/S (`inb`/`outb`...), `cli`, `sti`, `hlt`, `rdtsc`, `cpuid`, aritmética sin signo y `callptr` con la convención de Microsoft x64 (la de UEFI).
+- Errores en español que dicen qué no existe en modo nativo y qué usar en su lugar; `--mapa` con la dirección de cada función.
+
+**HyperEZX: un sistema operativo hecho con HyperEZ** ([repositorio aparte](https://github.com/cuevacaravacaadrian/HyperEZX))
+- Kernel escrito en HyperEZ y compilado con `hyper build`: escritorio con ventanas, barra superior, dock, menú con buscador, avisos, temas claro y oscuro, colores de acento, fondos, Terminal, Archivos, Ajustes, Notas, Calculadora, Serpiente y Sistema. Arranca desde un USB o una ISO.
+- Sus fuentes, iconos, fondo, la imagen del USB (GPT + FAT16) y la ISO (El Torito) también los genera HyperEZ.
+
+**La Academia HyperEZ** ([aprender.html](https://cuevacaravacaadrian.github.io/HyperEZ/aprender.html))
+- Un curso interactivo de **10 misiones en 4 mundos** (de `print` a las clases), cada una con su historia, una lección con ejemplos que se ejecutan en el navegador, un **reto** y preguntas.
+- Los retos los comprueba **HyperEZ de verdad** (WebAssembly): por la salida, cambiando los valores del programa (para que no valga escribir el resultado a mano) o con pruebas ocultas para funciones y clases. Si falla, dice en qué línea y qué se esperaba; hay pistas y, tras varios intentos, la solución.
+- Experiencia y niveles (de Aprendiz a Maestro HyperEZ), estrellas por misión, 6 medallas, confeti y avisos animados. El progreso se guarda en el navegador.
+- **Examen final** de 12 preguntas. La nota del certificado es la media de las preguntas de las misiones (a la primera) y del mejor examen; se aprueba con un 60.
+- **Certificado** con el diseño de HyperEZ (Black Edition), rellenado solo con el nombre, la nota, un código único `HZ-AAAA-XXXX-XXXX` y un **QR**. Se descarga en **PDF** (A4 apaisado) o en **PNG**, y se comparte por enlace o en LinkedIn.
+- **[verificar.html](https://cuevacaravacaadrian.github.io/HyperEZ/verificar.html)**: el QR lleva aquí; la página recalcula el código (SHA-256 de los datos) y muestra si el certificado es auténtico o si alguien lo ha retocado.
+
+**La web**
+- Estética nueva: auroras de color animadas, cabecera de cristal, textos con degradado, botones con destello, ventanas que flotan, tarjetas con brillo que sigue al ratón, contadores, barra de progreso de lectura y todo aparece al hacer scroll. Sin movimiento con *reducir movimiento* del sistema.
+- La Academia en la portada (con el certificado de muestra), en el menú y en el pie, y como `Course` en los datos estructurados para los buscadores.
+
+### Arreglado
+- La documentación comprueba también los ejemplos de HyperEZ nativo (los compila con `hyper build`).
+- `Http.serve` y `hyper serve` se quedaban colgados cuando el navegador abría una conexión de reserva sin enviar nada (atienden de una en una): ahora cada conexión tiene un límite de espera.
+
 ## [0.8.3] - 2026-11-06
 
 Las carpetas de HyperEZ (`hypersettings`, `hypercode`, `hypertests`...) con sus iconos, y los dos editores, el de Windows y el del navegador, con las mismas funciones.

@@ -36,6 +36,7 @@ static void printHelp() {
     section("Ejecutar");
     row("hyper <archivo.hz> [args...]", "ejecuta un programa (args llegan en System.args)");
     row("hyper run [archivo.hz] [args...]", "igual; sin archivo, el principal del proyecto o main.hez");
+    row("hyper build <archivo.hez> [-o x.efi]", "compila HyperEZ nativo a código máquina (UEFI o binario plano)");
     row("hyper tool [nombre] [args...]", "ejecuta una herramienta del proyecto (hypertools/<nombre>.hez)");
     row("hyper watch [archivo.hz]", "ejecuta y repite cada vez que guardas un .hz");
     row("hyper serve [carpeta] [--puerto N]", "sirve una web y recarga el navegador al guardar");
@@ -611,6 +612,7 @@ int main(int argc, char** argv) {
     if (cmd == "tool" || cmd == "herramienta") return cmdTool(rest);
     if (cmd == "fmt" || cmd == "format") return cmdFmt(rest);
     if (cmd == "serve") return cmdServe(rest);
+    if (cmd == "build") return nativeBuild(rest);
     if (cmd == "bytecode") {
         if (rest.empty()) { std::fprintf(stderr, "Uso: hyper bytecode <archivo.hz>\n"); return 2; }
         VM vm;

@@ -1,5 +1,9 @@
 # Cambios
 
+## 0.9.0
+
+- Versión al día con HyperEZ 0.9.0 (con `hyper build`, el compilador a código máquina). Aprende HyperEZ jugando en la [Academia HyperEZ](https://cuevacaravacaadrian.github.io/HyperEZ/aprender.html), con certificado.
+
 ## 0.8.3
 
 - **Tema de iconos de HyperEZ**: las carpetas de un proyecto (`hypersettings`, `hypercode`, `hypertests`, `hyperlibs`, `hypertools`, `hyperdata`, `hyperassets`, `hyperdocs`, `hyperbuild`) y los archivos `.hez` con su propio icono. Se ofrece una vez al abrir un proyecto con `hypersettings/`, y está en el comando *HyperEZ: Usar los iconos de HyperEZ*.

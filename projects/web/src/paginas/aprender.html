@@ -1,0 +1,102 @@
+<link rel="stylesheet" href="aprender/aprender.css">
+
+<section class="academia-portada">
+  <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="envoltura academia-cabeza">
+    <div class="revelar">
+      <span class="etiqueta"><b>Gratis</b> Curso interactivo con certificado</span>
+      <h1>La <span class="degradado">Academia HyperEZ</span></h1>
+      <p class="lema">Aprende a programar jugando: 10 misiones con historia, retos que se comprueban con HyperEZ de verdad, preguntas, experiencia y medallas. Al final, un examen y tu <b>certificado oficial</b> con código QR verificable.</p>
+      <div class="acciones">
+        <button class="btn btn-verde btn-brillo" id="boton-continuar">▶ Empezar la aventura</button>
+        <a class="btn btn-oscuro" href="#certificado-seccion">🎓 Ver el certificado</a>
+      </div>
+    </div>
+    <aside class="ficha revelar" aria-label="Tu progreso">
+      <div class="ficha-avatar" id="ficha-avatar">🧙</div>
+      <div class="ficha-nivel"><span id="ficha-nivel">Aprendiz</span><small id="ficha-xp">0 XP</small></div>
+      <div class="barra-xp" aria-hidden="true"><i id="ficha-barra"></i></div>
+      <div class="ficha-datos">
+        <div><b id="ficha-misiones">0/10</b><span>misiones</span></div>
+        <div><b id="ficha-estrellas">0</b><span>estrellas</span></div>
+        <div><b id="ficha-insignias">0</b><span>medallas</span></div>
+      </div>
+      <p class="ficha-motor" id="estado-motor">Cargando HyperEZ…</p>
+    </aside>
+  </div>
+</section>
+
+<section class="seccion academia-mapa-seccion">
+  <div class="envoltura">
+    <div class="centrado revelar">
+      <h2>El mapa de la aventura</h2>
+      <p class="sub">Cuatro mundos y diez misiones. Cada misión desbloquea la siguiente; tu progreso se guarda en este navegador.</p>
+    </div>
+    <div id="mapa" class="mapa"></div>
+    <div class="examen-tarjeta revelar" id="examen-tarjeta">
+      <div class="examen-icono">📝</div>
+      <div>
+        <h3>Examen final</h3>
+        <p id="examen-texto">Completa las 10 misiones para desbloquearlo. Doce preguntas sobre todo lo aprendido: con un 60 o más, consigues el certificado.</p>
+      </div>
+      <button class="btn btn-verde" id="boton-examen" disabled>Hacer el examen</button>
+    </div>
+  </div>
+</section>
+
+<section class="seccion gris" id="certificado-seccion">
+  <div class="envoltura">
+    <div class="centrado revelar">
+      <h2>Tu certificado</h2>
+      <p class="sub" id="cert-sub">Al aprobar el examen, el certificado se rellena con tu nombre, tu nota media y un código único. El QR lleva a la página de verificación.</p>
+    </div>
+    <div class="cert-zona revelar">
+      <div class="cert-marco" id="cert-marco"></div>
+      <form class="cert-form" id="cert-form" hidden>
+        <label for="cert-nombre">Tu nombre tal como quieres que aparezca</label>
+        <div class="cert-fila"><input id="cert-nombre" maxlength="60" autocomplete="name" placeholder="Nombre y apellidos" required><button class="btn btn-verde">Emitir mi certificado</button></div>
+        <small>Revisa que esté bien escrito: el nombre forma parte del código de verificación.</small>
+      </form>
+      <div class="cert-acciones" id="cert-acciones" hidden>
+        <button class="btn btn-verde" id="cert-pdf">⬇ Descargar PDF</button>
+        <button class="btn btn-claro" id="cert-png">🖼 Descargar imagen</button>
+        <button class="btn btn-claro" id="cert-copiar">🔗 Copiar enlace de verificación</button>
+        <a class="btn btn-claro" id="cert-verificar" href="verificar.html">✔ Verificar</a>
+        <a class="btn btn-claro" id="cert-linkedin" target="_blank" rel="noopener">in Compartir en LinkedIn</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="seccion">
+  <div class="envoltura">
+    <div class="centrado revelar">
+      <h2>Medallas</h2>
+      <p class="sub">Logros que vas desbloqueando por el camino.</p>
+    </div>
+    <div class="insignias" id="insignias"></div>
+    <p class="centrado reiniciar"><button class="enlace" id="boton-reiniciar">Borrar mi progreso y empezar de cero</button></p>
+  </div>
+</section>
+
+<!-- la misión: ocupa toda la pantalla -->
+<div class="mision" id="mision" hidden role="dialog" aria-modal="true" aria-labelledby="mision-titulo">
+  <header class="mision-cabeza">
+    <button class="mision-cerrar" id="mision-cerrar" aria-label="Volver al mapa">←</button>
+    <div class="mision-titulo"><span id="mision-icono"></span><div><small id="mision-mundo"></small><h2 id="mision-titulo"></h2></div></div>
+    <ol class="mision-pasos" id="mision-pasos"><li data-paso="0">Lección</li><li data-paso="1">Reto</li><li data-paso="2">Preguntas</li></ol>
+    <div class="mision-xp" id="mision-xp">+0 XP</div>
+  </header>
+  <div class="mision-cuerpo" id="mision-cuerpo"></div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<canvas class="confeti" id="confeti" aria-hidden="true"></canvas>
+<div class="cert-impresion" id="cert-impresion" aria-hidden="true"></div>
+
+<script src="editor/nucleo.js"></script>
+<script src="aprender/qrcode.js"></script>
+<script src="aprender/certificado.js"></script>
+<script src="aprender/misiones.js"></script>
+<script src="aprender/reto.js"></script>
+<script src="aprender/aprender.js"></script>

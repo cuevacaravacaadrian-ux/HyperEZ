@@ -8,6 +8,7 @@ Todo HyperEZ está en un solo ejecutable: `hyper` (`hyper.exe` en Windows).
 | `hyper repl` | Consola interactiva |
 | `hyper archivo.hz [args...]` | Ejecuta un programa; `System.args` recibe los argumentos |
 | `hyper run [archivo.hez] [args...]` | Igual; sin archivo ejecuta el programa principal del proyecto (`hypersettings/proyecto.json`) o `main.hez` |
+| `hyper build <archivo.hez> [-o x.efi] [--formato uefi\|bin]` | Compila [HyperEZ nativo](../lenguaje/12-nativo.md) a código máquina x86-64: una aplicación UEFI o un binario plano (para kernels) |
 | `hyper tool [nombre] [args...]` | Ejecuta una herramienta del proyecto (`hypertools/<nombre>.hez`); sin nombre, las lista |
 | `hyper watch [archivo.hz] [args...]` | Ejecuta y vuelve a ejecutar cada vez que se guarda un `.hz` de la carpeta (o subcarpetas) |
 | `hyper check [archivos o carpetas]` | Busca errores sin ejecutar |

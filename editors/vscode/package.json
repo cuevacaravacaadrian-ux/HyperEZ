@@ -1,8 +1,8 @@
 {
-  "name": "hyperezprogramminglanguagevscodeextension",
-  "displayName": "HyperEZ (Programación en español)",
+  "name": "hyperezprogramminglanguagevscodeextensioneditor",
+  "displayName": "HyperEZ Programming Language",
   "description": "Lenguaje de programación en español para hacer de todo: juegos, webs, IA, datos, gráficos y sistemas. Colores, errores en vivo, autocompletado, F5 para ejecutar, formato, pruebas, consola interactiva, tema propio y tutorial.",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "publisher": "hyperez",
   "license": "MIT",
   "author": {
@@ -562,7 +562,7 @@
   "scripts": {
     "bundle": "node tools/bundle.js",
     "vscode:prepublish": "node tools/bundle.js",
-    "package": "vsce package --no-dependencies --allow-missing-repository --allow-star-activation -o hyperez-0.8.3.vsix",
+    "package": "vsce package --no-dependencies --allow-missing-repository --allow-star-activation -o hyperez-0.9.0.vsix",
     "test": "node test/grammar.test.js",
     "test:vscode": "node test/runTest.js"
   },

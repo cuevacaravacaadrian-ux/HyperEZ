@@ -1,13 +1,13 @@
 # Sistemas operativos y bajo nivel
 
-HyperEZ todavía no compila a código máquina nativo, así que **no puede ser el lenguaje en el que está escrito un kernel** (eso exige ejecutarse sin sistema operativo debajo). Lo que sí puede hacer desde ya es todo el trabajo de **herramientas** que rodea a un sistema operativo:
+Desde la 0.9, HyperEZ **compila a código máquina** con `hyper build` ([HyperEZ nativo](../lenguaje/12-nativo.md)): se puede escribir un **kernel** entero en HyperEZ. El sistema operativo [HyperEZX](https://github.com/cuevacaravacaadrian/HyperEZX) está hecho así, con escritorio, ventanas y aplicaciones. Y el HyperEZ de siempre hace todo el trabajo de **herramientas** que rodea a un sistema operativo:
 
 - generar código máquina y sectores de arranque (`import x86`);
 - crear y analizar imágenes de disco, sistemas de archivos y formatos binarios (`Bytes`);
 - automatizar la compilación, el empaquetado y las pruebas en emuladores (`Process`, `File`);
 - scripts de instalación y configuración para una distribución (`Process.shell`, `Path`, `File`).
 
-La compilación a código nativo para poder escribir kernels está en la [hoja de ruta](../hoja-de-ruta.md).
+HyperEZX genera con HyperEZ sus fuentes, sus iconos, la imagen del USB (GPT + FAT16) y la ISO (El Torito): mira su `construir.hez`.
 
 ## Un sector de arranque
 

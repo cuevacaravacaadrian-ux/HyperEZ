@@ -27,6 +27,8 @@ var url = "https://cuevacaravacaadrian.github.io/HyperEZ/"
 var base = "/HyperEZ/"
 // verificación de Google Search Console y Bing Webmaster Tools (el código lo da cada uno; ver projects/web/README.md)
 var google = System.env("HZ_GOOGLE_VERIFICACION") ?? ""
+// un dominio propio (por ejemplo, uno gratis de FreeDomain): la web va en la raíz de ese dominio
+var dominio = System.env("HZ_DOMINIO") ?? ""
 var bing = System.env("HZ_BING_VERIFICACION") ?? ""
 var i = 0
 while i < System.args.length {
@@ -35,10 +37,12 @@ while i < System.args.length {
     else if a == "--url" { i += 1; url = System.args[i] }
     else if a == "--base" { i += 1; base = System.args[i] }
     else if a == "--google" { i += 1; google = System.args[i] }
+    else if a == "--dominio" { i += 1; dominio = System.args[i] }
     else if a == "--bing" { i += 1; bing = System.args[i] }
     else { destino = Path.join(System.cwd, a) }
     i += 1
 }
+if dominio != "" { url = "https://" + dominio + "/"; base = "/" }
 if not url.endsWith("/") { url += "/" }
 
 var t0 = Time.clock()
@@ -73,6 +77,7 @@ const NAV = [
     { url: "index.html", texto: "Inicio" },
     { url: "descargar.html", texto: "Descargar" },
     { url: "docs/index.html", texto: "Documentación" },
+    { url: "aprender.html", texto: "Aprender", nuevo: true },
     { url: "editor/index.html", texto: "Editor online" },
     { url: "ejemplos.html", texto: "Ejemplos" },
     { url: "versiones.html", texto: "Versiones" },
@@ -90,7 +95,7 @@ function jsonld(datos: map): text {
 function envolver(raiz: text, activo: text, titulo: text, descripcion: text, contenido: text, extra: map = {}): text {
     return template.renderHtml(plantilla, {
         titulo: titulo, descripcion: descripcion, raiz: raiz, url: url, version: version, fecha: hoy, contenido: contenido,
-        nav: NAV.map(n => ({ url: n.url, texto: n.texto, activo: n.url == activo })),
+        nav: NAV.map(n => ({ url: n.url, texto: n.texto, activo: n.url == activo, nuevo: n.nuevo ?? false })),
         canonica: url + (activo == "index.html" ? "" : activo), verificacion: verificacion, jsonld: "", noindex: false, ...extra,
     })
 }
@@ -141,6 +146,9 @@ if File.isDir(destino) { File.deleteDir(destino) }
 File.makeDir(destino)
 copiar(Path.join(SRC, "estilos.css"), "estilos.css")
 copiar(Path.join(SRC, "sitio.js"), "sitio.js")
+copiar(Path.join(SRC, "estilos-2.css"), "estilos-2.css")
+// la Academia HyperEZ (aprender.html y verificar.html): misiones, certificado y QR
+foreach f in File.list(Path.join(SRC, "aprender")) { copiar(Path.join(SRC, "aprender", f), "aprender/" + f) }
 copiar(Path.join(RAIZ, "assets", "branding", "banner.png"), "img/banner.png")
 copiar(Path.join(RAIZ, "assets", "icons", "hyperez-256.png"), "img/hyperez-256.png")
 copiar(Path.join(RAIZ, "assets", "icons", "hyperez-128.png"), "img/hyperez-128.png")
@@ -252,6 +260,18 @@ cerrarVersion()
 pagina("versiones.html", "versiones.html", "Versiones de HyperEZ", "Todos los cambios de HyperEZ, versión a versión, con sus descargas.",
     { versiones: versiones })
 
+// ---- 5b. la Academia HyperEZ: el curso con misiones y el certificado ----
+pagina("aprender.html", "aprender.html", "Academia HyperEZ · Aprende a programar jugando, con certificado",
+    "Curso gratis e interactivo de HyperEZ, el lenguaje de programación en español: 10 misiones con retos que se ejecutan en el navegador, experiencia, medallas, examen final y certificado verificable con QR.",
+    {}, { jsonld: jsonld({ "@type": "Course", name: "Academia HyperEZ", url: url + "aprender.html", inLanguage: "es",
+        description: "Aprende a programar en HyperEZ jugando: 10 misiones (variables, decisiones, bucles, listas, funciones, mapas y clases), retos comprobados con HyperEZ en el navegador y un examen final con certificado.",
+        provider: { "@type": "Person", name: AUTOR, url: AUTOR_URL }, isAccessibleForFree: true, educationalLevel: "Principiante",
+        teaches: ["Programación", "HyperEZ", "Variables", "Bucles", "Funciones", "Clases"], educationalCredentialAwarded: "Certificado de la Academia HyperEZ",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", category: "Free" },
+        hasCourseInstance: { "@type": "CourseInstance", courseMode: "online", courseWorkload: "PT4H" } }) })
+pagina("verificar.html", "verificar.html", "Verificar un certificado · Academia HyperEZ",
+    "Comprueba que un certificado de la Academia HyperEZ es auténtico: escanea su QR o pega su enlace de verificación.")
+
 // ---- 6. créditos ----
 var terceros = leer("THIRD-PARTY-NOTICES.md")
 terceros = Regex(r"^# [^\n]*\n").replace(terceros, "")
@@ -357,6 +377,7 @@ escribir("humans.txt", "/* EQUIPO */\nCreador: " + AUTOR + "\nGitHub: " + AUTOR_
          " (site, markdown y template)\nCódigo: " + REPO_URL + "\nIdioma: español\n")
 escribir("robots.txt", "User-agent: *\nAllow: /\nSitemap: " + url + "sitemap.xml\n")
 escribir(".nojekyll", "")
+if dominio != "" { escribir("CNAME", dominio + "\n") }
 
 print("✓ Web de HyperEZ ${version} en ${destino} (${round(Time.clock() - t0, 1)} s)")
 print("  ${paginasHechas.length + 1} páginas, ${paginasDocs} de documentación, ${ejemplos.length} ejemplos" + (conMotor ? ", editor con HyperEZ en WebAssembly" : ""))

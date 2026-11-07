@@ -28,14 +28,16 @@
 <link rel="sitemap" type="application/xml" href="{{raiz}}sitemap.xml">
 {{{jsonld}}}
 <link rel="stylesheet" href="{{raiz}}estilos.css">
+<link rel="stylesheet" href="{{raiz}}estilos-2.css">
 </head>
 <body>
+<div class="progreso-scroll" aria-hidden="true"></div>
 <header class="cabecera">
   <div class="envoltura">
     <a class="logo" href="{{raiz}}index.html"><img src="{{raiz}}img/hyperez-128.png" alt="">HyperEZ <span class="ver">{{version}}</span></a>
     <nav class="nav" aria-label="Secciones">
 {{#each nav}}
-      <a href="{{raiz}}{{url}}"{{#if activo}} class="activo"{{/if}}>{{texto}}</a>
+      <a href="{{raiz}}{{url}}" class="{{#if activo}}activo {{/if}}{{#if nuevo}}nuevo{{/if}}">{{texto}}</a>
 {{/each}}
     </nav>
     <a class="btn btn-verde" href="{{raiz}}descargar.html" data-descarga-principal>Descargar</a>
@@ -55,6 +57,7 @@
       <div>
         <h4>Empezar</h4>
         <a href="{{raiz}}descargar.html">Descargar</a>
+        <a href="{{raiz}}aprender.html">Academia HyperEZ</a>
         <a href="{{raiz}}editor/index.html">Editor en el navegador</a>
         <a href="{{raiz}}docs/empezar/instalacion.html">Instalación</a>
         <a href="{{raiz}}docs/empezar/primeros-pasos.html">Primeros pasos</a>
@@ -74,6 +77,7 @@
         <a href="{{raiz}}versiones.html">Versiones</a>
         <a href="https://marketplace.visualstudio.com/items?itemName=hyperez.hyperezprogramminglanguagevscodeextension">Extensión de VS Code</a>
         <a href="https://github.com/cuevacaravacaadrian/HyperEZ/blob/main/CONTRIBUTING.md">Colaborar</a>
+        <a href="{{raiz}}verificar.html">Verificar un certificado</a>
         <a href="{{raiz}}creditos.html">Créditos y licencias</a>
       </div>
     </div>

@@ -38,7 +38,10 @@ def main():
                 src = os.path.join(tmp, "bloque_%d.hz" % total)
                 with open(src, "w", encoding="utf-8") as out:
                     out.write(code)
-                r = subprocess.run([hyper, "run", src], capture_output=True, text=True, encoding="utf-8",
+                # HyperEZ nativo (un main(imagen, sistema)): se compila a código máquina con hyper build
+                nativo = re.search(r"^function main\(imagen", code, re.M) is not None
+                orden = [hyper, "build", src, "-o", src + ".efi"] if nativo else [hyper, "run", src]
+                r = subprocess.run(orden, capture_output=True, text=True, encoding="utf-8",
                                    errors="replace", timeout=30, env=env, cwd=tmp, stdin=subprocess.DEVNULL)
                 name = "%s:%d" % (os.path.basename(f), line)
                 if r.returncode != 0:

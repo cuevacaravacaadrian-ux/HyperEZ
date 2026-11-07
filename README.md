@@ -28,7 +28,7 @@
 
 ## 🚀 Empieza en un minuto
 
-1. Descarga **[HyperEZ-Setup-0.8.3.exe](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest)** y pulsa **Instalar** (no necesita administrador).
+1. Descarga **[HyperEZ-Setup-0.9.0.exe](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest)** y pulsa **Instalar** (no necesita administrador).
 2. Al terminar se abre **HyperEZ Editor** con tu primer programa.
 3. Pulsa **F5**. Ya está.
 
@@ -66,8 +66,8 @@ error[E0205]: No existe nada llamado 'pirnt'
 
 | Sistema | Cómo |
 |---|---|
-| **Windows** | **`HyperEZ-Setup-0.8.3.exe`** de la [última versión](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest): HyperEZ, HyperEZ Editor, ejemplos, documentación y la extensión de VS Code. |
-| **Linux / macOS** | `HyperEZ-0.8.3-linux-x64.tar.gz` (o `macos-arm64`): descomprímelo y ejecuta `sh install.sh`. |
+| **Windows** | **`HyperEZ-Setup-0.9.0.exe`** de la [última versión](https://github.com/cuevacaravacaadrian/HyperEZ/releases/latest): HyperEZ, HyperEZ Editor, ejemplos, documentación y la extensión de VS Code. |
+| **Linux / macOS** | `HyperEZ-0.9.0-linux-x64.tar.gz` (o `macos-arm64`): descomprímelo y ejecuta `sh install.sh`. |
 | **VS Code** | Lo instala el instalador de Windows; o búscala en el [Marketplace](https://marketplace.visualstudio.com/items?itemName=hyperez.hyperezprogramminglanguagevscodeextension): `code --install-extension hyperez.hyperezprogramminglanguagevscodeextension`. |
 
 En Windows, los `.hez` y `.hz` se abren **siempre** con HyperEZ (doble clic = ejecutar) y el clic derecho ofrece *Editar con HyperEZ Editor*, *Editar con VS Code*, *Comprobar errores* y *Ejecutar y repetir al guardar*; en cualquier carpeta, *Nuevo → Programa HyperEZ* y *Abrir HyperEZ aquí*. Detalles en la [guía de instalación](docs/empezar/instalacion.md).
@@ -89,6 +89,16 @@ hz> precios.map(p => round(p * 1.21, 2))
 ```
 
 Y además `hyper watch juego.hez` (vuelve a ejecutar cada vez que guardas) y `hyper new mi-juego --tipo juego|app|ia|script` (un proyecto ordenado que funciona desde el primer momento).
+
+## 🎓 Aprende jugando: la Academia HyperEZ
+
+**[La Academia HyperEZ](https://cuevacaravacaadrian.github.io/HyperEZ/aprender.html)** es un curso gratis en el navegador: 10 misiones con historia, retos que comprueba HyperEZ de verdad, experiencia, medallas y un examen final. Al aprobar, consigues tu **certificado** con un código QR que cualquiera puede **[verificar](https://cuevacaravacaadrian.github.io/HyperEZ/verificar.html)**.
+
+## 🖥️ Hasta un sistema operativo: HyperEZX
+
+`hyper build` compila HyperEZ a **código máquina** ([HyperEZ nativo](docs/lenguaje/12-nativo.md)). Con él está hecho **[HyperEZX](https://github.com/cuevacaravacaadrian/HyperEZX)**, un sistema operativo con escritorio, ventanas y aplicaciones que arranca desde un USB:
+
+<p align="center"><img src="docs/img/hyperezx-escritorio.png" alt="El escritorio de HyperEZX, un sistema operativo hecho con HyperEZ" width="85%"></p>
 
 ## 📁 Proyectos con carpetas propias
 
@@ -268,6 +278,7 @@ Toda la sintaxis está en la [referencia del lenguaje](docs/lenguaje/README.md),
 | `hyper fmt` | ordena la sangría y los espacios sin cambiar lo que hace el código |
 | `hyper new <nombre> --tipo T` | crea un proyecto: juego, app, ia, script, web o sitio |
 | `hyper tool [nombre]` | ejecuta una herramienta del proyecto (`hypertools/`) |
+| `hyper build archivo.hez` | compila HyperEZ nativo a código máquina (UEFI o binario plano) |
 | `hyper bytecode archivo` | enseña las instrucciones que genera el compilador |
 | `hyper docs` | genera la referencia de la API |
 | `hyper lsp` | servidor de lenguaje para cualquier editor |
